@@ -1,0 +1,24 @@
+app_kind: outofband
+collector_outofband:
+  # routines to spawn to collect oob inventory
+  concurrency: 5
+# stdout OR hollow
+#inventory_publisher: stdout
+inventory_publisher: hollow
+# csv OR emapi
+asset_getter: emapi
+hollow:
+  endpoint: http://localhost:8080
+  authToken: ""
+  concurrency: 10
+emapi:
+  auth_token:
+  consumer_token:
+  endpoint: https://foo.bar
+  facility: dc13
+  # concurrent emapi requests
+  concurrency: 5
+  # hardware items retrieved per emapi request
+  batch_size: 5
+  custom_headers:
+    X-Is-Boss: 1
