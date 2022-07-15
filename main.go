@@ -1,5 +1,7 @@
 package main
 
+import "github.com/metal-toolbox/alloy/cmd"
+
 func main() {
-	run()
+	cmd.Run()
 }
