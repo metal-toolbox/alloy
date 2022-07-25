@@ -20,11 +20,11 @@ var (
 func Run() {
 	var (
 		cmd, cfg     = newRootCmd()
-		outofbandCmd = newOutofbandCmd(cfg)
+		outOfBandCmd = newOutOfBandCmd(cfg)
 		inbandCmd    = newInbandCmd(cfg)
 	)
 
-	cmd.Subcommands = append(cmd.Subcommands, outofbandCmd, inbandCmd)
+	cmd.Subcommands = append(cmd.Subcommands, outOfBandCmd, inbandCmd)
 
 	if err := cmd.Parse(os.Args[1:]); err != nil {
 		fmt.Fprintf(os.Stderr, "error in cli parse: %v\n", err)

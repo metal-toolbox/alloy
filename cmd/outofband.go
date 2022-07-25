@@ -18,7 +18,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-type outofbandCmd struct {
+type outOfBandCmd struct {
 	rootCmd *rootCmd
 
 	// assets source is the cli flag for where assets are to be retrieved from.
@@ -35,8 +35,8 @@ type outofbandCmd struct {
 	assetListAll bool
 }
 
-func newOutofbandCmd(rootCmd *rootCmd) *ffcli.Command {
-	c := outofbandCmd{
+func newOutOfBandCmd(rootCmd *rootCmd) *ffcli.Command {
+	c := outOfBandCmd{
 		rootCmd: rootCmd,
 	}
 
@@ -57,7 +57,7 @@ func newOutofbandCmd(rootCmd *rootCmd) *ffcli.Command {
 	}
 }
 
-func (c *outofbandCmd) Exec(ctx context.Context, _ []string) error {
+func (c *outOfBandCmd) Exec(ctx context.Context, _ []string) error {
 	if err := c.validateFlags(); err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func (c *outofbandCmd) Exec(ctx context.Context, _ []string) error {
 }
 
 // initAssetGetter initializes the Asset Getter which retrieves asset information to collect inventory data.
-func (c *outofbandCmd) initAssetGetter(ctx context.Context, alloy *app.App) (asset.Getter, error) {
+func (c *outOfBandCmd) initAssetGetter(ctx context.Context, alloy *app.App) (asset.Getter, error) {
 	switch c.assetSourceKind {
 	case asset.SourceKindCSV:
 		if c.assetSourceCSVFile != "" {
@@ -116,7 +116,7 @@ func (c *outofbandCmd) initAssetGetter(ctx context.Context, alloy *app.App) (ass
 }
 
 // initAssetPublisher initializes the inventory publisher.
-func (c *outofbandCmd) initAssetPublisher(ctx context.Context, alloy *app.App) (publish.Publisher, error) {
+func (c *outOfBandCmd) initAssetPublisher(ctx context.Context, alloy *app.App) (publish.Publisher, error) {
 	switch c.rootCmd.publisherKind {
 	case publish.KindStdout:
 		return publish.NewStdoutPublisher(ctx, alloy)
@@ -128,7 +128,7 @@ func (c *outofbandCmd) initAssetPublisher(ctx context.Context, alloy *app.App) (
 }
 
 // validateFlags checks expected outofband flag parameters are valid
-func (c *outofbandCmd) validateFlags() error {
+func (c *outOfBandCmd) validateFlags() error {
 	if err := c.validateFlagSource(); err != nil {
 		return err
 	}
@@ -141,7 +141,7 @@ func (c *outofbandCmd) validateFlags() error {
 }
 
 // validateFlagSource checks the -asset-source flag parameter values are as expected.
-func (c *outofbandCmd) validateFlagSource() error {
+func (c *outOfBandCmd) validateFlagSource() error {
 	switch c.assetSourceKind {
 	case asset.SourceKindEMAPI:
 		if c.rootCmd.cfgFile == "" {
@@ -170,20 +170,20 @@ func (c *outofbandCmd) validateFlagSource() error {
 }
 
 // validateFlagPublish checks the -publish flag parameter values are as expected.
-func (c *outofbandCmd) validateFlagPublish() error {
+func (c *outOfBandCmd) validateFlagPublish() error {
 	switch c.rootCmd.publisherKind {
 	case publish.KindHollow, publish.KindStdout:
 		return nil
 	default:
 		return errors.Wrap(
 			errParseCLIParam,
-			"-publish parameter required, accepted values are stdout OR hollow",
+			"-publish parameter required, accepted values are stdout OR serverService",
 		)
 	}
 }
 
 // collect runs the asset getter, publisher and collects inventory out of band
-func (c *outofbandCmd) collect(ctx context.Context, alloy *app.App, getter asset.Getter, publisher publish.Publisher) error {
+func (c *outOfBandCmd) collect(ctx context.Context, alloy *app.App, getter asset.Getter, publisher publish.Publisher) error {
 	go func() {
 		log.Println(http.ListenAndServe("localhost:9091", nil))
 	}()
