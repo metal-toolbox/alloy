@@ -41,8 +41,7 @@ type App struct {
 // New returns a new alloy application object with the configuration loaded
 func New(ctx context.Context, kind, cfgFile string, loglevel int) (app *App, err error) {
 	switch kind {
-	case KindInband:
-	case KindOutOfBand:
+	case KindInband, KindOutOfBand:
 	default:
 		return nil, errors.Wrap(ErrAppInit, "invalid app kind: "+kind)
 	}
@@ -111,6 +110,7 @@ func configDefault() *model.Config {
 	}
 }
 
+// NewLogrusEntryFromLogger returns a logger contextualized with the given logrus fields.
 func NewLogrusEntryFromLogger(fields logrus.Fields, logger *logrus.Logger) *logrus.Entry {
 	l := logrus.New()
 	l.Formatter = logger.Formatter

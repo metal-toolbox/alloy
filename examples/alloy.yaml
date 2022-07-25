@@ -20,5 +20,6 @@ emapi:
   concurrency: 5
   # hardware items retrieved per emapi request
   batch_size: 5
+  # custom HTTP headers to be included in the emapi request
   custom_headers:
     X-Is-Boss: 1
