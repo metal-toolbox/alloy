@@ -3,7 +3,7 @@
 Alloy is internally composed of three main components,
 the `Asset getter`, `Inventory collector` and `Inventory publisher`.
 
-![Alloy software components](examples/alloy_components.png)
+![Alloy software components](alloy_components.png)
 
 #### Asset getter
 
@@ -33,7 +33,7 @@ In band inventory is collected when alloy is invoked with the `inband` command,
 this calls into the [ironlib](https://github.com/metal-toolbox/ironlib) library
 which abstracts the hardware/vendor specific data collection through a host OS.
 
-![Alloy software components](examples/alloy_inband.png)
+![Alloy software components](alloy_inband.png)
 
 
 ###### Out of band collection
@@ -44,7 +44,7 @@ library, which abstracts hardware/vendor specific data collection remotely throu
 BMC.
 
 
-![Alloy software components](examples/alloy_oob.png)
+![Alloy software components](alloy_oob.png)
 
 #### Inventory publisher
 

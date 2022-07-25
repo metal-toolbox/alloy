@@ -14,9 +14,9 @@ The `outofband` command will cause Alloy to collect inventory from the server BM
 The command requires BMC credential information provided by the `-asset-source` flag,
 see [examples](examples/assets.csv).
 
-The command also requires the `-publish-target`, which must be either `stdout` or `hollow`.
+The command also requires the `-publish-target`, which must be either `stdout` or `serverService`.
 
-For Alloy internals see [README-development.md](README-development.md)
+For Alloy internals see [README-development.md](docs/README-development.md)
 
 ##### sample commands
 
@@ -27,14 +27,14 @@ CSV file asset source with inventory published to stdout
                    -publish-target stdout
 ```
 
-CSV file asset source with inventory published to hollow
+CSV file asset source with inventory published to serverService
 ```
-export HOLLOW_AUTH_TOKEN="hunter2"
-export HOLLOW_ENDPOINT="http://127.0.0.1:8000"
+export SERVERSERVICE_AUTH_TOKEN="hunter2"
+export SERVERSERVICE_ENDPOINT="http://127.0.0.1:8000"
 
 ./alloy outofband  -asset-source csv \
                    -csv-file examples/assets.csv \
-                   -publish-target hollow
+                   -publish-target serverService
 ```
 
 
@@ -62,6 +62,6 @@ SUBCOMMANDS
 FLAGS
   -config-file ...     Alloy config file
   -debug=false         Set logging to debug level.
-  -publish-target ...  Publish collected inventory to [hollow|stdout]
+  -publish-target ...  Publish collected inventory to [serverService|stdout]
   -trace=false         Set logging to trace level.
 ```
