@@ -48,7 +48,7 @@ func rawVersionAttributeFirmwareEquals(t *testing.T, expectedVersion string, raw
 	return va.Firmware.Installed == expectedVersion
 }
 
-func Test_HollowChangeList(t *testing.T) {
+func Test_ServerServiceChangeList(t *testing.T) {
 	components := fixtures.CopyServerServiceComponentSlice(fixtures.ServerServiceR6515Components_fc167440)
 
 	// nolint:govet // struct alignment kept for readability
@@ -128,7 +128,7 @@ func Test_HollowChangeList(t *testing.T) {
 			default:
 			}
 
-			gotAdd, gotUpdate, gotRemove, err := hollowChangeList(tc.current, newObjs)
+			gotAdd, gotUpdate, gotRemove, err := serverServiceChangeList(tc.current, newObjs)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -143,7 +143,7 @@ func Test_HollowChangeList(t *testing.T) {
 func Test_DiffVersionedAttributes(t *testing.T) {
 	now := time.Now()
 
-	// current versioned attributes fixture for data read from hollow
+	// current versioned attributes fixture for data read from serverService
 	fixtureCurrentVA := []serverservice.VersionedAttributes{
 		{
 			Namespace: "server.components",
@@ -300,7 +300,7 @@ func newVersionAttributes(t *testing.T, data json.RawMessage, value string) *ver
 	return va
 }
 
-func Test_HollowRegisterChanges_ObjectsEqual(t *testing.T) {
+func Test_ServerService_RegisterChanges_ObjectsEqual(t *testing.T) {
 	serverID, _ := uuid.Parse(fixtures.TestserverID_Dell_fc167440)
 	handler := http.NewServeMux()
 	// get components query
@@ -337,7 +337,7 @@ func Test_HollowRegisterChanges_ObjectsEqual(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	hollow := hollowPublisher{
+	serverService := serverServicePublisher{
 		logger: app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher"}, logrus.New()),
 		slugs:  fixtures.ServerServiceSlugMap(),
 		client: c,
@@ -345,19 +345,20 @@ func Test_HollowRegisterChanges_ObjectsEqual(t *testing.T) {
 
 	device := &model.AssetDevice{ID: serverID.String(), Device: fixtures.CopyDevice(fixtures.R6515_fc167440)}
 
-	err = hollow.registerChanges(context.TODO(), serverID, device)
+	err = serverService.registerChanges(context.TODO(), serverID, device)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
-func Test_HollowRegisterChanges_ObjectsUpdated(t *testing.T) {
+func Test_ServerService_RegisterChanges_ObjectsUpdated(t *testing.T) {
 	serverID, _ := uuid.Parse(fixtures.TestserverID_Dell_fc167440)
 	newBIOSFWVersion := "2.6.7"
 
 	newBMCFWVersion := "5.12.00.00"
 
 	handler := http.NewServeMux()
+
 	// get components query
 	handler.HandleFunc(
 		fmt.Sprintf("/api/v1/servers/%s/components", serverID.String()),
@@ -412,7 +413,7 @@ func Test_HollowRegisterChanges_ObjectsUpdated(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	hollow := hollowPublisher{
+	serverService := serverServicePublisher{
 		logger: app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher"}, logrus.New()),
 		slugs:  fixtures.ServerServiceSlugMap(),
 		client: c,
@@ -428,13 +429,13 @@ func Test_HollowRegisterChanges_ObjectsUpdated(t *testing.T) {
 	device.BIOS.Firmware.Installed = newBIOSFWVersion
 	device.BMC.Firmware.Installed = newBMCFWVersion
 
-	err = hollow.registerChanges(context.TODO(), serverID, device)
+	err = serverService.registerChanges(context.TODO(), serverID, device)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
-func Test_HollowRegisterChanges_ObjectsAdded(t *testing.T) {
+func Test_ServerService_RegisterChanges_ObjectsAdded(t *testing.T) {
 	serverID, _ := uuid.Parse(fixtures.TestserverID_Dell_fc167440)
 
 	fixtureNICSerial := "c00l"
@@ -490,7 +491,7 @@ func Test_HollowRegisterChanges_ObjectsAdded(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	hollow := hollowPublisher{
+	serverService := serverServicePublisher{
 		logger: app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher"}, logrus.New()),
 		slugs:  fixtures.ServerServiceSlugMap(),
 		client: c,
@@ -515,7 +516,7 @@ func Test_HollowRegisterChanges_ObjectsAdded(t *testing.T) {
 		},
 	)
 
-	err = hollow.registerChanges(context.TODO(), serverID, device)
+	err = serverService.registerChanges(context.TODO(), serverID, device)
 	if err != nil {
 		t.Fatal(err)
 	}

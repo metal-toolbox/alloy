@@ -12,7 +12,7 @@ import (
 )
 
 func Test_ToComponentSlice(t *testing.T) {
-	h := hollowPublisher{
+	h := serverServicePublisher{
 		logger: logrus.NewEntry(logrus.New()),
 		slugs:  fixtures.ServerServiceSlugMap(),
 	}

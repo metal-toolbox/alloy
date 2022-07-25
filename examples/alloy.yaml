@@ -2,12 +2,12 @@ app_kind: outofband
 collector_outofband:
   # routines to spawn to collect oob inventory
   concurrency: 5
-# stdout OR hollow
+# stdout OR serverService (https://github.com/metal-toolbox/hollow-serverservice)
 #inventory_publisher: stdout
-inventory_publisher: hollow
+inventory_publisher: serverService
 # csv OR emapi
 asset_getter: emapi
-hollow:
+serverService:
   endpoint: http://localhost:8080
   authToken: ""
   concurrency: 10

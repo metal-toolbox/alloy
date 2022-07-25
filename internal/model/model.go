@@ -78,14 +78,15 @@ type Config struct {
 
 	// Publisher is the inventory store where alloy writes collected inventory data
 	InventoryPublisher struct {
-		// supported parameters: stdout, hollow
+		// supported parameters: stdout, serverService
 		Kind string `mapstructure:"kind"`
 
-		// Hollow is the Hollow inventory store
-		Hollow struct {
+		// ServerService is the Hollow server inventory store
+		// https://github.com/metal-toolbox/hollow-serverservice
+		ServerService struct {
 			Endpoint    string `mapstructure:"endpoint"`
 			AuthToken   string `mapstructure:"auth_token"`
 			Concurrency int    `mapstructure:"concurrency"`
-		} `mapstructure:"hollow"`
+		} `mapstructure:"serverService"`
 	} `mapstructure:"inventory_publisher"`
 }

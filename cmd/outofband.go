@@ -120,8 +120,8 @@ func (c *outOfBandCmd) initAssetPublisher(ctx context.Context, alloy *app.App) (
 	switch c.rootCmd.publisherKind {
 	case publish.KindStdout:
 		return publish.NewStdoutPublisher(ctx, alloy)
-	case publish.KindHollow:
-		return publish.NewHollowPublisher(ctx, alloy)
+	case publish.KindServerService:
+		return publish.NewServerServicePublisher(ctx, alloy)
 	default:
 		return nil, errors.Wrap(model.ErrConfig, "unknown inventory publisher: "+c.rootCmd.publisherKind)
 	}
@@ -172,7 +172,7 @@ func (c *outOfBandCmd) validateFlagSource() error {
 // validateFlagPublish checks the -publish flag parameter values are as expected.
 func (c *outOfBandCmd) validateFlagPublish() error {
 	switch c.rootCmd.publisherKind {
-	case publish.KindHollow, publish.KindStdout:
+	case publish.KindServerService, publish.KindStdout:
 		return nil
 	default:
 		return errors.Wrap(

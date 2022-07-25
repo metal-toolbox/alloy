@@ -23,8 +23,8 @@ import (
 )
 
 const (
-	KindHollow = "hollow"
-	namespace  = "server.components"
+	KindServerService = "serverService"
+	namespace         = "server.components"
 )
 
 var (
@@ -38,8 +38,8 @@ var (
 	ErrChangeList            = errors.New("error building change list")
 )
 
-// hollowPublisher publishes asset inventory to hollow
-type hollowPublisher struct {
+// serverServicePublisher publishes asset inventory to serverService
+type serverServicePublisher struct {
 	logger      *logrus.Entry
 	config      *model.Config
 	syncWg      *sync.WaitGroup
@@ -50,16 +50,16 @@ type hollowPublisher struct {
 	slugs       map[string]*serverservice.ServerComponentType
 }
 
-// NewHollowPublisher returns a hollow publisher to submit inventory data.
-func NewHollowPublisher(ctx context.Context, alloy *app.App) (Publisher, error) {
-	logger := app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher.hollow"}, alloy.Logger)
+// NewServerServicePublisher returns a serverService publisher to submit inventory data.
+func NewServerServicePublisher(ctx context.Context, alloy *app.App) (Publisher, error) {
+	logger := app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher.serverService"}, alloy.Logger)
 
-	client, err := newHollowClient(alloy.Config, logger)
+	client, err := newServerServiceClient(alloy.Config, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	p := &hollowPublisher{
+	p := &serverServicePublisher{
 		logger:      logger,
 		config:      alloy.Config,
 		syncWg:      alloy.SyncWg,
@@ -74,7 +74,7 @@ func NewHollowPublisher(ctx context.Context, alloy *app.App) (Publisher, error) 
 }
 
 // Run implements the Publisher interface to publish asset inventory
-func (h *hollowPublisher) Run(ctx context.Context) error {
+func (h *serverServicePublisher) Run(ctx context.Context) error {
 	// channel for routines spawned to indicate completion
 	doneCh := make(chan struct{})
 
@@ -133,8 +133,8 @@ func (h *hollowPublisher) Run(ctx context.Context) error {
 	return nil
 }
 
-// spawn registers any the device object information with hollow
-func (h *hollowPublisher) publish(ctx context.Context, device *model.AssetDevice) {
+// publish device information with hollow server service
+func (h *serverServicePublisher) publish(ctx context.Context, device *model.AssetDevice) {
 	if device == nil {
 		h.logger.Warn("nil device ignored")
 
@@ -181,10 +181,10 @@ func (h *hollowPublisher) publish(ctx context.Context, device *model.AssetDevice
 	}
 }
 
-// registerChanges compares the current object in hollow with the device data and registers changes.
+// registerChanges compares the current object in serverService with the device data and registers changes.
 //
 // nolint:gocyclo // the method caries out all steps to have device data compared and registered, for now its accepted as cyclomatic.
-func (h *hollowPublisher) registerChanges(ctx context.Context, serverID uuid.UUID, device *model.AssetDevice) error {
+func (h *serverServicePublisher) registerChanges(ctx context.Context, serverID uuid.UUID, device *model.AssetDevice) error {
 	// convert model.AssetDevice to server service component slice
 	newInventory, err := h.toComponentSlice(serverID, device)
 	if err != nil {
@@ -198,7 +198,7 @@ func (h *hollowPublisher) registerChanges(ctx context.Context, serverID uuid.UUI
 	}
 
 	// identify changes to be applied
-	add, update, remove, err := hollowChangeList(componentPtrSlice(currentInventory), newInventory)
+	add, update, remove, err := serverServiceChangeList(componentPtrSlice(currentInventory), newInventory)
 	if err != nil {
 		return errors.Wrap(ErrRegisterChanges, err.Error())
 	}
@@ -213,9 +213,9 @@ func (h *hollowPublisher) registerChanges(ctx context.Context, serverID uuid.UUI
 		logrus.Fields{
 			"id":            serverID,
 			"items-added":   len(add),
-			"items-updated": len(add),
+			"items-updated": len(update),
 			"items-removed": len(remove),
-		}).Debug("device inventory changes to be registered")
+		}).Info("device inventory changes to be registered")
 
 	// apply added component changes
 	if len(add) > 0 {
@@ -247,7 +247,7 @@ func (h *hollowPublisher) registerChanges(ctx context.Context, serverID uuid.UUI
 	return nil
 }
 
-// diffFilter is a filter is passed to the r3 diff filter method for comparing structs
+// diffFilter is a filter passed to the r3 diff filter method for comparing structs
 //
 // nolint:gocritic // r3diff requires the field attribute to be passed by value
 func diffFilter(path []string, parent reflect.Type, field reflect.StructField) bool {
@@ -259,9 +259,9 @@ func diffFilter(path []string, parent reflect.Type, field reflect.StructField) b
 	}
 }
 
-// hollowChangeList compares the current vs newer slice of server components
+// serverServiceChangeList compares the current vs newer slice of server components
 // and returns 3 lists - add, update, remove.
-func hollowChangeList(currentObjs, newObjs []*serverservice.ServerComponent) (add, update, remove serverservice.ServerComponentSlice, err error) {
+func serverServiceChangeList(currentObjs, newObjs []*serverservice.ServerComponent) (add, update, remove serverservice.ServerComponentSlice, err error) {
 	// 1. list updated and removed objects
 	for _, currentObj := range currentObjs {
 		// changeObj is the component changes to be registered
@@ -273,7 +273,7 @@ func hollowChangeList(currentObjs, newObjs []*serverservice.ServerComponent) (ad
 			continue
 		}
 
-		updated, err := hollowComponentsUpdated(currentObj, changeObj)
+		updated, err := serverServiceComponentsUpdated(currentObj, changeObj)
 		if err != nil {
 			return add, update, remove, err
 		}
@@ -299,7 +299,7 @@ func hollowChangeList(currentObjs, newObjs []*serverservice.ServerComponent) (ad
 	return add, update, remove, nil
 }
 
-func hollowComponentsUpdated(currentObj, newObj *serverservice.ServerComponent) (*serverservice.ServerComponent, error) {
+func serverServiceComponentsUpdated(currentObj, newObj *serverservice.ServerComponent) (*serverservice.ServerComponent, error) {
 	differ, err := r3diff.NewDiffer(r3diff.Filter(diffFilter))
 	if err != nil {
 		return nil, err
@@ -379,7 +379,7 @@ func diffComponentObjectsAttributes(currentObj, changeObj *serverservice.ServerC
 
 // diffVersionedAttributes compares the current latest (created_at) versioned attribute
 // with the newer versioned attribute (from the inventory collection)
-// returning the versioned attribute to be registered with hollow.
+// returning the versioned attribute to be registered with serverService.
 //
 // In the case that no changes are to be registered, a nil object is returned.
 func diffVersionedAttributes(currentObjs, newObjs []serverservice.VersionedAttributes) (*serverservice.VersionedAttributes, error) {
@@ -422,32 +422,32 @@ func diffVersionedAttributes(currentObjs, newObjs []serverservice.VersionedAttri
 	return nil, nil
 }
 
-func newHollowClient(cfg *model.Config, logger *logrus.Entry) (*serverservice.Client, error) {
+func newServerServiceClient(cfg *model.Config, logger *logrus.Entry) (*serverservice.Client, error) {
 	// env var auth token
-	if authToken := os.Getenv("HOLLOW_AUTH_TOKEN"); authToken != "" {
-		cfg.InventoryPublisher.Hollow.AuthToken = authToken
+	if authToken := os.Getenv("SERVERSERVICE_AUTH_TOKEN"); authToken != "" {
+		cfg.InventoryPublisher.ServerService.AuthToken = authToken
 	}
 
-	if cfg.InventoryPublisher.Hollow.AuthToken == "" {
-		return nil, errors.Wrap(model.ErrConfig, "expected hollow auth token, got empty")
+	if cfg.InventoryPublisher.ServerService.AuthToken == "" {
+		return nil, errors.Wrap(model.ErrConfig, "expected serverService auth token, got empty")
 	}
 
-	// env var hollow endpoint
-	if endpoint := os.Getenv("HOLLOW_ENDPOINT"); endpoint != "" {
-		cfg.InventoryPublisher.Hollow.Endpoint = endpoint
+	// env var serverService endpoint
+	if endpoint := os.Getenv("SERVERSERVICE_ENDPOINT"); endpoint != "" {
+		cfg.InventoryPublisher.ServerService.Endpoint = endpoint
 	}
 
-	if cfg.InventoryPublisher.Hollow.Endpoint == "" {
-		return nil, errors.Wrap(model.ErrConfig, "expected hollow endpoint, got empty")
+	if cfg.InventoryPublisher.ServerService.Endpoint == "" {
+		return nil, errors.Wrap(model.ErrConfig, "expected serverService endpoint, got empty")
 	}
 
-	endpoint, err := url.Parse(cfg.InventoryPublisher.Hollow.Endpoint)
+	endpoint, err := url.Parse(cfg.InventoryPublisher.ServerService.Endpoint)
 	if err != nil {
-		return nil, errors.Wrap(model.ErrConfig, "error in hollow endpoint URL: "+err.Error())
+		return nil, errors.Wrap(model.ErrConfig, "error in serverService endpoint URL: "+err.Error())
 	}
 
-	if cfg.InventoryPublisher.Hollow.Concurrency == 0 {
-		cfg.InventoryPublisher.Hollow.Concurrency = concurrency
+	if cfg.InventoryPublisher.ServerService.Concurrency == 0 {
+		cfg.InventoryPublisher.ServerService.Concurrency = concurrency
 	}
 
 	// init retryable http client
@@ -461,7 +461,7 @@ func newHollowClient(cfg *model.Config, logger *logrus.Entry) (*serverservice.Cl
 	}
 
 	return serverservice.NewClientWithToken(
-		cfg.InventoryPublisher.Hollow.AuthToken,
+		cfg.InventoryPublisher.ServerService.AuthToken,
 		endpoint.String(),
 		retryableClient.StandardClient(),
 	)

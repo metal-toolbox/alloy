@@ -27,7 +27,7 @@ func componentBySlugSerial(slug, serial string, components []*serverservice.Serv
 	return nil
 }
 
-func (h *hollowPublisher) cacheServerComponentTypes(ctx context.Context) error {
+func (h *serverServicePublisher) cacheServerComponentTypes(ctx context.Context) error {
 	serverComponentTypes, _, err := h.client.ListServerComponentTypes(ctx, nil)
 	if err != nil {
 		return err
@@ -60,7 +60,7 @@ func componentPtrSlice(components serverservice.ServerComponentSlice) []*servers
 }
 
 // toComponentSlice converts an model.AssetDevice object to the server service component slice object
-func (h *hollowPublisher) toComponentSlice(serverID uuid.UUID, device *model.AssetDevice) ([]*serverservice.ServerComponent, error) {
+func (h *serverServicePublisher) toComponentSlice(serverID uuid.UUID, device *model.AssetDevice) ([]*serverservice.ServerComponent, error) {
 	componentsTmp := []*serverservice.ServerComponent{}
 	componentsTmp = append(componentsTmp,
 		h.bios(device.BIOS),
@@ -92,7 +92,7 @@ func (h *hollowPublisher) toComponentSlice(serverID uuid.UUID, device *model.Ass
 	return components, nil
 }
 
-func (h *hollowPublisher) newComponent(slug, cvendor, cmodel, cserial string) (*serverservice.ServerComponent, error) {
+func (h *serverServicePublisher) newComponent(slug, cvendor, cmodel, cserial string) (*serverservice.ServerComponent, error) {
 	// lower case slug to changeObj how its stored in server service
 	slug = strings.ToLower(slug)
 
@@ -118,7 +118,7 @@ func (h *hollowPublisher) newComponent(slug, cvendor, cmodel, cserial string) (*
 	}, nil
 }
 
-func (h *hollowPublisher) gpus(gpus []*common.GPU) []*serverservice.ServerComponent {
+func (h *serverServicePublisher) gpus(gpus []*common.GPU) []*serverservice.ServerComponent {
 	if gpus == nil {
 		return nil
 	}
@@ -160,7 +160,7 @@ func (h *hollowPublisher) gpus(gpus []*common.GPU) []*serverservice.ServerCompon
 	return components
 }
 
-func (h *hollowPublisher) cplds(cplds []*common.CPLD) []*serverservice.ServerComponent {
+func (h *serverServicePublisher) cplds(cplds []*common.CPLD) []*serverservice.ServerComponent {
 	if cplds == nil {
 		return nil
 	}
@@ -202,7 +202,7 @@ func (h *hollowPublisher) cplds(cplds []*common.CPLD) []*serverservice.ServerCom
 	return components
 }
 
-func (h *hollowPublisher) tpms(tpms []*common.TPM) []*serverservice.ServerComponent {
+func (h *serverServicePublisher) tpms(tpms []*common.TPM) []*serverservice.ServerComponent {
 	if tpms == nil {
 		return nil
 	}
@@ -245,7 +245,7 @@ func (h *hollowPublisher) tpms(tpms []*common.TPM) []*serverservice.ServerCompon
 	return components
 }
 
-func (h *hollowPublisher) cpus(cpus []*common.CPU) []*serverservice.ServerComponent {
+func (h *serverServicePublisher) cpus(cpus []*common.CPU) []*serverservice.ServerComponent {
 	if cpus == nil {
 		return nil
 	}
@@ -293,7 +293,7 @@ func (h *hollowPublisher) cpus(cpus []*common.CPU) []*serverservice.ServerCompon
 	return components
 }
 
-func (h *hollowPublisher) storageControllers(controllers []*common.StorageController) []*serverservice.ServerComponent {
+func (h *serverServicePublisher) storageControllers(controllers []*common.StorageController) []*serverservice.ServerComponent {
 	if controllers == nil {
 		return nil
 	}
@@ -343,7 +343,7 @@ func (h *hollowPublisher) storageControllers(controllers []*common.StorageContro
 	return components
 }
 
-func (h *hollowPublisher) psus(psus []*common.PSU) []*serverservice.ServerComponent {
+func (h *serverServicePublisher) psus(psus []*common.PSU) []*serverservice.ServerComponent {
 	if psus == nil {
 		return nil
 	}
@@ -388,7 +388,7 @@ func (h *hollowPublisher) psus(psus []*common.PSU) []*serverservice.ServerCompon
 	return components
 }
 
-func (h *hollowPublisher) drives(drives []*common.Drive) []*serverservice.ServerComponent {
+func (h *serverServicePublisher) drives(drives []*common.Drive) []*serverservice.ServerComponent {
 	if drives == nil {
 		return nil
 	}
@@ -442,7 +442,7 @@ func (h *hollowPublisher) drives(drives []*common.Drive) []*serverservice.Server
 	return components
 }
 
-func (h *hollowPublisher) nics(nics []*common.NIC) []*serverservice.ServerComponent {
+func (h *serverServicePublisher) nics(nics []*common.NIC) []*serverservice.ServerComponent {
 	if nics == nil {
 		return nil
 	}
@@ -489,7 +489,7 @@ func (h *hollowPublisher) nics(nics []*common.NIC) []*serverservice.ServerCompon
 	return components
 }
 
-func (h *hollowPublisher) dimms(dimms []*common.Memory) []*serverservice.ServerComponent {
+func (h *serverServicePublisher) dimms(dimms []*common.Memory) []*serverservice.ServerComponent {
 	if dimms == nil {
 		return nil
 	}
@@ -537,7 +537,7 @@ func (h *hollowPublisher) dimms(dimms []*common.Memory) []*serverservice.ServerC
 	return components
 }
 
-func (h *hollowPublisher) mainboard(c *common.Mainboard) *serverservice.ServerComponent {
+func (h *serverServicePublisher) mainboard(c *common.Mainboard) *serverservice.ServerComponent {
 	if c == nil {
 		return nil
 	}
@@ -575,7 +575,7 @@ func (h *hollowPublisher) mainboard(c *common.Mainboard) *serverservice.ServerCo
 	return sc
 }
 
-func (h *hollowPublisher) bmc(c *common.BMC) *serverservice.ServerComponent {
+func (h *serverServicePublisher) bmc(c *common.BMC) *serverservice.ServerComponent {
 	if c == nil {
 		return nil
 	}
@@ -612,7 +612,7 @@ func (h *hollowPublisher) bmc(c *common.BMC) *serverservice.ServerComponent {
 	return sc
 }
 
-func (h *hollowPublisher) bios(c *common.BIOS) *serverservice.ServerComponent {
+func (h *serverServicePublisher) bios(c *common.BIOS) *serverservice.ServerComponent {
 	if c == nil {
 		return nil
 	}
@@ -696,7 +696,7 @@ type versionedAttributes struct {
 	SmartStatus string           `json:"smart_status,omitempty"`
 }
 
-func (h *hollowPublisher) setAttributes(component *serverservice.ServerComponent, attr *attributes) {
+func (h *serverServicePublisher) setAttributes(component *serverservice.ServerComponent, attr *attributes) {
 	// convert attributes to raw json
 	data, err := json.Marshal(attr)
 	if err != nil {
@@ -727,7 +727,7 @@ func (h *hollowPublisher) setAttributes(component *serverservice.ServerComponent
 	)
 }
 
-func (h *hollowPublisher) setVersionedAttributes(component *serverservice.ServerComponent, vattr *versionedAttributes) {
+func (h *serverServicePublisher) setVersionedAttributes(component *serverservice.ServerComponent, vattr *versionedAttributes) {
 	// convert versioned attributes to raw json
 	data, err := json.Marshal(vattr)
 	if err != nil {

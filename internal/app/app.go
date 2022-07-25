@@ -16,8 +16,6 @@ import (
 const (
 	KindInband    = "inband"
 	KindOutOfBand = "outofband"
-	// PublishTarget default, collected inventory data is published to hollow server service.
-	PublishTarget = "hollow"
 )
 
 var (
