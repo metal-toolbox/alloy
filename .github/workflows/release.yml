@@ -10,6 +10,6 @@ jobs:
   container-push-latest:
     uses: metal-toolbox/container-push/.github/workflows/container-push.yml@main
     with:
-      name: alloy
+      name: alloy-inband
       tag: latest
-      dockerfile_path: Dockerfile
+      dockerfile_path: Dockerfile.inband
