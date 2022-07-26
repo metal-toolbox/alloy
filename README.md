@@ -40,12 +40,12 @@ export SERVERSERVICE_ENDPOINT="http://127.0.0.1:8000"
 
 EMAPI as an asset source with inventory published to stdout.
 
-In this case the asset id is passed to the `--list` flag, and the `-config-file` parameter is required.
+In this case the asset id is passed to the `-list` flag, and the `-config-file` parameter is required.
 ```
 alloy outofband  -asset-source emapi \
                  -publish-target stdout \
                  -config-file examples/alloy.yaml \
-                 --list fc167440-18d3-4455-b5ee-1c8e347b3f36
+                 -list fc167440-18d3-4455-b5ee-1c8e347b3f36
 ```
 
 ### Alloy commands
