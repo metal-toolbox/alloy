@@ -7,6 +7,7 @@ linters-settings:
   govet:
     enable:
       - fieldalignment
+    auto-fix: true
     check-shadowing: true
     settings:
       printf:
@@ -19,8 +20,6 @@ linters-settings:
     min-confidence: 0
   gocyclo:
     min-complexity: 10
-  maligned:
-    suggest-new: true
   dupl:
     threshold: 100
   goconst:
@@ -80,17 +79,14 @@ linters:
     - stylecheck
     - whitespace
     - wsl
+    - gosec
   enable-all: false
   disable-all: true
 
 run:
-  build-tags:
-    - gingonic
+#  build-tags:
   skip-dirs:
-    - scripts
-    - docker
-    - samples
-  #modules-download-mode: vendor
+    - internal/fixtures
 
 issues:
   exclude-rules:
