@@ -1,6 +1,6 @@
 module github.com/metal-toolbox/alloy
 
-go 1.18
+go 1.19
 
 require (
 	github.com/bmc-toolbox/bmclib/v2 v2.0.0
