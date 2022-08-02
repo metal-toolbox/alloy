@@ -16,7 +16,7 @@ require (
 	github.com/r3labs/diff/v3 v3.0.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.12.0
-	github.com/stretchr/testify v1.7.4
+	github.com/stretchr/testify v1.8.0
 	go.hollow.sh/serverservice v0.13.5
 	golang.org/x/net v0.0.0-20220615171555-694bf12d69de
 	gotest.tools v2.2.0+incompatible
