@@ -1,0 +1,7 @@
+# https://github.com/metal-toolbox/ironlib/blob/main/Dockerfile
+FROM ghcr.io/metal-toolbox/ironlib:latest
+
+COPY alloy /usr/sbin/alloy
+RUN chmod +x /usr/sbin/alloy
+
+ENTRYPOINT ["/bin/bash", "-l", "-c"]

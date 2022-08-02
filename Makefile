@@ -1,7 +1,7 @@
 export DOCKER_BUILDKIT=1
 GIT_COMMIT_FULL  := $(shell git rev-parse HEAD)
 GO_VERSION := $(shell expr `go version |cut -d ' ' -f3 |cut -d. -f2` \>= 16)
-DOCKER_REGISTRY  := "ghcr.io/metal-toolbox/alloy:latest"
+DOCKER_REGISTRY  := "ghcr.io/metal-toolbox/alloy-inband"
 REPO := "https://github.com/metal-toolbox/alloy.git"
 
 .DEFAULT_GOAL := help
@@ -12,7 +12,7 @@ lint:
 
 ## Go test
 test:
-	CGO_ENABLED=0 go test -v -covermode=atomic ./...
+	CGO_ENABLED=0 go test -timeout 30s -v -covermode=atomic ./...
 
 ## build osx bin
 build-osx:
@@ -29,17 +29,17 @@ ifeq ($(GO_VERSION), 0)
 endif
 	GOOS=linux GOARCH=amd64 go build -o alloy
 
-## build docker image and tag as ghcr.io/metal-toolbox/alloy:latest
-build-image:
+## build docker image and tag as ghcr.io/metal-toolbox/alloy-inband:latest
+build-image-inband:
 	@echo ">>>> NOTE: You may want to execute 'make build-image-nocache' depending on the Docker stages changed"
-	docker build --rm=true -f Dockerfile -t ${DOCKER_REGISTRY}:latest  . \
+	docker build --rm=true -f Dockerfile.inband -t ${DOCKER_REGISTRY}:latest  . \
 							 --label org.label-schema.schema-version=1.0 \
 							 --label org.label-schema.vcs-ref=$(GIT_COMMIT_FULL) \
 							 --label org.label-schema.vcs-url=$(REPO)
 
 ## build docker image, ignoring the cache
-build-image-nocache:
-	docker build --no-cache --rm=true -f Dockerfile -t ${DOCKER_REGISTRY}:latest  . \
+build-image-inband-nocache:
+	docker build --no-cache --rm=true -f Dockerfile.inband -t ${DOCKER_REGISTRY}:latest  . \
 							 --label org.label-schema.schema-version=1.0 \
 							 --label org.label-schema.vcs-ref=$(GIT_COMMIT_FULL) \
 							 --label org.label-schema.vcs-url=$(REPO)
