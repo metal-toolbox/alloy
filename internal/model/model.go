@@ -57,40 +57,30 @@ type Config struct {
 		Concurrency int `mapstructure:"concurrency"`
 	} `mapstructure:"collector_outofband"`
 
+	// ServerService is the Hollow server inventory store
+	// https://github.com/metal-toolbox/hollow-serverservice
+	ServerService struct {
+		Endpoint     string `mapstructure:"endpoint"`
+		AuthToken    string `mapstructure:"auth_token"`
+		FacilityCode string `mapstructure:"facility_code"`
+		Concurrency  int    `mapstructure:"concurrency"`
+	} `mapstructure:"serverService"`
+
 	// AssetGetter is where alloy looks up assets information like BMC credentials
 	// to collect inventory.
 	AssetGetter struct {
-		// supported parameters: csv OR emapi
+		// supported parameters: csv OR serverService
 		Kind string `mapstructure:"kind"`
 
 		// Csv is the CSV asset getter type configuration.
 		Csv struct {
 			File string `mapstructure:"file"`
 		} `mapstructure:"csv"`
-
-		// Emapi is the EMAPI asset getter type configuration
-		Emapi struct {
-			AuthToken     string            `mapstructure:"auth_token"`
-			ConsumerToken string            `mapstructure:"consumer_token"`
-			Endpoint      string            `mapstructure:"endpoint"`
-			Facility      string            `mapstructure:"facility"`
-			Concurrency   int               `mapstructure:"concurrency"`
-			BatchSize     int               `mapstructure:"batch_size"`
-			CustomHeaders map[string]string `mapstructure:"custom_headers"`
-		} `mapstructure:"emapi"`
 	} `mapstructure:"asset_getter"`
 
 	// Publisher is the inventory store where alloy writes collected inventory data
 	InventoryPublisher struct {
 		// supported parameters: stdout, serverService
 		Kind string `mapstructure:"kind"`
-
-		// ServerService is the Hollow server inventory store
-		// https://github.com/metal-toolbox/hollow-serverservice
-		ServerService struct {
-			Endpoint    string `mapstructure:"endpoint"`
-			AuthToken   string `mapstructure:"auth_token"`
-			Concurrency int    `mapstructure:"concurrency"`
-		} `mapstructure:"serverService"`
 	} `mapstructure:"inventory_publisher"`
 }
