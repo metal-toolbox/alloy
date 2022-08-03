@@ -6,6 +6,7 @@ require (
 	github.com/bmc-toolbox/bmclib/v2 v2.0.0
 	github.com/bmc-toolbox/common v0.0.0-20220707135204-5368ecd5d175
 	github.com/bombsimon/logrusr/v2 v2.0.1
+	github.com/davecgh/go-spew v1.1.1
 	github.com/gammazero/workerpool v1.1.2
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-retryablehttp v0.7.1
@@ -14,17 +15,18 @@ require (
 	github.com/peterbourgon/ff/v3 v3.1.2
 	github.com/pkg/errors v0.9.1
 	github.com/r3labs/diff/v3 v3.0.0
+	github.com/sanity-io/litter v1.5.5
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.12.0
-	github.com/stretchr/testify v1.7.4
-	go.hollow.sh/serverservice v0.13.5
-	golang.org/x/net v0.0.0-20220615171555-694bf12d69de
+	github.com/stretchr/testify v1.8.0
+	go.hollow.sh/serverservice v0.14.1
+	golang.org/x/net v0.0.0-20220708220712-1185a9018129
 	gotest.tools v2.2.0+incompatible
 )
 
 require (
 	github.com/beevik/etree v1.1.0 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/cockroachdb/cockroach-go/v2 v2.2.15 // indirect
 	github.com/dselans/dmidecode v0.0.0-20180814053009-65c3f9d81910 // indirect
 	github.com/ericlagergren/decimal v0.0.0-20181231230500-73749d4874d5 // indirect
 	github.com/friendsofgo/errors v0.9.2 // indirect
@@ -38,13 +40,25 @@ require (
 	github.com/go-playground/validator/v10 v10.10.0 // indirect
 	github.com/goccy/go-json v0.9.7 // indirect
 	github.com/gofrs/uuid v4.0.0+incompatible // indirect
+	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
+	github.com/googleapis/gax-go/v2 v2.4.0 // indirect
+	github.com/gosimple/slug v1.12.0 // indirect
+	github.com/gosimple/unidecode v1.0.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
+	github.com/jackc/pgconn v1.12.1 // indirect
+	github.com/jackc/pgio v1.0.0 // indirect
+	github.com/jackc/pgpassfile v1.0.0 // indirect
+	github.com/jackc/pgproto3/v2 v2.3.0 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
+	github.com/jackc/pgtype v1.11.0 // indirect
+	github.com/jackc/pgx/v4 v4.16.1 // indirect
 	github.com/jacobweinstock/registrar v0.4.6 // indirect
 	github.com/jmoiron/sqlx v1.3.5 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -61,7 +75,7 @@ require (
 	github.com/r3labs/diff/v2 v2.15.1 // indirect
 	github.com/spf13/afero v1.8.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
-	github.com/spf13/cobra v1.4.0 // indirect
+	github.com/spf13/cobra v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stmcginnis/gofish v0.13.0 // indirect
@@ -74,14 +88,19 @@ require (
 	github.com/volatiletech/inflect v0.0.1 // indirect
 	github.com/volatiletech/null/v8 v8.1.2 // indirect
 	github.com/volatiletech/randomize v0.0.1 // indirect
-	github.com/volatiletech/sqlboiler/v4 v4.11.0 // indirect
+	github.com/volatiletech/sqlboiler/v4 v4.12.0 // indirect
 	github.com/volatiletech/strmangle v0.0.4 // indirect
-	go.hollow.sh/toolbox v0.1.5 // indirect
+	go.hollow.sh/toolbox v0.3.0 // indirect
+	go.opencensus.io v0.23.0 // indirect
+	gocloud.dev v0.25.0 // indirect
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/text v0.3.7 // indirect
-	golang.org/x/xerrors v0.0.0-20220517211312-f3a8303e98df // indirect
+	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
+	google.golang.org/api v0.81.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
+	google.golang.org/genproto v0.0.0-20220519153652-3a47de7e79bd // indirect
+	google.golang.org/grpc v1.46.2 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
