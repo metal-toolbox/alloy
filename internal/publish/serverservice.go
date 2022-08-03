@@ -2,7 +2,6 @@ package publish
 
 import (
 	"context"
-	"net/url"
 	"os"
 	"reflect"
 	"sort"
@@ -12,8 +11,8 @@ import (
 
 	"github.com/gammazero/workerpool"
 	"github.com/google/uuid"
-	"github.com/hashicorp/go-retryablehttp"
 	"github.com/metal-toolbox/alloy/internal/app"
+	"github.com/metal-toolbox/alloy/internal/helpers"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -54,7 +53,7 @@ type serverServicePublisher struct {
 func NewServerServicePublisher(ctx context.Context, alloy *app.App) (Publisher, error) {
 	logger := app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher.serverService"}, alloy.Logger)
 
-	client, err := newServerServiceClient(alloy.Config, logger)
+	client, err := helpers.NewServerServiceClient(alloy.Config, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -420,49 +419,4 @@ func diffVersionedAttributes(currentObjs, newObjs []serverservice.VersionedAttri
 	}
 
 	return nil, nil
-}
-
-func newServerServiceClient(cfg *model.Config, logger *logrus.Entry) (*serverservice.Client, error) {
-	// env var auth token
-	if authToken := os.Getenv("SERVERSERVICE_AUTH_TOKEN"); authToken != "" {
-		cfg.InventoryPublisher.ServerService.AuthToken = authToken
-	}
-
-	if cfg.InventoryPublisher.ServerService.AuthToken == "" {
-		return nil, errors.Wrap(model.ErrConfig, "expected serverService auth token, got empty")
-	}
-
-	// env var serverService endpoint
-	if endpoint := os.Getenv("SERVERSERVICE_ENDPOINT"); endpoint != "" {
-		cfg.InventoryPublisher.ServerService.Endpoint = endpoint
-	}
-
-	if cfg.InventoryPublisher.ServerService.Endpoint == "" {
-		return nil, errors.Wrap(model.ErrConfig, "expected serverService endpoint, got empty")
-	}
-
-	endpoint, err := url.Parse(cfg.InventoryPublisher.ServerService.Endpoint)
-	if err != nil {
-		return nil, errors.Wrap(model.ErrConfig, "error in serverService endpoint URL: "+err.Error())
-	}
-
-	if cfg.InventoryPublisher.ServerService.Concurrency == 0 {
-		cfg.InventoryPublisher.ServerService.Concurrency = concurrency
-	}
-
-	// init retryable http client
-	retryableClient := retryablehttp.NewClient()
-
-	// disable default debug logging on the retryable client
-	if logger.Level < logrus.DebugLevel {
-		retryableClient.Logger = nil
-	} else {
-		retryableClient.Logger = logger
-	}
-
-	return serverservice.NewClientWithToken(
-		cfg.InventoryPublisher.ServerService.AuthToken,
-		endpoint.String(),
-		retryableClient.StandardClient(),
-	)
 }
