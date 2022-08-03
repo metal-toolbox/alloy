@@ -21,7 +21,7 @@ type outOfBandCmd struct {
 	rootCmd *rootCmd
 
 	// assets source is the cli flag for where assets are to be retrieved from.
-	// supported sources: csv OR emapi
+	// supported sources: csv OR serverService
 	assetSourceKind string
 
 	// assetSourceCSVFile is required when assetSource is set to csv.
@@ -105,10 +105,10 @@ func (c *outOfBandCmd) initAssetGetter(ctx context.Context, alloy *app.App) (ass
 		}
 
 		// init csv asset source
-		return asset.NewCSVSource(ctx, alloy, fh)
+		return asset.NewCSVGetter(ctx, alloy, fh)
 
-	case asset.SourceKindEMAPI:
-		return asset.NewEMAPISource(ctx, alloy)
+	case asset.SourceKindServerService:
+		return asset.NewServerServiceGetter(ctx, alloy)
 	default:
 		return nil, errors.Wrap(model.ErrConfig, "unknown asset getter: "+c.assetSourceKind)
 	}
@@ -142,13 +142,7 @@ func (c *outOfBandCmd) validateFlags() error {
 // validateFlagSource checks the -asset-source flag parameter values are as expected.
 func (c *outOfBandCmd) validateFlagSource() error {
 	switch c.assetSourceKind {
-	case asset.SourceKindEMAPI:
-		if c.rootCmd.cfgFile == "" {
-			return errors.Wrap(
-				model.ErrConfig,
-				"-asset-source=emapi requires a valid config file parameter -config-file",
-			)
-		}
+	case asset.SourceKindServerService:
 
 	case asset.SourceKindCSV:
 		if c.assetSourceCSVFile == "" {
@@ -161,7 +155,7 @@ func (c *outOfBandCmd) validateFlagSource() error {
 	default:
 		return errors.Wrap(
 			errParseCLIParam,
-			"invalid -asset-source parameter, accepted values are csv OR emapi",
+			"invalid -asset-source parameter, accepted values are csv OR serverService",
 		)
 	}
 
