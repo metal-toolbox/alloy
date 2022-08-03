@@ -27,6 +27,8 @@ type Asset struct {
 	Vendor string
 	// Model is the asset model
 	Model string
+	// The datacenter facility
+	Facility string
 	// Username is the BMC login username
 	BMCUsername string
 	// Password is the BMC login password
