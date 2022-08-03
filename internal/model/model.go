@@ -6,13 +6,17 @@ import (
 	"github.com/bmc-toolbox/common"
 )
 
-var (
-	// App logging level.
-	LogLevel int
+const (
+	LogLevelInfo       = 0
+	LogLevelDebug      = 1
+	LogLevelTrace      = 2
+	ConcurrencyDefault = 5
+	ProfilingEndpoint  = "localhost:9091"
+)
 
-	LogLevelInfo  = 0
-	LogLevelDebug = 1
-	LogLevelTrace = 2
+var (
+	// App logging level
+	LogLevel = 0
 )
 
 // Asset represents attributes of an asset retrieved from the asset store
