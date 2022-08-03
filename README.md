@@ -11,23 +11,31 @@ Inventory collection with Alloy can be executed in two modes,
 
 The `outofband` command will cause Alloy to collect inventory from the server BMC.
 
-The command requires BMC credential information provided by the `-asset-source` flag,
-see [examples](examples/assets.csv).
+Assets are fetched from an `asset source`, this is defined by the by the `-asset-source` flag,
+see [examples](examples/assets.csv). Accepted `-asset-source` parameters are `csv` and `serverService`.
 
-The command also requires the `-publish-target`, which must be either `stdout` or `serverService`.
+Collected inventory is published to a `publish target`, this is defined by the `-publish-target` flag. Accepted `-publish-target` parameters are `stdout` or `serverService`.
 
 For Alloy internals see [README-development.md](docs/README-development.md)
 
+##### build Alloy
+
+a. build linux executable
+`make build-linux`
+
+b. build osx executable
+`make build-osx`
+
 ##### sample commands
 
-CSV file asset source with inventory published to stdout
+1. CSV file asset source with inventory published to `stdout`
 ```
 ./alloy outofband  -asset-source csv \
                    -csv-file examples/assets.csv \
                    -publish-target stdout
 ```
 
-CSV file asset source with inventory published to serverService
+2. CSV file asset source with inventory published to `serverService`
 ```
 export SERVERSERVICE_AUTH_TOKEN="hunter2"
 export SERVERSERVICE_ENDPOINT="http://127.0.0.1:8000"
@@ -38,20 +46,35 @@ export SERVERSERVICE_ENDPOINT="http://127.0.0.1:8000"
 ```
 
 
-EMAPI as an asset source with inventory published to stdout.
+3. ServerService as an asset source with inventory published to `stdout`.
 
-In this case the asset id is passed to the `-list` flag, and the `-config-file` parameter is required.
+In this case the asset id is passed to the `-asset-ids` flag.
 ```
-alloy outofband  -asset-source emapi \
-                 -publish-target stdout \
-                 -config-file examples/alloy.yaml \
-                 -list fc167440-18d3-4455-b5ee-1c8e347b3f36
+export SERVERSERVICE_FACILITY_CODE="ld7"
+export SERVERSERVICE_AUTH_TOKEN="asd"
+export SERVERSERVICE_ENDPOINT="http://localhost:8000"
+
+alloy outofband -asset-source serverService \
+                -asset-ids fc167440-18d3-4455-b5ee-1c8e347b3f36
+                -publish-target stdout
+```
+
+3. ServerService as an asset source and target.
+
+
+```
+export SERVERSERVICE_FACILITY_CODE="ld7"
+export SERVERSERVICE_AUTH_TOKEN="asd"
+export SERVERSERVICE_ENDPOINT="http://localhost:8000"
+
+alloy outofband -asset-source serverService \
+                -publish-target serverService
 ```
 
 ### Alloy commands
 
 ```
-❯ ./alloy --help
+❯ ./alloy
 USAGE
   alloy [inband|outofband] [flags]
 
@@ -62,6 +85,9 @@ SUBCOMMANDS
 FLAGS
   -config-file ...     Alloy config file
   -debug=false         Set logging to debug level.
+  -profile=false       Enable performance profile endpoint.
   -publish-target ...  Publish collected inventory to [serverService|stdout]
   -trace=false         Set logging to trace level.
+
+flag: help requested
 ```
