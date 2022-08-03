@@ -2,14 +2,13 @@ package cmd
 
 import (
 	"flag"
-	"log"
-	"net/http"
 	"os"
 	"strings"
 
 	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/asset"
 	"github.com/metal-toolbox/alloy/internal/collect"
+	"github.com/metal-toolbox/alloy/internal/helpers"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/metal-toolbox/alloy/internal/publish"
 
@@ -184,9 +183,9 @@ func (c *outOfBandCmd) validateFlagPublish() error {
 
 // collect runs the asset getter, publisher and collects inventory out of band
 func (c *outOfBandCmd) collect(ctx context.Context, alloy *app.App, getter asset.Getter, publisher publish.Publisher) error {
-	go func() {
-		log.Println(http.ListenAndServe("localhost:9091", nil))
-	}()
+	if c.rootCmd.pprof {
+		helpers.EnablePProfile()
+	}
 
 	// setup cancel context with cancel func
 	ctx, cancelFunc := context.WithCancel(ctx)

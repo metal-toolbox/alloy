@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"flag"
-	"fmt"
 
 	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/collect"
+	"github.com/metal-toolbox/alloy/internal/helpers"
 	"github.com/metal-toolbox/alloy/internal/publish"
 	"github.com/peterbourgon/ff/v3/ffcli"
 	"golang.org/x/net/context"
@@ -33,6 +33,10 @@ func newInbandCmd(rootCmd *rootCmd) *ffcli.Command {
 }
 
 func (c *inbandCmd) Exec(ctx context.Context, _ []string) error {
+	if c.rootCmd.pprof {
+		helpers.EnablePProfile()
+	}
+
 	alloy, err := app.New(ctx, app.KindOutOfBand, c.rootCmd.cfgFile, c.rootCmd.LogLevel())
 	if err != nil {
 		return err
@@ -57,7 +61,7 @@ func (c *inbandCmd) Exec(ctx context.Context, _ []string) error {
 			cancelFunc()
 		}
 
-		fmt.Println("publisher done")
+		alloy.Logger.Trace("publisher routine returned")
 	}()
 
 	// routine listens for termination signal
@@ -72,10 +76,10 @@ func (c *inbandCmd) Exec(ctx context.Context, _ []string) error {
 		alloy.Logger.WithField("err", err).Error("error running inband collector")
 	}
 
-	fmt.Println("collector done")
+	alloy.Logger.Trace("collector routine returned")
 
 	// wait all routines are complete
-	alloy.Logger.Trace("waiting for routines..")
+	alloy.Logger.Trace("waiting for any other running routines..")
 	alloy.SyncWg.Wait()
 	alloy.Logger.Trace("done..")
 
