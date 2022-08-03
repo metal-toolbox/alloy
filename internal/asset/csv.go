@@ -32,8 +32,8 @@ type csvee struct {
 	assetCh   chan<- *model.Asset
 }
 
-// NewCSVSource returns a new csv asset sourcer to retrieve asset information from a CSV file for inventory collection.
-func NewCSVSource(ctx context.Context, alloy *app.App, csvReader io.ReadCloser) (Getter, error) {
+// NewCSVGetter returns a new csv asset getter to retrieve asset information from a CSV file for inventory collection.
+func NewCSVGetter(ctx context.Context, alloy *app.App, csvReader io.ReadCloser) (Getter, error) {
 	return &csvee{
 		logger:    alloy.Logger.WithField("component", "getter.csv"),
 		syncWg:    alloy.SyncWg,

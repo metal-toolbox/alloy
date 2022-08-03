@@ -79,7 +79,7 @@ func Test_RunCSVListAll(t *testing.T) {
 050db820-c807-013a-c0bf-3e22fbc86c5a,127.0.0.2,admin,hunter2`)
 
 	// init asset getter
-	csvs, err := NewCSVSource(context.TODO(), alloy, ioReaderFakeCloser{bytes.NewReader(csvee)})
+	csvs, err := NewCSVGetter(context.TODO(), alloy, ioReaderFakeCloser{bytes.NewReader(csvee)})
 	if err != nil {
 		t.Fatal(err)
 	}
