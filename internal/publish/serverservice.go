@@ -210,10 +210,10 @@ func (h *serverServicePublisher) registerChanges(ctx context.Context, serverID u
 
 	h.logger.WithFields(
 		logrus.Fields{
-			"id":            serverID,
-			"items-added":   len(add),
-			"items-updated": len(update),
-			"items-removed": len(remove),
+			"serverID":           serverID,
+			"components-added":   len(add),
+			"components-updated": len(update),
+			"components-removed": len(remove),
 		}).Info("device inventory changes to be registered")
 
 	// apply added component changes
@@ -238,9 +238,9 @@ func (h *serverServicePublisher) registerChanges(ctx context.Context, serverID u
 
 	h.logger.WithFields(
 		logrus.Fields{
-			"id":      serverID,
-			"added":   len(add),
-			"removed": len(remove),
+			"serverID": serverID,
+			"added":    len(add),
+			"removed":  len(remove),
 		}).Debug("registered inventory changes with server service")
 
 	return nil
