@@ -49,11 +49,14 @@ type rootCmd struct {
 	trace bool
 	// flag sets debug log level
 	debug bool
+	// flag enables pprof endpoint on localhost:9091
+	pprof bool
 }
 
 func (c *rootCmd) RegisterFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&c.debug, "debug", false, "Set logging to debug level.")
 	fs.BoolVar(&c.trace, "trace", false, "Set logging to trace level.")
+	fs.BoolVar(&c.pprof, "profile", false, "Enable performance profile endpoint.")
 	fs.StringVar(&c.cfgFile, "config-file", "", "Alloy config file")
 	fs.StringVar(&c.publisherKind, "publish-target", "", "Publish collected inventory to [serverService|stdout]")
 }
