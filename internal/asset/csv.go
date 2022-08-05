@@ -35,7 +35,7 @@ type csvee struct {
 // NewCSVGetter returns a new csv asset getter to retrieve asset information from a CSV file for inventory collection.
 func NewCSVGetter(ctx context.Context, alloy *app.App, csvReader io.ReadCloser) (Getter, error) {
 	return &csvee{
-		logger:    alloy.Logger.WithField("component", "getter.csv"),
+		logger:    alloy.Logger.WithField("component", "getter-csv"),
 		syncWg:    alloy.SyncWg,
 		config:    alloy.Config,
 		assetCh:   alloy.AssetCh,
@@ -59,7 +59,7 @@ func (c *csvee) ListAll(ctx context.Context) error {
 		return err
 	}
 
-	c.logger.Trace("list all assets")
+	c.logger.WithField("count", len(assets)).Trace("loaded assets")
 
 	for _, asset := range assets {
 		c.assetCh <- asset
@@ -105,6 +105,10 @@ func (c *csvee) loadAssets(ctx context.Context, csvReader io.ReadCloser) ([]*mod
 	}
 
 	defer csvReader.Close()
+
+	if len(records) == 0 {
+		return nil, errors.Wrap(ErrCSVSource, "no valid asset records found")
+	}
 
 	assets := []*model.Asset{}
 
