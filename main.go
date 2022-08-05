@@ -1,7 +1,14 @@
 package main
 
-import "github.com/metal-toolbox/alloy/cmd"
+import (
+	"fmt"
+	"os"
+
+	"github.com/metal-toolbox/alloy/cmd"
+)
 
 func main() {
-	cmd.Run()
+	if err := cmd.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+	}
 }

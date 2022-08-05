@@ -10,6 +10,8 @@ import (
 
 	"github.com/peterbourgon/ff/v3/ffcli"
 	"golang.org/x/net/context"
+
+	"github.com/equinix-labs/otel-init-go/otelinit"
 )
 
 var (
@@ -17,7 +19,7 @@ var (
 )
 
 // Run is the main command entry point, all sub commands are registered here
-func Run() {
+func Run() error {
 	var (
 		cmd, cfg     = newRootCmd()
 		outOfBandCmd = newOutOfBandCmd(cfg)
@@ -31,10 +33,13 @@ func Run() {
 		os.Exit(1)
 	}
 
-	if err := cmd.Run(context.Background()); err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
-	}
+	// setup otel telemetry
+	ctx := context.Background()
+	ctx, otelShutdown := otelinit.InitOpenTelemetry(ctx, "alloy")
+
+	defer otelShutdown(ctx)
+
+	return cmd.Run(ctx)
 }
 
 // rootCmd is the cli root command instance, it holds attributes available to subcommands

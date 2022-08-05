@@ -13,6 +13,7 @@ import (
 	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/metal-toolbox/alloy/internal/publish"
+	"go.opentelemetry.io/otel"
 
 	"github.com/peterbourgon/ff/v3/ffcli"
 	"github.com/pkg/errors"
@@ -233,6 +234,12 @@ Loop:
 // collect runs the asset getter, publisher and collects inventory out of band
 func (c *outOfBandCmd) collect(ctx context.Context, alloy *app.App) error {
 	alloy.Logger.Trace("collector spawned.")
+
+	// trace
+	tracer := otel.Tracer("alloy")
+	ctx, span := tracer.Start(ctx, "collect")
+
+	defer span.End()
 
 	// init collector channels
 	alloy.InitAssetCollectorChannels()
