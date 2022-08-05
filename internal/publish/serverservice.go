@@ -13,8 +13,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/helpers"
+	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 
 	r3diff "github.com/r3labs/diff/v3"
@@ -91,7 +93,13 @@ func (h *serverServicePublisher) Run(ctx context.Context) error {
 			continue
 		}
 
-		for h.workers.WaitingQueueSize() > 0 {
+		// count asset received on the collector channel
+		metrics.AssetsReceived.With(stageLabel).Inc()
+
+		// measure tasks waiting queue size
+		metrics.TaskQueueSize.With(stageLabel).Set(float64(h.workers.WaitingQueueSize()))
+
+		for h.workers.WaitingQueueSize() > concurrency {
 			if ctx.Err() != nil {
 				break
 			}
@@ -104,6 +112,14 @@ func (h *serverServicePublisher) Run(ctx context.Context) error {
 
 			// nolint:gomnd // delay is a magic number
 			time.Sleep(5 * time.Second)
+
+			// measure tasks waiting queue size, when this loop is active
+			metrics.TaskQueueSize.With(stageLabel).Set(float64(h.workers.WaitingQueueSize()))
+		}
+
+		// context canceled
+		if ctx.Err() != nil {
+			break
 		}
 
 		// increment wait group
@@ -111,6 +127,9 @@ func (h *serverServicePublisher) Run(ctx context.Context) error {
 
 		// increment spawned count
 		atomic.AddInt32(&dispatched, 1)
+
+		// count dispatched worker task
+		metrics.TasksDispatched.With(stageLabel).Inc()
 
 		// submit inventory collection to worker pool
 		h.workers.Submit(
@@ -126,6 +145,10 @@ func (h *serverServicePublisher) Run(ctx context.Context) error {
 	// wait for dispatched routines to complete
 	for dispatched > 0 {
 		<-doneCh
+
+		// count tasks completed
+		metrics.TasksCompleted.With(stageLabel).Inc()
+
 		atomic.AddInt32(&dispatched, ^int32(0))
 	}
 
@@ -190,6 +213,14 @@ func (h *serverServicePublisher) registerChanges(ctx context.Context, serverID u
 		return errors.Wrap(ErrAssetObjectConversion, err.Error())
 	}
 
+	// measure number of components identified by the publisher in a device.
+	metricAssetComponentsIdentified.With(
+		metrics.AddLabels(
+			stageLabel,
+			prometheus.Labels{"vendor": device.Vendor, "model": device.Model},
+		),
+	)
+
 	// retrieve current inventory from server service
 	currentInventory, _, err := h.client.GetComponents(ctx, serverID, &serverservice.PaginationParams{})
 	if err != nil {
@@ -218,6 +249,16 @@ func (h *serverServicePublisher) registerChanges(ctx context.Context, serverID u
 
 	// apply added component changes
 	if len(add) > 0 {
+		// count components added
+		metricServerServiceDataChanges.With(
+			metrics.AddLabels(
+				stageLabel,
+				prometheus.Labels{
+					"change_kind": "components-added",
+				},
+			),
+		).Add(float64(len(add)))
+
 		_, err = h.client.CreateComponents(ctx, serverID, add)
 		if err != nil {
 			return errors.Wrap(ErrRegisterChanges, err.Error())
@@ -226,6 +267,16 @@ func (h *serverServicePublisher) registerChanges(ctx context.Context, serverID u
 
 	// apply updated component changes
 	if len(update) > 0 {
+		// count components updated
+		metricServerServiceDataChanges.With(
+			metrics.AddLabels(
+				stageLabel,
+				prometheus.Labels{
+					"change_kind": "components-updated",
+				},
+			),
+		).Add(float64(len(add)))
+
 		_, err = h.client.UpdateComponents(ctx, serverID, update)
 		if err != nil {
 			return errors.Wrap(ErrRegisterChanges, err.Error())
@@ -233,6 +284,16 @@ func (h *serverServicePublisher) registerChanges(ctx context.Context, serverID u
 	}
 
 	if len(remove) > 0 {
+		// count components removed
+		metricServerServiceDataChanges.With(
+			metrics.AddLabels(
+				stageLabel,
+				prometheus.Labels{
+					"change_kind": "components-removed",
+				},
+			),
+		).Add(float64(len(add)))
+
 		return errors.Wrap(ErrRegisterChanges, "component deletion not implemented")
 	}
 
@@ -240,6 +301,7 @@ func (h *serverServicePublisher) registerChanges(ctx context.Context, serverID u
 		logrus.Fields{
 			"serverID": serverID,
 			"added":    len(add),
+			"updated":  len(update),
 			"removed":  len(remove),
 		}).Debug("registered inventory changes with server service")
 
