@@ -79,6 +79,12 @@ func New(ctx context.Context, kind, cfgFile string, loglevel int) (app *App, err
 	return app, nil
 }
 
+// InitAssetCollectorChannels is a helper method to initialize the asset and collector channels.
+func (a *App) InitAssetCollectorChannels() {
+	a.AssetCh = make(chan *model.Asset)
+	a.CollectorCh = make(chan *model.AssetDevice)
+}
+
 func configLoad(kind, cfgFile string) (config *model.Config, err error) {
 	cfg := configDefault()
 
