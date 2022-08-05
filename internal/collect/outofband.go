@@ -12,7 +12,9 @@ import (
 	logrusrv2 "github.com/bombsimon/logrusr/v2"
 	"github.com/gammazero/workerpool"
 	"github.com/metal-toolbox/alloy/internal/app"
+	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/metal-toolbox/alloy/internal/model"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )
 
@@ -83,13 +85,19 @@ func (o *OutOfBandCollector) Inventory(ctx context.Context) error {
 			continue
 		}
 
+		// count assets received on the asset channel
+		metrics.AssetsReceived.With(stageLabel).Inc()
+
 		// increment wait group
 		o.syncWg.Add(1)
 
 		// increment spawned count
 		atomic.AddInt32(&dispatched, 1)
 
-		for o.workers.WaitingQueueSize() > 0 {
+		// measure tasks waiting queue size
+		metrics.TaskQueueSize.With(stageLabel).Set(float64(o.workers.WaitingQueueSize()))
+
+		for o.workers.WaitingQueueSize() > concurrency {
 			if ctx.Err() != nil {
 				break
 			}
@@ -102,6 +110,14 @@ func (o *OutOfBandCollector) Inventory(ctx context.Context) error {
 
 			// nolint:gomnd // delay is a magic number
 			time.Sleep(5 * time.Second)
+
+			// measure tasks waiting queue size, when this loop is active
+			metrics.TaskQueueSize.With(stageLabel).Set(float64(o.workers.WaitingQueueSize()))
+		}
+
+		// context canceled
+		if ctx.Err() != nil {
+			break
 		}
 
 		// submit inventory collection to worker pool
@@ -109,6 +125,9 @@ func (o *OutOfBandCollector) Inventory(ctx context.Context) error {
 			func() {
 				defer o.syncWg.Done()
 				defer func() { doneCh <- struct{}{} }()
+
+				// count dispatched worker task
+				metrics.TasksDispatched.With(stageLabel).Add(1)
 
 				o.spawn(ctx, asset)
 			},
@@ -118,6 +137,10 @@ func (o *OutOfBandCollector) Inventory(ctx context.Context) error {
 	// wait for dispatched routines to complete
 	for dispatched > 0 {
 		<-doneCh
+
+		// count tasks completed
+		metrics.TasksCompleted.With(stageLabel).Add(1)
+
 		atomic.AddInt32(&dispatched, ^int32(0))
 	}
 
@@ -137,15 +160,16 @@ func (o *OutOfBandCollector) spawn(ctx context.Context, asset *model.Asset) {
 	if o.mockClient == nil {
 		bmc = newBMCClient(
 			ctx,
-			asset.BMCUsername,
-			asset.BMCPassword,
-			asset.BMCAddress.String(),
+			asset,
 			o.logger.Logger,
 		)
 	} else {
 		// mock client for tests
 		bmc = o.mockClient
 	}
+
+	// measure BMC connection open
+	startTS := time.Now()
 
 	if err := bmc.Open(ctx); err != nil {
 		o.logger.WithFields(
@@ -154,18 +178,70 @@ func (o *OutOfBandCollector) spawn(ctx context.Context, asset *model.Asset) {
 				"err": err,
 			}).Warn("error in bmc connection open")
 
+		span.SetStatus(codes.Error, " BMC connection: "+err.Error())
+
+		// count connection open error metric
+		metricBMCQueryErrorCount.With(
+			metrics.AddLabels(
+				stageLabel,
+				prometheus.Labels{
+					"query_kind": "conn_open",
+					"vendor":     asset.Vendor,
+					"model":      asset.Model,
+				}),
+		).Inc()
+
 		return
 	}
 
+	// measure BMC connection open
+	metricBMCQueryTimeSummary.With(
+		metrics.AddLabels(
+			stageLabel,
+			prometheus.Labels{
+				"query_kind": "conn_open",
+				"vendor":     asset.Vendor,
+				"model":      asset.Model,
+			}),
+	).Observe(time.Since(startTS).Seconds())
+
 	defer func() {
+		// measure BMC connection close
+		startTS = time.Now()
+
 		if err := bmc.Close(ctx); err != nil {
 			o.logger.WithFields(
 				logrus.Fields{
 					"IP":  asset.BMCAddress.String(),
 					"err": err,
 				}).Warn("error in bmc connection close")
+
+			// count connection close error metric
+			metricBMCQueryErrorCount.With(
+				metrics.AddLabels(
+					stageLabel,
+					prometheus.Labels{
+						"query_kind": "conn_close",
+						"vendor":     asset.Vendor,
+						"model":      asset.Model,
+					}),
+			).Inc()
 		}
+
+		// measure BMC connection close
+		metricBMCQueryTimeSummary.With(
+			metrics.AddLabels(
+				stageLabel,
+				prometheus.Labels{
+					"query_kind": "conn_close",
+					"vendor":     asset.Vendor,
+					"model":      asset.Model,
+				}),
+		).Observe(time.Since(startTS).Seconds())
 	}()
+
+	// measure BMC inventory query
+	startTS = time.Now()
 
 	device, err := bmc.Inventory(ctx)
 	if err != nil {
@@ -175,14 +251,36 @@ func (o *OutOfBandCollector) spawn(ctx context.Context, asset *model.Asset) {
 				"err": err,
 			}).Warn("error in bmc inventory collection")
 
+		// count inventory query error metric
+		metricBMCQueryErrorCount.With(
+			metrics.AddLabels(
+				stageLabel,
+				prometheus.Labels{
+					"query_kind": "inventory",
+					"vendor":     asset.Vendor,
+					"model":      asset.Model,
+				}),
+		).Inc()
+
 		return
 	}
+
+	// measure BMC inventory query
+	metricBMCQueryTimeSummary.With(
+		metrics.AddLabels(
+			stageLabel,
+			prometheus.Labels{
+				"query_kind": "inventory",
+				"vendor":     asset.Vendor,
+				"model":      asset.Model,
+			}),
+	).Observe(time.Since(startTS).Seconds())
 
 	o.collectorCh <- &model.AssetDevice{ID: asset.ID, Device: device}
 }
 
 //  newBMCClient initializes a bmclib client with the given credentials
-func newBMCClient(ctx context.Context, user, pass, host string, l *logrus.Logger) *bmclibv2.Client {
+func newBMCClient(ctx context.Context, asset *model.Asset, l *logrus.Logger) *bmclibv2.Client {
 	logger := logrus.New()
 	logger.Formatter = l.Formatter
 
@@ -200,10 +298,32 @@ func newBMCClient(ctx context.Context, user, pass, host string, l *logrus.Logger
 
 	logruslogr := logrusrv2.New(logger)
 
-	bmcClient := bmclibv2.NewClient(host, "", user, pass, bmclibv2.WithLogger(logruslogr))
+	bmcClient := bmclibv2.NewClient(
+		asset.BMCAddress.String(),
+		"", // port unset
+		asset.BMCUsername,
+		asset.BMCPassword,
+		bmclibv2.WithLogger(logruslogr),
+	)
+
+	// measure BMC compatibility query
+	startTS := time.Now()
 
 	// filter BMC providers based on compatibility
+	//
+	// TODO(joel) : when the vendor is known, bmclib could be given hints so as to skip the compatibility check.
 	bmcClient.Registry.Drivers = bmcClient.Registry.FilterForCompatible(ctx)
+
+	// measure BMC compatibility check query
+	metricBMCQueryTimeSummary.With(
+		metrics.AddLabels(
+			stageLabel,
+			prometheus.Labels{
+				"query_kind": "compatibility_check",
+				"vendor":     asset.Vendor,
+				"model":      asset.Model,
+			}),
+	).Observe(time.Since(startTS).Seconds())
 
 	return bmcClient
 }
