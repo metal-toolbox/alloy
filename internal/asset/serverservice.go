@@ -17,8 +17,11 @@ import (
 	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 
 	serverservice "go.hollow.sh/serverservice/pkg/api/v1"
 )
@@ -46,7 +49,13 @@ var (
 	ErrServerServiceQuery = errors.New("serverService query error")
 	// ErrServerServiceObject is returned when a server service object is found to be missing attributes.
 	ErrServerServiceObject = errors.New("serverService object error")
+	// The serverservice asset getter tracer
+	tracer trace.Tracer
 )
+
+func init() {
+	tracer = otel.Tracer("getter-serverservice")
+}
 
 // serverServiceGetter is an inventory asset getter
 type serverServiceGetter struct {
@@ -68,7 +77,7 @@ type serverServiceRequestor interface {
 
 // NewServerServiceGetter returns an asset getter to retrieve asset information from serverService for inventory collection.
 func NewServerServiceGetter(ctx context.Context, alloy *app.App) (Getter, error) {
-	logger := alloy.Logger.WithField("component", "getter.serverService")
+	logger := alloy.Logger.WithField("component", "getter-serverService")
 
 	client, err := helpers.NewServerServiceClient(alloy.Config, logger)
 	if err != nil {
@@ -107,6 +116,10 @@ func (s *serverServiceGetter) SetClient(c interface{}) {
 
 // ListByIDs implements the Getter interface to query the inventory for the assetIDs and return found assets over the asset channel.
 func (s *serverServiceGetter) ListByIDs(ctx context.Context, assetIDs []string) error {
+	// attach child span
+	ctx, span := tracer.Start(ctx, "ListByIDs()")
+	defer span.End()
+
 	// close assetCh to notify consumers
 	defer close(s.assetCh)
 
@@ -171,6 +184,10 @@ func (s *serverServiceGetter) ListByIDs(ctx context.Context, assetIDs []string) 
 
 // ListAll implements the Getter interface to query the inventory and return assets over the asset channel.
 func (s *serverServiceGetter) ListAll(ctx context.Context) error {
+	// add child span
+	ctx, span := tracer.Start(ctx, "ListAll()")
+	defer span.End()
+
 	// close assetCh to notify consumers
 	defer close(s.assetCh)
 
@@ -220,6 +237,10 @@ func (s *serverServiceGetter) ListAll(ctx context.Context) error {
 //
 // nolint:gocyclo // this method has various cases to consider and shared context information which is ideal to keep together.
 func (s *serverServiceGetter) dispatcher(ctx context.Context, dispatched *int32, doneCh chan<- struct{}) error {
+	// attach child span
+	ctx, span := tracer.Start(ctx, "dispatcher()")
+	defer span.End()
+
 	// first request to figures out total items
 	offset := 1
 
@@ -254,8 +275,6 @@ func (s *serverServiceGetter) dispatcher(ctx context.Context, dispatched *int32,
 	offset = 2
 	fetched := 1
 
-	testingLimit := 5
-
 	for {
 		// final batch
 		if total < batchSize {
@@ -275,6 +294,8 @@ func (s *serverServiceGetter) dispatcher(ctx context.Context, dispatched *int32,
 			if ctx.Err() != nil {
 				break
 			}
+
+			span.AddEvent("task queue size delay")
 
 			s.logger.WithFields(logrus.Fields{
 				"queue size":  s.workers.WaitingQueueSize(),
@@ -349,11 +370,6 @@ func (s *serverServiceGetter) dispatcher(ctx context.Context, dispatched *int32,
 			break
 		}
 
-		// For testing
-		if fetched > testingLimit {
-			break
-		}
-
 		offset++
 
 		fetched += batchSize
@@ -371,6 +387,10 @@ type serverServiceClient struct {
 
 // assetByID queries serverService for the hardware asset by ID and returns an Asset object
 func (r *serverServiceClient) AssetByID(ctx context.Context, id string) (*model.Asset, error) {
+	// attach child span
+	ctx, span := tracer.Start(ctx, "AssetByID()")
+	defer span.End()
+
 	sid, err := uuid.Parse(id)
 	if err != nil {
 		return nil, err
@@ -379,12 +399,16 @@ func (r *serverServiceClient) AssetByID(ctx context.Context, id string) (*model.
 	// get server
 	server, _, err := r.client.Get(ctx, sid)
 	if err != nil {
+		span.SetStatus(codes.Error, "Get() server failed")
+
 		return nil, errors.Wrap(ErrServerServiceQuery, err.Error())
 	}
 
 	// get bmc secret
 	secret, _, err := r.client.GetSecret(ctx, sid, serverservice.ServerSecretTypeBMC)
 	if err != nil {
+		span.SetStatus(codes.Error, "GetSecret() failed")
+
 		return nil, errors.Wrap(ErrServerServiceQuery, err.Error())
 	}
 
@@ -393,6 +417,15 @@ func (r *serverServiceClient) AssetByID(ctx context.Context, id string) (*model.
 
 // assetByID queries serverService for the hardware asset by ID and returns an Asset object
 func (r *serverServiceClient) AssetsByOffsetLimit(ctx context.Context, offset, limit int) (assets []*model.Asset, totalAssets int, err error) {
+	// attach child span
+	ctx, span := tracer.Start(ctx, "AssetsByOffsetLimit()")
+	span.SetAttributes(
+		attribute.Int("offset", offset),
+		attribute.Int("limit", limit),
+	)
+
+	defer span.End()
+
 	params := &serverservice.ServerListParams{
 		FacilityCode: r.facilityCode,
 		AttributeListParams: []serverservice.AttributeListParams{
@@ -406,35 +439,24 @@ func (r *serverServiceClient) AssetsByOffsetLimit(ctx context.Context, offset, l
 		},
 	}
 
-	// measure get server
-	startTS := time.Now()
-
 	// list servers
 	servers, response, err := r.client.List(ctx, params)
 	if err != nil {
+		span.SetStatus(codes.Error, "List() servers failed")
+
 		return nil, 0, errors.Wrap(ErrServerServiceQuery, err.Error())
 	}
-
-	// measure get bmc secret query
-	metrics.ServerServiceQueryTimeSummary.With(
-		metrics.AddLabels(stageLabel, prometheus.Labels{"endpoint": "server"}),
-	).Observe(time.Since(startTS).Seconds())
 
 	assets = make([]*model.Asset, 0, len(servers))
 
 	// collect bmc secrets and structure as alloy asset
 	for _, server := range serverPtrSlice(servers) {
-		// measure get server secret
-		startTS = time.Now()
-
 		secret, _, err := r.client.GetSecret(ctx, server.UUID, serverservice.ServerSecretTypeBMC)
 		if err != nil {
+			span.SetStatus(codes.Error, "GetSecret() failed")
+
 			return nil, 0, errors.Wrap(ErrServerServiceQuery, err.Error())
 		}
-
-		metrics.ServerServiceQueryTimeSummary.With(
-			metrics.AddLabels(stageLabel, prometheus.Labels{"endpoint": "server_secret"}),
-		).Observe(time.Since(startTS).Seconds())
 
 		asset, err := toAsset(server, secret)
 		if err != nil {
