@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	// nolint:gosec,G108 // pprof path is only exposed over localhost
 	_ "net/http/pprof"
 
@@ -57,6 +58,8 @@ func NewServerServiceClient(cfg *model.Config, logger *logrus.Entry) (*serverser
 
 	// init retryable http client
 	retryableClient := retryablehttp.NewClient()
+
+	retryableClient.HTTPClient = otelhttp.DefaultClient
 
 	// disable default debug logging on the retryable client
 	if logger.Level < logrus.DebugLevel {
