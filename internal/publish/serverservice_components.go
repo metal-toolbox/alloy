@@ -9,9 +9,11 @@ import (
 
 	"github.com/bmc-toolbox/common"
 	"github.com/google/uuid"
+	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel/codes"
 
 	serverservice "go.hollow.sh/serverservice/pkg/api/v1"
 )
@@ -28,8 +30,18 @@ func componentBySlugSerial(slug, serial string, components []*serverservice.Serv
 }
 
 func (h *serverServicePublisher) cacheServerComponentTypes(ctx context.Context) error {
+	// attach child span
+	ctx, span := tracer.Start(ctx, "cacheServerComponentTypes()")
+	defer span.End()
+
 	serverComponentTypes, _, err := h.client.ListServerComponentTypes(ctx, nil)
 	if err != nil {
+		// count error
+		metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
+
+		// set span status
+		span.SetStatus(codes.Error, "ListServerComponentTypes() failed")
+
 		return err
 	}
 

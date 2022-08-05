@@ -128,7 +128,7 @@ func Test_ServerServiceChangeList(t *testing.T) {
 			default:
 			}
 
-			gotAdd, gotUpdate, gotRemove, err := serverServiceChangeList(tc.current, newObjs)
+			gotAdd, gotUpdate, gotRemove, err := serverServiceChangeList(context.TODO(), tc.current, newObjs)
 			if err != nil {
 				t.Fatal(err)
 			}

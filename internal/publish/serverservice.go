@@ -18,6 +18,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 
 	r3diff "github.com/r3labs/diff/v3"
 	serverservice "go.hollow.sh/serverservice/pkg/api/v1"
@@ -37,7 +40,13 @@ var (
 	ErrRegisterChanges       = errors.New("error in server service register changes")
 	ErrAssetObjectConversion = errors.New("error converting asset object")
 	ErrChangeList            = errors.New("error building change list")
+	// The serverservice publisher tracer
+	tracer trace.Tracer
 )
+
+func init() {
+	tracer = otel.Tracer("publisher-serverservice")
+}
 
 // serverServicePublisher publishes asset inventory to serverService
 type serverServicePublisher struct {
@@ -76,6 +85,10 @@ func NewServerServicePublisher(ctx context.Context, alloy *app.App) (Publisher, 
 
 // Run implements the Publisher interface to publish asset inventory
 func (h *serverServicePublisher) Run(ctx context.Context) error {
+	// attach child span
+	ctx, span := tracer.Start(ctx, "Run()")
+	defer span.End()
+
 	// channel for routines spawned to indicate completion
 	doneCh := make(chan struct{})
 
@@ -103,6 +116,8 @@ func (h *serverServicePublisher) Run(ctx context.Context) error {
 			if ctx.Err() != nil {
 				break
 			}
+
+			span.AddEvent("task queue size delay")
 
 			h.logger.WithFields(logrus.Fields{
 				"component":   "oob collector",
@@ -157,6 +172,10 @@ func (h *serverServicePublisher) Run(ctx context.Context) error {
 
 // publish device information with hollow server service
 func (h *serverServicePublisher) publish(ctx context.Context, device *model.AssetDevice) {
+	// attach child span
+	ctx, span := tracer.Start(ctx, "publish()")
+	defer span.End()
+
 	if device == nil {
 		h.logger.Warn("nil device ignored")
 
@@ -179,6 +198,12 @@ func (h *serverServicePublisher) publish(ctx context.Context, device *model.Asse
 				"id":       id,
 				"response": hr,
 			}).Warn("server service server query returned error")
+
+		// set span status
+		span.SetStatus(codes.Error, "Get() server failed")
+
+		// count error
+		metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
 
 		return
 	}
@@ -207,6 +232,10 @@ func (h *serverServicePublisher) publish(ctx context.Context, device *model.Asse
 //
 // nolint:gocyclo // the method caries out all steps to have device data compared and registered, for now its accepted as cyclomatic.
 func (h *serverServicePublisher) registerChanges(ctx context.Context, serverID uuid.UUID, device *model.AssetDevice) error {
+	// attach child span
+	ctx, span := tracer.Start(ctx, "registerChanges()")
+	defer span.End()
+
 	// convert model.AssetDevice to server service component slice
 	newInventory, err := h.toComponentSlice(serverID, device)
 	if err != nil {
@@ -219,16 +248,22 @@ func (h *serverServicePublisher) registerChanges(ctx context.Context, serverID u
 			stageLabel,
 			prometheus.Labels{"vendor": device.Vendor, "model": device.Model},
 		),
-	)
+	).Add(float64(len(newInventory)))
 
 	// retrieve current inventory from server service
 	currentInventory, _, err := h.client.GetComponents(ctx, serverID, &serverservice.PaginationParams{})
 	if err != nil {
+		// count error
+		metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
+
+		// set span status
+		span.SetStatus(codes.Error, "GetComponents() failed")
+
 		return errors.Wrap(ErrServerServiceQuery, err.Error())
 	}
 
 	// identify changes to be applied
-	add, update, remove, err := serverServiceChangeList(componentPtrSlice(currentInventory), newInventory)
+	add, update, remove, err := serverServiceChangeList(ctx, componentPtrSlice(currentInventory), newInventory)
 	if err != nil {
 		return errors.Wrap(ErrRegisterChanges, err.Error())
 	}
@@ -261,6 +296,12 @@ func (h *serverServicePublisher) registerChanges(ctx context.Context, serverID u
 
 		_, err = h.client.CreateComponents(ctx, serverID, add)
 		if err != nil {
+			// count error
+			metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
+
+			// set span status
+			span.SetStatus(codes.Error, "CreateComponents() failed")
+
 			return errors.Wrap(ErrRegisterChanges, err.Error())
 		}
 	}
@@ -279,6 +320,12 @@ func (h *serverServicePublisher) registerChanges(ctx context.Context, serverID u
 
 		_, err = h.client.UpdateComponents(ctx, serverID, update)
 		if err != nil {
+			// count error
+			metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
+
+			// set span status
+			span.SetStatus(codes.Error, "UpdateComponents() failed")
+
 			return errors.Wrap(ErrRegisterChanges, err.Error())
 		}
 	}
@@ -322,7 +369,11 @@ func diffFilter(path []string, parent reflect.Type, field reflect.StructField) b
 
 // serverServiceChangeList compares the current vs newer slice of server components
 // and returns 3 lists - add, update, remove.
-func serverServiceChangeList(currentObjs, newObjs []*serverservice.ServerComponent) (add, update, remove serverservice.ServerComponentSlice, err error) {
+func serverServiceChangeList(ctx context.Context, currentObjs, newObjs []*serverservice.ServerComponent) (add, update, remove serverservice.ServerComponentSlice, err error) {
+	// attach child span
+	_, span := tracer.Start(ctx, "serverServiceChangeList()")
+	defer span.End()
+
 	// 1. list updated and removed objects
 	for _, currentObj := range currentObjs {
 		// changeObj is the component changes to be registered
