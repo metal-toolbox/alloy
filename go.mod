@@ -6,16 +6,14 @@ require (
 	github.com/bmc-toolbox/bmclib/v2 v2.0.0
 	github.com/bmc-toolbox/common v0.0.0-20220707135204-5368ecd5d175
 	github.com/bombsimon/logrusr/v2 v2.0.1
-	github.com/davecgh/go-spew v1.1.1
 	github.com/gammazero/workerpool v1.1.2
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-retryablehttp v0.7.1
 	github.com/jinzhu/copier v0.3.5
-	github.com/metal-toolbox/ironlib v0.1.1-staging.0.20220620125540-b6f10fbbba26
+	github.com/metal-toolbox/ironlib v0.1.1-staging
 	github.com/peterbourgon/ff/v3 v3.1.2
 	github.com/pkg/errors v0.9.1
 	github.com/r3labs/diff/v3 v3.0.0
-	github.com/sanity-io/litter v1.5.5
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.12.0
 	github.com/stretchr/testify v1.8.0
@@ -27,6 +25,7 @@ require (
 require (
 	github.com/beevik/etree v1.1.0 // indirect
 	github.com/cockroachdb/cockroach-go/v2 v2.2.15 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dselans/dmidecode v0.0.0-20180814053009-65c3f9d81910 // indirect
 	github.com/ericlagergren/decimal v0.0.0-20181231230500-73749d4874d5 // indirect
 	github.com/friendsofgo/errors v0.9.2 // indirect
