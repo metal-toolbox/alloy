@@ -16,7 +16,20 @@ import (
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
+
+var (
+	// The outofband collector tracer
+	tracer trace.Tracer
+)
+
+func init() {
+	tracer = otel.Tracer("collector-outofband")
+}
 
 const (
 	// concurrency is the default number of workers to concurrently query BMCs
@@ -70,6 +83,10 @@ func (o *OutOfBandCollector) SetMockGetter(getter interface{}) {
 
 // Inventory implements the Collector interface to collect inventory inband
 func (o *OutOfBandCollector) Inventory(ctx context.Context) error {
+	// attach child span
+	ctx, span := tracer.Start(ctx, "Inventory()")
+	defer span.End()
+
 	// close collectorCh to notify consumers
 	defer close(o.collectorCh)
 
@@ -102,6 +119,8 @@ func (o *OutOfBandCollector) Inventory(ctx context.Context) error {
 				break
 			}
 
+			span.AddEvent("task queue size delay")
+
 			o.logger.WithFields(logrus.Fields{
 				"component":   "oob collector",
 				"queue size":  o.workers.WaitingQueueSize(),
@@ -120,18 +139,20 @@ func (o *OutOfBandCollector) Inventory(ctx context.Context) error {
 			break
 		}
 
-		// submit inventory collection to worker pool
-		o.workers.Submit(
-			func() {
-				defer o.syncWg.Done()
-				defer func() { doneCh <- struct{}{} }()
+		func(target *model.Asset) {
+			// submit inventory collection to worker pool
+			o.workers.Submit(
+				func() {
+					defer o.syncWg.Done()
+					defer func() { doneCh <- struct{}{} }()
 
-				// count dispatched worker task
-				metrics.TasksDispatched.With(stageLabel).Add(1)
+					// count dispatched worker task
+					metrics.TasksDispatched.With(stageLabel).Add(1)
 
-				o.spawn(ctx, asset)
-			},
-		)
+					o.collect(ctx, target)
+				},
+			)
+		}(asset)
 	}
 
 	// wait for dispatched routines to complete
@@ -148,9 +169,19 @@ func (o *OutOfBandCollector) Inventory(ctx context.Context) error {
 }
 
 // spawn runs the asset inventory collection and writes the collected inventory to the collectorCh
-func (o *OutOfBandCollector) spawn(ctx context.Context, asset *model.Asset) {
+func (o *OutOfBandCollector) collect(ctx context.Context, asset *model.Asset) {
 	// bmc is the bmc client instance
 	var bmc oobGetter
+
+	// attach child span
+	ctx, span := tracer.Start(ctx, "collect()")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("bmc.host", asset.BMCAddress.String()))
+	span.SetAttributes(attribute.String("bmc.vendor", asset.Vendor))
+	span.SetAttributes(attribute.String("bmc.model", asset.Model))
+
+	defer span.End()
 
 	o.logger.WithFields(
 		logrus.Fields{
@@ -178,7 +209,7 @@ func (o *OutOfBandCollector) spawn(ctx context.Context, asset *model.Asset) {
 				"err": err,
 			}).Warn("error in bmc connection open")
 
-		span.SetStatus(codes.Error, " BMC connection: "+err.Error())
+		span.SetStatus(codes.Error, " BMC connection open: "+err.Error())
 
 		// count connection open error metric
 		metricBMCQueryErrorCount.With(
@@ -216,6 +247,8 @@ func (o *OutOfBandCollector) spawn(ctx context.Context, asset *model.Asset) {
 					"err": err,
 				}).Warn("error in bmc connection close")
 
+			span.SetStatus(codes.Error, " BMC connection close: "+err.Error())
+
 			// count connection close error metric
 			metricBMCQueryErrorCount.With(
 				metrics.AddLabels(
@@ -251,6 +284,8 @@ func (o *OutOfBandCollector) spawn(ctx context.Context, asset *model.Asset) {
 				"err": err,
 			}).Warn("error in bmc inventory collection")
 
+		span.SetStatus(codes.Error, " BMC Inventory(): "+err.Error())
+
 		// count inventory query error metric
 		metricBMCQueryErrorCount.With(
 			metrics.AddLabels(
@@ -281,6 +316,10 @@ func (o *OutOfBandCollector) spawn(ctx context.Context, asset *model.Asset) {
 
 //  newBMCClient initializes a bmclib client with the given credentials
 func newBMCClient(ctx context.Context, asset *model.Asset, l *logrus.Logger) *bmclibv2.Client {
+	// attach child span
+	ctx, span := tracer.Start(ctx, "newBMCClient()")
+	defer span.End()
+
 	logger := logrus.New()
 	logger.Formatter = l.Formatter
 
