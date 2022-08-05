@@ -31,9 +31,6 @@ var (
 	// TaskQueueSize measures the number of tasks waiting for a getter worker .
 	TaskQueueSize *prometheus.GaugeVec
 
-	// ServerServiceQueryTimeSummary measures how the time spent querying for assets from server service.
-	ServerServiceQueryTimeSummary *prometheus.SummaryVec
-
 	// ServerServiceQueryErrorCount counts the number of query errors - when querying the asset store.
 	ServerServiceQueryErrorCount *prometheus.CounterVec
 )
@@ -86,14 +83,6 @@ func init() {
 			Help: "A gauge metric to measure the number of tasks waiting for a worker in the getter worker pool",
 		},
 		[]string{"stage"},
-	)
-
-	ServerServiceQueryTimeSummary = promauto.NewSummaryVec(
-		prometheus.SummaryOpts{
-			Name: "alloy_serverservice_query_duration_seconds",
-			Help: "A counter metric to measure the duration to retrieve asset information from serverService",
-		},
-		[]string{"stage", "endpoint"},
 	)
 
 	ServerServiceQueryErrorCount = promauto.NewCounterVec(
