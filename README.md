@@ -71,6 +71,19 @@ alloy outofband -asset-source serverService \
                 -publish-target serverService
 ```
 
+4. ServerService as an asset source and target, collect inventory at the given interval.
+
+```
+SERVERSERVICE_FACILITY_CODE="ld7"
+SERVERSERVICE_AUTH_TOKEN="asd"
+SERVERSERVICE_ENDPOINT="http://localhost:8000"
+
+alloy outofband -asset-source serverService \
+                -publish-target serverService \
+                -asset-ids 023bd72d-f032-41fc-b7ca-3ef044cd33d5 \
+                --collect-interval 1h --trace
+```
+
 ### Alloy commands
 
 ```

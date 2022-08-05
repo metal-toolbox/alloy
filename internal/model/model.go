@@ -12,6 +12,7 @@ const (
 	LogLevelTrace      = 2
 	ConcurrencyDefault = 5
 	ProfilingEndpoint  = "localhost:9091"
+	MetricsEndpoint    = "localhost:9090"
 )
 
 var (

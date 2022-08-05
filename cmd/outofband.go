@@ -4,11 +4,13 @@ import (
 	"flag"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/asset"
 	"github.com/metal-toolbox/alloy/internal/collect"
 	"github.com/metal-toolbox/alloy/internal/helpers"
+	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/metal-toolbox/alloy/internal/publish"
 
@@ -30,9 +32,20 @@ type outOfBandCmd struct {
 	// assetIDList is a comma separated list of asset IDs to lookup inventory.
 	assetIDList string
 
+	// collectInterval when defined runs alloy in a forever loop collecting inventory at the given interval value.
+	collectInterval string
+
 	// assetListAll sets up the asset getter to fetch all assets from the store.
 	assetListAll bool
+
+	// active is a bool flag indicating that the collector is currently running.
+	active bool
 }
+
+var (
+	errOutOfBandCollectInterval = errors.New("invalid collect interval")
+	errCollectorActive          = errors.New("collector currently running")
+)
 
 func newOutOfBandCmd(rootCmd *rootCmd) *ffcli.Command {
 	c := outOfBandCmd{
@@ -44,6 +57,7 @@ func newOutOfBandCmd(rootCmd *rootCmd) *ffcli.Command {
 	fs.StringVar(&c.assetIDList, "asset-ids", "", "Collect inventory for the given comma separated list of asset IDs.")
 	fs.BoolVar(&c.assetListAll, "all", false, "Collect inventory for all assets.")
 	fs.StringVar(&c.assetSourceCSVFile, "csv-file", "", "Source assets from csv file (required when -asset-source=csv)")
+	fs.StringVar(&c.collectInterval, "collect-interval", "", "run as a process, collecting inventory at the given interval in the time.Duration string format - 12h, 5d...")
 
 	rootCmd.RegisterFlags(fs)
 
@@ -72,19 +86,19 @@ func (c *outOfBandCmd) Exec(ctx context.Context, _ []string) error {
 		return err
 	}
 
-	// init asset getter
-	getter, err := c.initAssetGetter(ctx, alloy)
-	if err != nil {
-		return err
+	// profiling endpoint
+	if c.rootCmd.pprof {
+		helpers.EnablePProfile()
 	}
 
-	// init asset publisher
-	publisher, err := c.initAssetPublisher(ctx, alloy)
-	if err != nil {
-		return err
+	// serve metrics endpoint
+	metrics.ListenAndServe()
+
+	if c.collectInterval != "" {
+		return c.collectAtIntervals(ctx, alloy, c.collectInterval)
 	}
 
-	return c.collect(ctx, alloy, getter, publisher)
+	return c.collect(ctx, alloy)
 }
 
 // initAssetGetter initializes the Asset Getter which retrieves asset information to collect inventory data.
@@ -175,10 +189,64 @@ func (c *outOfBandCmd) validateFlagPublish() error {
 	}
 }
 
+func (c *outOfBandCmd) collectAtIntervals(ctx context.Context, alloy *app.App, interval string) error {
+	tInterval, err := time.ParseDuration(interval)
+	if err != nil {
+		return errors.Wrap(errOutOfBandCollectInterval, err.Error())
+	}
+
+	if tInterval < time.Duration(1*time.Minute) {
+		return errors.Wrap(errOutOfBandCollectInterval, "minimum collect interval is 1m")
+	}
+
+	alloy.Logger.Info("inventory collection scheduled at interval: " + interval)
+
+Loop:
+	for {
+		select {
+		case <-time.NewTicker(tInterval).C:
+			if c.active {
+				return errors.Wrap(errCollectorActive, "skipped invocation")
+			}
+
+			go func() {
+				// set active flag to indicate the collector is currently active
+				c.active = true
+				defer func() { c.active = false }()
+
+				err := c.collect(ctx, alloy)
+				if err != nil {
+					alloy.Logger.Warn(err)
+				}
+			}()
+		case <-alloy.TermCh:
+			break Loop
+		}
+	}
+
+	// wait until all routines are complete
+	alloy.SyncWg.Wait()
+
+	return nil
+}
+
 // collect runs the asset getter, publisher and collects inventory out of band
-func (c *outOfBandCmd) collect(ctx context.Context, alloy *app.App, getter asset.Getter, publisher publish.Publisher) error {
-	if c.rootCmd.pprof {
-		helpers.EnablePProfile()
+func (c *outOfBandCmd) collect(ctx context.Context, alloy *app.App) error {
+	alloy.Logger.Trace("collector spawned.")
+
+	// init collector channels
+	alloy.InitAssetCollectorChannels()
+
+	// init asset getter
+	getter, err := c.initAssetGetter(ctx, alloy)
+	if err != nil {
+		return err
+	}
+
+	// init asset publisher
+	publisher, err := c.initAssetPublisher(ctx, alloy)
+	if err != nil {
+		return err
 	}
 
 	// setup cancel context with cancel func
