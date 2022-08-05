@@ -58,13 +58,13 @@ type serverServiceGetter struct {
 
 // serverServiceRequestor interface defines methods to lookup inventory assets
 //
-// the methods are exported to enable mock implementaions
+// the methods are exported to enable mock implementations
 type serverServiceRequestor interface {
 	AssetByID(ctx context.Context, id string) (asset *model.Asset, err error)
 	AssetsByOffsetLimit(ctx context.Context, offset, limit int) (assets []*model.Asset, totalAssets int, err error)
 }
 
-// NewServerServiceGetter returns an asset getter to retieve asset information from serverService for inventory collection.
+// NewServerServiceGetter returns an asset getter to retrieve asset information from serverService for inventory collection.
 func NewServerServiceGetter(ctx context.Context, alloy *app.App) (Getter, error) {
 	logger := alloy.Logger.WithField("component", "getter.serverService")
 
