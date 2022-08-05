@@ -84,6 +84,18 @@ alloy outofband -asset-source serverService \
                 --collect-interval 1h --trace
 ```
 
+### Metrics and traces
+
+Go runtime and Alloy metrics are exposed on `localhost:9090/metrics`.
+
+Telementry can be collected by setting env variables to point to the
+opentelemetry collector like Jaeger.
+
+```
+export OTEL_EXPORTER_OTLP_ENDPOINT=jaeger:4317
+export OTEL_EXPORTER_OTLP_INSECURE=true
+```
+
 ### Alloy commands
 
 ```
