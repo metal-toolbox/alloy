@@ -147,14 +147,16 @@ func (h *serverServicePublisher) Run(ctx context.Context) error {
 		metrics.TasksDispatched.With(stageLabel).Inc()
 
 		// submit inventory collection to worker pool
-		h.workers.Submit(
-			func() {
-				defer h.syncWg.Done()
-				defer func() { doneCh <- struct{}{} }()
+		func(target *model.AssetDevice) {
+			h.workers.Submit(
+				func() {
+					defer h.syncWg.Done()
+					defer func() { doneCh <- struct{}{} }()
 
-				h.publish(ctx, device)
-			},
-		)
+					h.publish(ctx, target)
+				},
+			)
+		}(device)
 	}
 
 	// wait for dispatched routines to complete
