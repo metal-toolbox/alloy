@@ -6,8 +6,6 @@ import (
 	"reflect"
 	"sort"
 	"sync"
-	"sync/atomic"
-	"time"
 
 	"github.com/gammazero/workerpool"
 	"github.com/google/uuid"
@@ -84,16 +82,12 @@ func NewServerServicePublisher(ctx context.Context, alloy *app.App) (Publisher, 
 }
 
 // Run implements the Publisher interface to publish asset inventory
+//
+// Listens on the collector channel for asset inventory send by the collector.
 func (h *serverServicePublisher) Run(ctx context.Context) error {
 	// attach child span
 	ctx, span := tracer.Start(ctx, "Run()")
 	defer span.End()
-
-	// channel for routines spawned to indicate completion
-	doneCh := make(chan struct{})
-
-	// count of routines spawned to publish device inventory
-	var dispatched int32
 
 	// cache server component types for lookups
 	err := h.cacheServerComponentTypes(ctx)
@@ -102,6 +96,11 @@ func (h *serverServicePublisher) Run(ctx context.Context) error {
 	}
 
 	for device := range h.collectorCh {
+		// context canceled
+		if ctx.Err() != nil {
+			break
+		}
+
 		if device == nil {
 			continue
 		}
@@ -109,64 +108,10 @@ func (h *serverServicePublisher) Run(ctx context.Context) error {
 		// count asset received on the collector channel
 		metrics.AssetsReceived.With(stageLabel).Inc()
 
-		// measure tasks waiting queue size
-		metrics.TaskQueueSize.With(stageLabel).Set(float64(h.workers.WaitingQueueSize()))
-
-		for h.workers.WaitingQueueSize() > concurrency {
-			if ctx.Err() != nil {
-				break
-			}
-
-			span.AddEvent("task queue size delay")
-
-			h.logger.WithFields(logrus.Fields{
-				"component":   "oob collector",
-				"queue size":  h.workers.WaitingQueueSize(),
-				"concurrency": concurrency,
-			}).Debug("delay for queue size to drop..")
-
-			// nolint:gomnd // delay is a magic number
-			time.Sleep(5 * time.Second)
-
-			// measure tasks waiting queue size, when this loop is active
-			metrics.TaskQueueSize.With(stageLabel).Set(float64(h.workers.WaitingQueueSize()))
-		}
-
-		// context canceled
-		if ctx.Err() != nil {
-			break
-		}
-
-		// increment wait group
-		h.syncWg.Add(1)
-
-		// increment spawned count
-		atomic.AddInt32(&dispatched, 1)
-
 		// count dispatched worker task
 		metrics.TasksDispatched.With(stageLabel).Inc()
 
-		// submit inventory collection to worker pool
-		func(target *model.AssetDevice) {
-			h.workers.Submit(
-				func() {
-					defer h.syncWg.Done()
-					defer func() { doneCh <- struct{}{} }()
-
-					h.publish(ctx, target)
-				},
-			)
-		}(device)
-	}
-
-	// wait for dispatched routines to complete
-	for dispatched > 0 {
-		<-doneCh
-
-		// count tasks completed
-		metrics.TasksCompleted.With(stageLabel).Inc()
-
-		atomic.AddInt32(&dispatched, ^int32(0))
+		h.publish(ctx, device)
 	}
 
 	return nil
