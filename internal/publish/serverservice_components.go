@@ -104,7 +104,7 @@ func (h *serverServicePublisher) toComponentSlice(serverID uuid.UUID, device *mo
 	return components, nil
 }
 
-func (h *serverServicePublisher) newComponent(slug, cvendor, cmodel, cserial string) (*serverservice.ServerComponent, error) {
+func (h *serverServicePublisher) newComponent(slug, cvendor, cmodel, cserial, cproduct string) (*serverservice.ServerComponent, error) {
 	// lower case slug to changeObj how its stored in server service
 	slug = strings.ToLower(slug)
 
@@ -117,6 +117,11 @@ func (h *serverServicePublisher) newComponent(slug, cvendor, cmodel, cserial str
 	_, exists := h.slugs[slug]
 	if !exists {
 		return nil, errors.Wrap(ErrSlugs, "unknown component slug: "+slug)
+	}
+
+	// use the product name when model number is empty
+	if strings.TrimSpace(cmodel) == "" && strings.TrimSpace(cproduct) != "" {
+		cmodel = cproduct
 	}
 
 	return &serverservice.ServerComponent{
@@ -142,7 +147,7 @@ func (h *serverServicePublisher) gpus(gpus []*common.GPU) []*serverservice.Serve
 			c.Serial = strconv.Itoa(idx)
 		}
 
-		sc, err := h.newComponent(common.SlugGPU, c.Vendor, c.Model, c.Serial)
+		sc, err := h.newComponent(common.SlugGPU, c.Vendor, c.Model, c.Serial, c.ProductName)
 		if err != nil {
 			h.logger.Error(err)
 
@@ -184,7 +189,7 @@ func (h *serverServicePublisher) cplds(cplds []*common.CPLD) []*serverservice.Se
 			c.Serial = strconv.Itoa(idx)
 		}
 
-		sc, err := h.newComponent(common.SlugCPLD, c.Vendor, c.Model, c.Serial)
+		sc, err := h.newComponent(common.SlugCPLD, c.Vendor, c.Model, c.Serial, c.ProductName)
 		if err != nil {
 			h.logger.Error(err)
 
@@ -226,7 +231,7 @@ func (h *serverServicePublisher) tpms(tpms []*common.TPM) []*serverservice.Serve
 			c.Serial = strconv.Itoa(idx)
 		}
 
-		sc, err := h.newComponent(common.SlugTPM, c.Vendor, c.Model, c.Serial)
+		sc, err := h.newComponent(common.SlugTPM, c.Vendor, c.Model, c.Serial, c.ProductName)
 		if err != nil {
 			h.logger.Error(err)
 
@@ -269,7 +274,7 @@ func (h *serverServicePublisher) cpus(cpus []*common.CPU) []*serverservice.Serve
 			c.Serial = strconv.Itoa(idx)
 		}
 
-		sc, err := h.newComponent(common.SlugCPU, c.Vendor, c.Model, c.Serial)
+		sc, err := h.newComponent(common.SlugCPU, c.Vendor, c.Model, c.Serial, c.ProductName)
 		if err != nil {
 			h.logger.Error(err)
 
@@ -317,7 +322,7 @@ func (h *serverServicePublisher) storageControllers(controllers []*common.Storag
 			c.Serial = strconv.Itoa(idx)
 		}
 
-		sc, err := h.newComponent(common.SlugStorageController, c.Vendor, c.Model, c.Serial)
+		sc, err := h.newComponent(common.SlugStorageController, c.Vendor, c.Model, c.Serial, c.ProductName)
 		if err != nil {
 			h.logger.Error(err)
 
@@ -349,6 +354,11 @@ func (h *serverServicePublisher) storageControllers(controllers []*common.Storag
 			},
 		)
 
+		// some controller show up with model numbers in the description field.
+		if sc.Model == "" && c.Description != "" {
+			sc.Model = c.Description
+		}
+
 		components = append(components, sc)
 	}
 
@@ -367,7 +377,7 @@ func (h *serverServicePublisher) psus(psus []*common.PSU) []*serverservice.Serve
 			c.Serial = strconv.Itoa(idx)
 		}
 
-		sc, err := h.newComponent(common.SlugPSU, c.Vendor, c.Model, c.Serial)
+		sc, err := h.newComponent(common.SlugPSU, c.Vendor, c.Model, c.Serial, c.ProductName)
 		if err != nil {
 			h.logger.Error(err)
 
@@ -412,7 +422,7 @@ func (h *serverServicePublisher) drives(drives []*common.Drive) []*serverservice
 			c.Serial = strconv.Itoa(idx)
 		}
 
-		sc, err := h.newComponent(common.SlugDrive, c.Vendor, c.Model, c.Serial)
+		sc, err := h.newComponent(common.SlugDrive, c.Vendor, c.Model, c.Serial, c.ProductName)
 		if err != nil {
 			h.logger.Error(err)
 
@@ -448,6 +458,11 @@ func (h *serverServicePublisher) drives(drives []*common.Drive) []*serverservice
 			},
 		)
 
+		// some drives show up with model numbers in the description field.
+		if sc.Model == "" && c.Description != "" {
+			sc.Model = c.Description
+		}
+
 		components = append(components, sc)
 	}
 
@@ -466,7 +481,7 @@ func (h *serverServicePublisher) nics(nics []*common.NIC) []*serverservice.Serve
 			c.Serial = strconv.Itoa(idx)
 		}
 
-		sc, err := h.newComponent(common.SlugNIC, c.Vendor, c.Model, c.Serial)
+		sc, err := h.newComponent(common.SlugNIC, c.Vendor, c.Model, c.Serial, c.ProductName)
 		if err != nil {
 			h.logger.Error(err)
 
@@ -513,7 +528,7 @@ func (h *serverServicePublisher) dimms(dimms []*common.Memory) []*serverservice.
 			c.Serial = strconv.Itoa(idx)
 		}
 
-		sc, err := h.newComponent(common.SlugPhysicalMem, c.Vendor, c.Model, c.Serial)
+		sc, err := h.newComponent(common.SlugPhysicalMem, c.Vendor, c.Model, c.Serial, c.ProductName)
 		if err != nil {
 			h.logger.Error(err)
 
@@ -558,7 +573,7 @@ func (h *serverServicePublisher) mainboard(c *common.Mainboard) *serverservice.S
 		c.Serial = "0"
 	}
 
-	sc, err := h.newComponent(common.SlugMainboard, c.Vendor, c.Model, c.Serial)
+	sc, err := h.newComponent(common.SlugMainboard, c.Vendor, c.Model, c.Serial, c.ProductName)
 	if err != nil {
 		h.logger.Error(err)
 
@@ -596,7 +611,7 @@ func (h *serverServicePublisher) bmc(c *common.BMC) *serverservice.ServerCompone
 		c.Serial = "0"
 	}
 
-	sc, err := h.newComponent(common.SlugBMC, c.Vendor, c.Model, c.Serial)
+	sc, err := h.newComponent(common.SlugBMC, c.Vendor, c.Model, c.Serial, c.ProductName)
 	if err != nil {
 		h.logger.Error(err)
 
@@ -633,7 +648,7 @@ func (h *serverServicePublisher) bios(c *common.BIOS) *serverservice.ServerCompo
 		c.Serial = "0"
 	}
 
-	sc, err := h.newComponent(common.SlugBIOS, c.Vendor, c.Model, c.Serial)
+	sc, err := h.newComponent(common.SlugBIOS, c.Vendor, c.Model, c.Serial, c.ProductName)
 	if err != nil {
 		h.logger.Error(err)
 
