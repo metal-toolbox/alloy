@@ -512,7 +512,7 @@ var (
 		},
 		serverservice.ServerComponent{
 			Name:   "PhysicalMemory",
-			Vendor: "Samsung",
+			Vendor: "samsung",
 			Model:  "",
 			Serial: "20390266",
 			Attributes: []serverservice.Attributes{
@@ -702,7 +702,7 @@ var (
 		},
 		serverservice.ServerComponent{
 			Name:   "PhysicalMemory",
-			Vendor: "Samsung",
+			Vendor: "samsung",
 			Model:  "",
 			Serial: "20390296",
 			Attributes: []serverservice.Attributes{
@@ -892,7 +892,7 @@ var (
 		},
 		serverservice.ServerComponent{
 			Name:   "PhysicalMemory",
-			Vendor: "Samsung",
+			Vendor: "samsung",
 			Model:  "",
 			Serial: "2035D193",
 			Attributes: []serverservice.Attributes{
@@ -1082,7 +1082,7 @@ var (
 		},
 		serverservice.ServerComponent{
 			Name:   "PhysicalMemory",
-			Vendor: "Samsung",
+			Vendor: "samsung",
 			Model:  "",
 			Serial: "203902BC",
 			Attributes: []serverservice.Attributes{
@@ -1272,7 +1272,7 @@ var (
 		},
 		serverservice.ServerComponent{
 			Name:   "PhysicalMemory",
-			Vendor: "Samsung",
+			Vendor: "samsung",
 			Model:  "",
 			Serial: "20390263",
 			Attributes: []serverservice.Attributes{
@@ -1462,7 +1462,7 @@ var (
 		},
 		serverservice.ServerComponent{
 			Name:   "PhysicalMemory",
-			Vendor: "Samsung",
+			Vendor: "samsung",
 			Model:  "",
 			Serial: "2035D1D9",
 			Attributes: []serverservice.Attributes{
@@ -1652,7 +1652,7 @@ var (
 		},
 		serverservice.ServerComponent{
 			Name:   "PhysicalMemory",
-			Vendor: "Samsung",
+			Vendor: "samsung",
 			Model:  "",
 			Serial: "203902BB",
 			Attributes: []serverservice.Attributes{
@@ -1842,7 +1842,7 @@ var (
 		},
 		serverservice.ServerComponent{
 			Name:   "PhysicalMemory",
-			Vendor: "Samsung",
+			Vendor: "samsung",
 			Model:  "",
 			Serial: "2035D1E1",
 			Attributes: []serverservice.Attributes{
@@ -2514,7 +2514,7 @@ var (
 		},
 		serverservice.ServerComponent{
 			Name:   "Drive",
-			Vendor: "SAMSUNG",
+			Vendor: "samsung",
 			Model:  "MZ7LH480HBHQ0D3",
 			Serial: "S5YJNA0R800552",
 			Attributes: []serverservice.Attributes{
@@ -3008,7 +3008,7 @@ var (
 		},
 		serverservice.ServerComponent{
 			Name:   "Drive",
-			Vendor: "SAMSUNG",
+			Vendor: "samsung",
 			Model:  "MZ7LH480HBHQ0D3",
 			Serial: "S5YJNA0R800525",
 			Attributes: []serverservice.Attributes{
@@ -5321,7 +5321,7 @@ var (
 		serverservice.ServerComponent{
 			Name:   "StorageController",
 			Vendor: "dell",
-			Model:  "",
+			Model:  "Dell HBA330 Mini",
 			Serial: "0",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
@@ -5540,7 +5540,7 @@ var (
 		serverservice.ServerComponent{
 			Name:   "StorageController",
 			Vendor: "dell",
-			Model:  "",
+			Model:  "BOSS-S1",
 			Serial: "1",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
