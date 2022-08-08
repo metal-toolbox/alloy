@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/gammazero/workerpool"
@@ -123,60 +122,34 @@ func (s *serverServiceGetter) ListByIDs(ctx context.Context, assetIDs []string) 
 	// close assetCh to notify consumers
 	defer close(s.assetCh)
 
-	// channel for routines spawned to indicate completion
-	doneCh := make(chan struct{})
-
-	// count of routines spawned to retrieve assets
-	var dispatched int32
-
 	// submit inventory collection to worker pool
 	for _, assetID := range assetIDs {
 		assetID := assetID
 
-		// increment wait group
-		s.syncWg.Add(1)
+		// context canceled
+		if ctx.Err() != nil {
+			break
+		}
 
-		// increment spawned count
-		atomic.AddInt32(&dispatched, 1)
+		// lookup asset by its ID from the inventory asset store
+		asset, err := s.client.AssetByID(ctx, assetID)
+		if err != nil {
+			// count serverService query errors
+			if errors.Is(err, ErrServerServiceQuery) {
+				metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
+			}
 
-		s.workers.Submit(
-			func() {
-				defer s.syncWg.Done()
-				defer func() { doneCh <- struct{}{} }()
+			s.logger.Warn(err)
+		}
 
-				// count dispatched worker task
-				metrics.TasksDispatched.With(stageLabel).Inc()
+		// count assets retrieved
+		metrics.ServerServiceAssetsRetrieved.With(stageLabel).Inc()
 
-				// lookup asset by its ID from the inventory asset store
-				asset, err := s.client.AssetByID(ctx, assetID)
-				if err != nil {
-					// count serverService query errors
-					if errors.Is(err, ErrServerServiceQuery) {
-						metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
-					}
+		// send asset for inventory collection
+		s.assetCh <- asset
 
-					s.logger.Warn(err)
-				}
-
-				// count assets retrieved
-				metrics.ServerServiceAssetsRetrieved.With(stageLabel).Inc()
-
-				// send asset for inventory collection
-				s.assetCh <- asset
-
-				// count assets sent to collector
-				metrics.AssetsSent.With(stageLabel).Inc()
-			},
-		)
-	}
-
-	for dispatched > 0 {
-		<-doneCh
-
-		// count tasks completed
-		metrics.TasksCompleted.With(stageLabel).Inc()
-
-		atomic.AddInt32(&dispatched, ^int32(0))
+		// count assets sent to collector
+		metrics.AssetsSent.With(stageLabel).Inc()
 	}
 
 	return nil
@@ -191,52 +164,21 @@ func (s *serverServiceGetter) ListAll(ctx context.Context) error {
 	// close assetCh to notify consumers
 	defer close(s.assetCh)
 
-	// channel for routines spawned to indicate completion
-	doneCh := make(chan struct{})
+	// count tasks dispatched
+	metrics.TasksDispatched.With(stageLabel).Inc()
 
-	// count of routines spawned to retrieve assets
-	var dispatched int32
-
-	// increment wait group
-	s.syncWg.Add(1)
-
-	// increment spawned count
-	atomic.AddInt32(&dispatched, 1)
-
-	func(dispatched *int32) {
-		s.workers.Submit(
-
-			func() {
-				defer s.syncWg.Done()
-				defer func() { doneCh <- struct{}{} }()
-
-				// count tasks dispatched
-				metrics.TasksDispatched.With(stageLabel).Inc()
-
-				err := s.dispatcher(ctx, dispatched, doneCh)
-				if err != nil {
-					s.logger.Warn(err)
-				}
-			},
-		)
-	}(&dispatched)
-
-	for dispatched > 0 {
-		<-doneCh
-
-		// count tasks completed
-		metrics.TasksCompleted.With(stageLabel).Inc()
-
-		atomic.AddInt32(&dispatched, ^int32(0))
+	err := s.dispatchQueries(ctx)
+	if err != nil {
+		s.logger.Warn(err)
 	}
 
 	return nil
 }
 
-// dispatcher spawns workers to fetch assets
+// dispatchQueries spawns workers to fetch assets
 //
 // nolint:gocyclo // this method has various cases to consider and shared context information which is ideal to keep together.
-func (s *serverServiceGetter) dispatcher(ctx context.Context, dispatched *int32, doneCh chan<- struct{}) error {
+func (s *serverServiceGetter) dispatchQueries(ctx context.Context) error {
 	// attach child span
 	ctx, span := tracer.Start(ctx, "dispatcher()")
 	defer span.End()
@@ -286,85 +228,42 @@ func (s *serverServiceGetter) dispatcher(ctx context.Context, dispatched *int32,
 			finalBatch = true
 		}
 
-		// measure tasks waiting queue size
-		metrics.TaskQueueSize.With(stageLabel).Set(float64(s.workers.WaitingQueueSize()))
-
-		for s.workers.WaitingQueueSize() > s.config.ServerService.Concurrency {
-			// context canceled
-			if ctx.Err() != nil {
-				break
-			}
-
-			span.AddEvent("task queue size delay")
-
-			s.logger.WithFields(logrus.Fields{
-				"queue size":  s.workers.WaitingQueueSize(),
-				"concurrency": s.config.ServerService.Concurrency,
-			}).Debug("delay for queue size to drop..")
-
-			// nolint:gomnd // delay is a magic number
-			time.Sleep(5 * time.Second)
-
-			// measure tasks waiting queue size, when this loop is active
-			metrics.TaskQueueSize.With(stageLabel).Set(float64(s.workers.WaitingQueueSize()))
-		}
-
 		// context canceled
 		if ctx.Err() != nil {
 			break
 		}
-
-		// increment wait group
-		s.syncWg.Add(1)
-
-		// increment spawned count
-		atomic.AddInt32(dispatched, 1)
-
-		// count tasks dispatched
-		metrics.TasksDispatched.With(stageLabel).Inc()
 
 		// pause between spawning workers - skip delay for tests
 		if os.Getenv("TEST_ENV") == "" {
 			time.Sleep(delayBetweenRequests)
 		}
 
-		// spawn worker with the offset, limit parameters
-		// this is done within a closure to capture the offset, limit values
-		func(pOffset, limit int) {
-			s.workers.Submit(
-				func() {
-					defer s.syncWg.Done()
-					defer func() { doneCh <- struct{}{} }()
+		assets, _, err := s.client.AssetsByOffsetLimit(ctx, offset, batchSize)
+		if err != nil {
+			if errors.Is(err, ErrServerServiceQuery) {
+				metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
+			}
 
-					assets, _, err := s.client.AssetsByOffsetLimit(ctx, pOffset, limit)
-					if err != nil {
-						if errors.Is(err, ErrServerServiceQuery) {
-							metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
-						}
+			s.logger.Warn(err)
+		}
 
-						s.logger.Warn(err)
-					}
+		s.logger.WithFields(logrus.Fields{
+			"offset":  offset,
+			"limit":   batchSize,
+			"total":   total,
+			"fetched": fetched,
+			"got":     len(assets),
+		}).Trace()
 
-					s.logger.WithFields(logrus.Fields{
-						"offset":  pOffset,
-						"limit":   limit,
-						"total":   total,
-						"fetched": fetched,
-						"got":     len(assets),
-					}).Trace()
+		// count assets retrieved
+		metrics.ServerServiceAssetsRetrieved.With(stageLabel).Add(float64(len(assets)))
 
-					// count assets retrieved
-					metrics.ServerServiceAssetsRetrieved.With(stageLabel).Add(float64(len(assets)))
+		for _, asset := range assets {
+			s.assetCh <- asset
 
-					for _, asset := range assets {
-						s.assetCh <- asset
-
-						// count assets sent to collector
-						metrics.AssetsSent.With(stageLabel).Inc()
-					}
-				},
-			)
-		}(offset, batchSize)
+			// count assets sent to collector
+			metrics.AssetsSent.With(stageLabel).Inc()
+		}
 
 		if finalBatch {
 			break
