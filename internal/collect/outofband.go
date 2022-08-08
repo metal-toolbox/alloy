@@ -96,73 +96,76 @@ func (o *OutOfBandCollector) Inventory(ctx context.Context) error {
 	// count of routines spawned to retrieve assets
 	var dispatched int32
 
-	// spawn routines to collect inventory for assets
-	for asset := range o.assetCh {
-		if asset == nil {
-			continue
-		}
+Loop:
+	for {
+		select {
+		case <-doneCh:
+			// count tasks completed
+			metrics.TasksCompleted.With(stageLabel).Add(1)
 
-		// count assets received on the asset channel
-		metrics.AssetsReceived.With(stageLabel).Inc()
-
-		// increment wait group
-		o.syncWg.Add(1)
-
-		// increment spawned count
-		atomic.AddInt32(&dispatched, 1)
-
-		// measure tasks waiting queue size
-		metrics.TaskQueueSize.With(stageLabel).Set(float64(o.workers.WaitingQueueSize()))
-
-		for o.workers.WaitingQueueSize() > concurrency {
-			if ctx.Err() != nil {
-				break
+			atomic.AddInt32(&dispatched, ^int32(0))
+			if dispatched == 0 {
+				break Loop
 			}
 
-			span.AddEvent("task queue size delay")
+		case <-ctx.Done():
+			logrus.Info("context canceled")
+			break Loop
 
-			o.logger.WithFields(logrus.Fields{
-				"component":   "oob collector",
-				"queue size":  o.workers.WaitingQueueSize(),
-				"concurrency": concurrency,
-			}).Debug("delay for queue size to drop..")
+		// spawn routines to collect inventory for assets
+		case asset := <-o.assetCh:
+			if asset == nil {
+				continue
+			}
 
-			// nolint:gomnd // delay is a magic number
-			time.Sleep(5 * time.Second)
+			// count assets received on the asset channel
+			metrics.AssetsReceived.With(stageLabel).Inc()
 
-			// measure tasks waiting queue size, when this loop is active
+			// measure tasks waiting queue size
 			metrics.TaskQueueSize.With(stageLabel).Set(float64(o.workers.WaitingQueueSize()))
+
+			for o.workers.WaitingQueueSize() > concurrency {
+				span.AddEvent("task queue size delay")
+
+				o.logger.WithFields(logrus.Fields{
+					"component":   "oob collector",
+					"queue size":  o.workers.WaitingQueueSize(),
+					"concurrency": concurrency,
+				}).Debug("delay for queue size to drop..")
+
+				// nolint:gomnd // delay is a magic number
+				time.Sleep(5 * time.Second)
+
+				// measure tasks waiting queue size, when this loop is active
+				metrics.TaskQueueSize.With(stageLabel).Set(float64(o.workers.WaitingQueueSize()))
+			}
+
+			// increment wait group
+			o.syncWg.Add(1)
+
+			// increment spawned count
+			atomic.AddInt32(&dispatched, 1)
+
+			func(ctx context.Context, target *model.Asset) {
+				// submit inventory collection to worker pool
+				o.workers.Submit(
+					func() {
+						defer o.syncWg.Done()
+						defer func() {
+							// notify done only when the context is not canceled.
+							if ctx.Err() == nil {
+								doneCh <- struct{}{}
+							}
+						}()
+
+						// count dispatched worker task
+						metrics.TasksDispatched.With(stageLabel).Add(1)
+
+						o.collect(ctx, target)
+					},
+				)
+			}(ctx, asset)
 		}
-
-		// context canceled
-		if ctx.Err() != nil {
-			break
-		}
-
-		func(target *model.Asset) {
-			// submit inventory collection to worker pool
-			o.workers.Submit(
-				func() {
-					defer o.syncWg.Done()
-					defer func() { doneCh <- struct{}{} }()
-
-					// count dispatched worker task
-					metrics.TasksDispatched.With(stageLabel).Add(1)
-
-					o.collect(ctx, target)
-				},
-			)
-		}(asset)
-	}
-
-	// wait for dispatched routines to complete
-	for dispatched > 0 {
-		<-doneCh
-
-		// count tasks completed
-		metrics.TasksCompleted.With(stageLabel).Add(1)
-
-		atomic.AddInt32(&dispatched, ^int32(0))
 	}
 
 	return nil
