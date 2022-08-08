@@ -216,7 +216,7 @@ func (h *serverServicePublisher) registerChanges(ctx context.Context, serverID u
 	}
 
 	if len(add) == 0 && len(update) == 0 && len(remove) == 0 {
-		h.logger.Debug("no changes identified to register.")
+		h.logger.WithField("serverID", serverID).Debug("no changes identified to register.")
 
 		return nil
 	}
@@ -382,7 +382,7 @@ func serverServiceComponentsUpdated(currentObj, newObj *serverservice.ServerComp
 
 	// no changes in attributes, versioned attributes
 	if len(attributes) == 0 && len(versionedAttributes) == 0 {
-		return nil, err
+		return nil, nil
 	}
 
 	newObj.Attributes = nil
