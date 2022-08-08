@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/bmc-toolbox/bmclib/v2 v2.0.0
-	github.com/bmc-toolbox/common v0.0.0-20220707135204-5368ecd5d175
+	github.com/bmc-toolbox/common v0.0.0-20220808122349-335517678873
 	github.com/bombsimon/logrusr/v2 v2.0.1
 	github.com/equinix-labs/otel-init-go v0.0.5
 	github.com/gammazero/workerpool v1.1.2

@@ -164,6 +164,8 @@ github.com/bmc-toolbox/bmclib/v2 v2.0.0 h1:4iYc/TMErQ2a7geubO1W/pJZk/MhORLieQvk9
 github.com/bmc-toolbox/bmclib/v2 v2.0.0/go.mod h1:J8VqwJ83ciXbN4IimBYS/voa6+8GjJhzKFOXK4mLJdw=
 github.com/bmc-toolbox/common v0.0.0-20220707135204-5368ecd5d175 h1:sBkvK0BfJqFEJ3OMNqmXc9iAutobuHhv3/QvAt+b2YU=
 github.com/bmc-toolbox/common v0.0.0-20220707135204-5368ecd5d175/go.mod h1:SY//n1PJjZfbFbmAsB6GvEKbc7UXz3d30s3kWxfJQ/c=
+github.com/bmc-toolbox/common v0.0.0-20220808122349-335517678873 h1:aHFMwerTuTpn38Q5LlqkP53RC4V6VYUL7nLa6E3EUT4=
+github.com/bmc-toolbox/common v0.0.0-20220808122349-335517678873/go.mod h1:SY//n1PJjZfbFbmAsB6GvEKbc7UXz3d30s3kWxfJQ/c=
 github.com/bombsimon/logrusr/v2 v2.0.1 h1:1VgxVNQMCvjirZIYaT9JYn6sAVGVEcNtRE0y4mvaOAM=
 github.com/bombsimon/logrusr/v2 v2.0.1/go.mod h1:ByVAX+vHdLGAfdroiMg6q0zgq2FODY2lc5YJvzmOJio=
 github.com/cenkalti/backoff/v4 v4.1.2 h1:6Yo7N8UP2K6LWZnW94DLVSSrbobcWdVzAYOisuDPIFo=
