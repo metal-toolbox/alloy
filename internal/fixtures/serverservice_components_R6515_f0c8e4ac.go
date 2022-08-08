@@ -5323,7 +5323,7 @@ var (
 		serverservice.ServerComponent{
 			Name:   "StorageController",
 			Vendor: "dell",
-			Model:  "",
+			Model:  "Dell HBA330 Mini",
 			Serial: "0",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
@@ -5542,7 +5542,7 @@ var (
 		serverservice.ServerComponent{
 			Name:   "StorageController",
 			Vendor: "dell",
-			Model:  "",
+			Model:  "BOSS-S1",
 			Serial: "1",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
@@ -5737,7 +5737,7 @@ var (
 		serverservice.ServerComponent{
 			Name:   "StorageController",
 			Vendor: "dell",
-			Model:  "",
+			Model:  "FCH SATA Controller [AHCI mode]",
 			Serial: "2",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
@@ -5866,7 +5866,7 @@ var (
 		serverservice.ServerComponent{
 			Name:   "StorageController",
 			Vendor: "dell",
-			Model:  "",
+			Model:  "FCH SATA Controller [AHCI mode]",
 			Serial: "3",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
