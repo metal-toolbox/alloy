@@ -12,7 +12,7 @@ lint:
 
 ## Go test
 test:
-	CGO_ENABLED=0 go test -timeout 30s -v -covermode=atomic ./...
+	CGO_ENABLED=0 go test -timeout 1m -v -covermode=atomic ./...
 
 ## build osx bin
 build-osx:
