@@ -53,3 +53,21 @@ func (p *stdoutPublisher) Run(ctx context.Context) error {
 
 	return nil
 }
+
+// PublishOne publishes the device parameter by printing the device object to stdout.
+//
+// PublishOne implements the Publisher interface
+func (p *stdoutPublisher) PublishOne(ctx context.Context, device *model.AssetDevice) error {
+	if device == nil {
+		return nil
+	}
+
+	out, err := json.MarshalIndent(device, "", " ")
+	if err != nil {
+		return err
+	}
+
+	log.Println(string(out))
+
+	return nil
+}
