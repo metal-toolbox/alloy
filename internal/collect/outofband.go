@@ -81,8 +81,17 @@ func (o *OutOfBandCollector) SetMockGetter(getter interface{}) {
 	o.mockClient = getter.(oobGetter)
 }
 
-// Inventory implements the Collector interface to collect inventory inband
-func (o *OutOfBandCollector) Inventory(ctx context.Context) error {
+// InventoryLocal implements the Collector interface just to satisfy it.
+func (o *OutOfBandCollector) InventoryLocal(ctx context.Context) (*model.AssetDevice, error) {
+	return nil, nil
+}
+
+// InventoryRemote iterates over assets received on the asset channel
+// and collects inventory out-of-band (remotely) for the assets received,
+// the collected inventory is then sent over the collector channel to the publisher.
+//
+// RunInventoryCollect implements the Collector interface.
+func (o *OutOfBandCollector) InventoryRemote(ctx context.Context) error {
 	// attach child span
 	ctx, span := tracer.Start(ctx, "Inventory()")
 	defer span.End()
