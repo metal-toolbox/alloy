@@ -3,7 +3,6 @@ package collect
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/fixtures"
@@ -29,30 +28,8 @@ func Test_InbandInventory(t *testing.T) {
 
 	var got *model.AssetDevice
 
-	// background routine to collect device inventory objects sent from the collector
-	go func(t *testing.T) {
-		t.Helper()
-
-		timeout := time.NewTicker(time.Second * 2).C
-
-		var ok bool
-
-	Loop:
-		for {
-			select {
-			case got, ok = <-alloy.CollectorCh:
-				if !ok {
-					continue
-				}
-				break Loop
-			case <-timeout:
-				break Loop
-			}
-		}
-	}(t)
-
 	// collect inventory
-	err = collector.Inventory(context.TODO())
+	got, err = collector.InventoryLocal(context.TODO())
 	if err != nil {
 		t.Fatal(err)
 	}
