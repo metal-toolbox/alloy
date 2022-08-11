@@ -36,13 +36,13 @@ type MockAssetGetter struct {
 	assets map[string]*model.Asset
 }
 
-// NewMockAssetGetter returns a MockAssetGetter that writes the given []*model.Asset to the given channel
+// NewMockAssetGetter returns a mock asset Getter that writes the given []*model.Asset to the given channel
 func NewMockAssetGetter(ch chan<- *model.Asset, assets map[string]*model.Asset) *MockAssetGetter {
 	return &MockAssetGetter{ch: ch, assets: assets}
 }
 
-// Run implements the AssetGetter interface, sending mock assets over the asset channel
-func (m *MockAssetGetter) Run(ctx context.Context) {
+// Listall implements the asset Getter interface, sending mock assets over the asset channel
+func (m *MockAssetGetter) ListAll(ctx context.Context) {
 	for _, asset := range m.assets {
 		m.ch <- asset
 	}
