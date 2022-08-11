@@ -74,7 +74,7 @@ func Test_OutOfBandInventory(t *testing.T) {
 	}(t, alloy.SyncWg)
 
 	// run the inventory collector
-	err = collector.Inventory(context.TODO())
+	err = collector.InventoryRemote(context.TODO())
 	if err != nil {
 		t.Fatal(err)
 	}

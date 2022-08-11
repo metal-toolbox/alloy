@@ -302,7 +302,7 @@ func (c *outOfBandCmd) collect(ctx context.Context, alloy *app.App) error {
 
 	// spawn out of band collector as a routine
 	collector := collect.NewOutOfBandCollector(alloy)
-	if err := collector.Inventory(ctx); err != nil {
+	if err := collector.InventoryRemote(ctx); err != nil {
 		alloy.Logger.WithField("err", err).Error("error running outofband collector")
 	}
 
