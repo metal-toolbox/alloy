@@ -60,7 +60,7 @@ type serverServicePublisher struct {
 
 // NewServerServicePublisher returns a serverService publisher to submit inventory data.
 func NewServerServicePublisher(ctx context.Context, alloy *app.App) (Publisher, error) {
-	logger := app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher.serverService"}, alloy.Logger)
+	logger := app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher-serverService"}, alloy.Logger)
 
 	client, err := helpers.NewServerServiceClient(alloy.Config, logger)
 	if err != nil {
@@ -104,13 +104,13 @@ func (h *serverServicePublisher) PublishOne(ctx context.Context, device *model.A
 	return nil
 }
 
-// Run spawns a device inventory publisher that iterates over the device objects received
+// RunInventoryPublisher spawns a device inventory publisher that iterates over the device objects received
 // on the collector channel and publishes them to the server service asset store.
 //
-// Run implements the Publisher interface.
-func (h *serverServicePublisher) Run(ctx context.Context) error {
+// RunInventoryPublisher implements the Publisher interface.
+func (h *serverServicePublisher) RunInventoryPublisher(ctx context.Context) error {
 	// attach child span
-	ctx, span := tracer.Start(ctx, "Run()")
+	ctx, span := tracer.Start(ctx, "RunInventoryPublisher()")
 	defer span.End()
 
 	// cache server component types for lookups
