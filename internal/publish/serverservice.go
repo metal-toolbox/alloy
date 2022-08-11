@@ -81,9 +81,33 @@ func NewServerServicePublisher(ctx context.Context, alloy *app.App) (Publisher, 
 	return p, nil
 }
 
-// Run implements the Publisher interface to publish asset inventory
+// PublishOne publishes the given asset to the server service asset store.
 //
-// Listens on the collector channel for asset inventory send by the collector.
+// PublishOne implements the Publisher interface.
+func (h *serverServicePublisher) PublishOne(ctx context.Context, device *model.AssetDevice) error {
+	if device == nil {
+		return nil
+	}
+
+	// attach child span
+	ctx, span := tracer.Start(ctx, "PublishOne()")
+	defer span.End()
+
+	// cache server component types for lookups
+	err := h.cacheServerComponentTypes(ctx)
+	if err != nil {
+		return err
+	}
+
+	h.publish(ctx, device)
+
+	return nil
+}
+
+// Run spawns a device inventory publisher that iterates over the device objects received
+// on the collector channel and publishes them to the server service asset store.
+//
+// Run implements the Publisher interface.
 func (h *serverServicePublisher) Run(ctx context.Context) error {
 	// attach child span
 	ctx, span := tracer.Start(ctx, "Run()")
@@ -249,7 +273,7 @@ func (h *serverServicePublisher) registerChanges(ctx context.Context, serverID u
 			// set span status
 			span.SetStatus(codes.Error, "CreateComponents() failed")
 
-			return errors.Wrap(ErrRegisterChanges, err.Error())
+			return errors.Wrap(ErrRegisterChanges, "CreateComponents: "+err.Error())
 		}
 	}
 
@@ -273,7 +297,7 @@ func (h *serverServicePublisher) registerChanges(ctx context.Context, serverID u
 			// set span status
 			span.SetStatus(codes.Error, "UpdateComponents() failed")
 
-			return errors.Wrap(ErrRegisterChanges, err.Error())
+			return errors.Wrap(ErrRegisterChanges, "UpdateComponents: "+err.Error())
 		}
 	}
 
