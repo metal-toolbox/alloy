@@ -63,7 +63,7 @@ func (c *rootCmd) RegisterFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&c.trace, "trace", false, "Set logging to trace level.")
 	fs.BoolVar(&c.pprof, "profile", false, "Enable performance profile endpoint.")
 	fs.StringVar(&c.cfgFile, "config-file", "", "Alloy config file")
-	fs.StringVar(&c.publisherKind, "publish-target", "", "Publish collected inventory to [serverService|stdout]")
+	fs.StringVar(&c.publisherKind, "publish-target", "stdout", "Publish collected inventory to [serverService|stdout]")
 }
 
 func (c *rootCmd) Exec(context.Context, []string) error {
