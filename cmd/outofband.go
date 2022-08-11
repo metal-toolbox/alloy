@@ -45,7 +45,6 @@ type outOfBandCmd struct {
 
 var (
 	errOutOfBandCollectInterval = errors.New("invalid collect interval")
-	errCollectorActive          = errors.New("collector currently running")
 )
 
 func newOutOfBandCmd(rootCmd *rootCmd) *ffcli.Command {
@@ -207,7 +206,7 @@ Loop:
 		select {
 		case <-time.NewTicker(tInterval).C:
 			if c.active {
-				return errors.Wrap(errCollectorActive, "skipped invocation")
+				continue
 			}
 
 			go func() {
@@ -221,6 +220,7 @@ Loop:
 				}
 			}()
 		case <-alloy.TermCh:
+			alloy.Logger.Info("got cancel signal, wait for spawned routines to complete...")
 			break Loop
 		}
 	}
