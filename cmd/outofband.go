@@ -286,7 +286,7 @@ func (c *outOfBandCmd) collect(ctx context.Context, alloy *app.App) error {
 	go func() {
 		defer alloy.SyncWg.Done()
 
-		if err := publisher.Run(ctx); err != nil {
+		if err := publisher.RunInventoryPublisher(ctx); err != nil {
 			alloy.Logger.WithField("err", err).Error("error running inventory publisher routine")
 			cancelFunc()
 		}

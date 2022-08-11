@@ -24,8 +24,9 @@ type stdoutPublisher struct {
 	termCh      <-chan os.Signal
 }
 
+// NewStdoutPublisher returns a new publisher that prints received objects to stdout.
 func NewStdoutPublisher(ctx context.Context, alloy *app.App) (Publisher, error) {
-	logger := app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher.stdout"}, alloy.Logger)
+	logger := app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher-stdout"}, alloy.Logger)
 
 	p := &stdoutPublisher{
 		logger:      logger,
@@ -37,7 +38,11 @@ func NewStdoutPublisher(ctx context.Context, alloy *app.App) (Publisher, error) 
 	return p, nil
 }
 
-func (p *stdoutPublisher) Run(ctx context.Context) error {
+// RunInventoryPublisher iterates over device objects received on the collector channel and prints them to stdout,
+// the method stops once the collector channel is closed.
+//
+// RunInventoryPublisher implements the Publisher interface
+func (p *stdoutPublisher) RunInventoryPublisher(ctx context.Context) error {
 	for device := range p.collectorCh {
 		if device == nil {
 			continue
