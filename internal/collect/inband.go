@@ -36,32 +36,26 @@ func (i *InbandCollector) SetMockGetter(getter interface{}) {
 	i.mock = true
 }
 
-// Inventory implements the Collector interface to collect inventory inband
-func (i *InbandCollector) Inventory(ctx context.Context) error {
+// InventoryLocal implements the Collector interface to collect inventory locally (inband).
+func (i *InbandCollector) InventoryLocal(ctx context.Context) (*model.AssetDevice, error) {
 	if !i.mock {
 		var err error
 
 		i.deviceManager, err = ironlib.New(i.logger.Logger)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	defer close(i.collectorCh)
-
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		default:
-			device, err := i.deviceManager.GetInventory(ctx)
-			if err != nil {
-				return err
-			}
-
-			i.collectorCh <- &model.AssetDevice{ID: "", Device: device}
-
-			return nil
-		}
+	device, err := i.deviceManager.GetInventory(ctx)
+	if err != nil {
+		return nil, err
 	}
+
+	return &model.AssetDevice{Device: device}, nil
+}
+
+// InventoryRemote implements is present here to satisfy the Collector interface.
+func (i *InbandCollector) InventoryRemote(ctx context.Context) error {
+	return nil
 }
