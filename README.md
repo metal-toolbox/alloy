@@ -28,6 +28,8 @@ b. build osx executable
 
 ##### sample commands
 
+###### Collect inventory out of band - through the host BMC
+
 1. CSV file asset source with inventory published to `stdout`
 ```
 ./alloy outofband  -asset-source csv \
@@ -81,7 +83,28 @@ SERVERSERVICE_ENDPOINT="http://localhost:8000"
 alloy outofband -asset-source serverService \
                 -publish-target serverService \
                 -asset-ids 023bd72d-f032-41fc-b7ca-3ef044cd33d5 \
-                --collect-interval 1h --trace
+                -collect-interval 1h -trace
+```
+
+###### Collect inventory in band - through the host OS
+
+Inband inventory collection requires various OS based utilites provided by the `ghcr.io/metal-toolbox/alloy-inband` docker image.
+
+
+collect and publish to server service.
+
+The `-timeout` parameter ensures that the alloy utility will terminate if it exceeds
+the given timeout value. The default timeout is `10m`.
+```
+docker run -e SERVERSERVICE_FACILITY_CODE="dc13" \
+           -e SERVERSERVICE_AUTH_TOKEN="asd"    \
+           -e SERVERSERVICE_ENDPOINT="http://localhost:8000"
+           -v /dev:/dev \
+           -v /proc:/proc \
+           -v /sys:/sys  --network host \
+           --privileged \
+           -ti ghcr.io/metal-toolbox/alloy-inband \
+           "alloy inband -timeout 600s  -asset-id f0c8e4ac-5cce-4370-93ff-bd3196fd3b9e -publish-target serverService"
 ```
 
 ### Metrics and traces
