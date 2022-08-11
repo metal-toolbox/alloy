@@ -45,7 +45,7 @@ func Test_OutOfBandInventory(t *testing.T) {
 		defer wg.Done()
 
 		assetGetter := fixtures.NewMockAssetGetter(alloy.AssetCh, mockAssets)
-		assetGetter.Run(context.TODO())
+		assetGetter.ListAll(context.TODO())
 	}(t, alloy.SyncWg)
 
 	// background routine to collect device inventory objects sent from the collector
