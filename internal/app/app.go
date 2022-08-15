@@ -7,6 +7,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/metal-toolbox/alloy/internal/helpers"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -24,6 +25,9 @@ var (
 
 // App holds attributes for running alloy.
 type App struct {
+	// AssetGetterPause when set will cause the asset getter to pause sending assets
+	// on the asset channel until the flag has been cleared.
+	AssetGetterPause *helpers.Pauser
 	// App configuration.
 	Config *model.Config
 	// AssetCh is where the asset getter retrieves assets from the asset store for the inventory collector to consume.
@@ -54,12 +58,13 @@ func New(ctx context.Context, kind, cfgFile string, loglevel int) (app *App, err
 	cfg.AppKind = kind
 
 	app = &App{
-		Config:      cfg,
-		AssetCh:     make(chan *model.Asset),
-		CollectorCh: make(chan *model.AssetDevice),
-		TermCh:      make(chan os.Signal),
-		SyncWg:      &sync.WaitGroup{},
-		Logger:      logrus.New(),
+		AssetGetterPause: helpers.NewPauser(),
+		Config:           cfg,
+		AssetCh:          make(chan *model.Asset),
+		CollectorCh:      make(chan *model.AssetDevice),
+		TermCh:           make(chan os.Signal),
+		SyncWg:           &sync.WaitGroup{},
+		Logger:           logrus.New(),
 	}
 
 	switch loglevel {

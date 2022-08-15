@@ -14,6 +14,7 @@ import (
 	"github.com/gammazero/workerpool"
 	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/fixtures"
+	"github.com/metal-toolbox/alloy/internal/helpers"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/stretchr/testify/assert"
 	serverservice "go.hollow.sh/serverservice/pkg/api/v1"
@@ -28,6 +29,7 @@ func newMockServerServiceGetter(t *testing.T, alloy *app.App) *serverServiceGett
 		config:  alloy.Config,
 		assetCh: alloy.AssetCh,
 		workers: workerpool.New(1),
+		pauser:  helpers.NewPauser(),
 		client:  fixtures.NewMockServerServiceClient(),
 	}
 }

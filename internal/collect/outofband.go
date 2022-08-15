@@ -40,14 +40,15 @@ const (
 
 // OutOfBand collector collects hardware, firmware inventory out of band
 type OutOfBandCollector struct {
-	mockClient  oobGetter
-	logger      *logrus.Entry
-	config      *model.Config
-	syncWg      *sync.WaitGroup
-	assetCh     <-chan *model.Asset
-	termCh      <-chan os.Signal
-	collectorCh chan<- *model.AssetDevice
-	workers     workerpool.WorkerPool
+	assetGetterPause *helpers.Pauser
+	mockClient       oobGetter
+	logger           *logrus.Entry
+	config           *model.Config
+	syncWg           *sync.WaitGroup
+	assetCh          <-chan *model.Asset
+	termCh           <-chan os.Signal
+	collectorCh      chan<- *model.AssetDevice
+	workers          *workerpool.WorkerPool
 }
 
 // oobGetter interface defines methods that the bmclib client exposes
@@ -63,18 +64,21 @@ func NewOutOfBandCollector(alloy *app.App) Collector {
 	logger := app.NewLogrusEntryFromLogger(logrus.Fields{"component": "collector.outofband"}, alloy.Logger)
 
 	c := &OutOfBandCollector{
-		logger:      logger,
-		assetCh:     alloy.AssetCh,
-		termCh:      alloy.TermCh,
-		syncWg:      alloy.SyncWg,
-		config:      alloy.Config,
-		collectorCh: alloy.CollectorCh,
-		workers:     *workerpool.New(concurrency),
+		logger:           logger,
+		assetCh:          alloy.AssetCh,
+		termCh:           alloy.TermCh,
+		syncWg:           alloy.SyncWg,
+		config:           alloy.Config,
+		collectorCh:      alloy.CollectorCh,
+		assetGetterPause: alloy.AssetGetterPause,
 	}
 
+	// set worker concurrency
 	if c.config.CollectorOutofband.Concurrency == 0 {
 		c.config.CollectorOutofband.Concurrency = concurrency
 	}
+
+	c.workers = workerpool.New(c.config.CollectorOutofband.Concurrency)
 
 	return c
 }
@@ -92,6 +96,8 @@ func (o *OutOfBandCollector) InventoryLocal(ctx context.Context) (*model.AssetDe
 // and collects inventory out-of-band (remotely) for the assets received,
 // the collected inventory is then sent over the collector channel to the publisher.
 //
+// This method returns after all the routines it dispatched (to the worker pool) have returned.
+//
 // RunInventoryCollect implements the Collector interface.
 func (o *OutOfBandCollector) InventoryRemote(ctx context.Context) error {
 	// attach child span
@@ -107,49 +113,51 @@ func (o *OutOfBandCollector) InventoryRemote(ctx context.Context) error {
 	// count of routines spawned to retrieve assets
 	var dispatched int32
 
+	var getterCompleted bool
+
+	// tickerCh is the interval at which the loop below checks the collector task queue size
+	// and if its reached completion.
+	//
+	// nolint:gomnd // ticker is internal to this method and is clear as is.
+	tickerCh := time.NewTicker(1 * time.Second).C
+
 Loop:
 	for {
 		select {
+		case <-tickerCh:
+			// pause/unpause asset getter based on the task queue size.
+			o.taskQueueWait(span)
+
+			// tasks dispatched were completed and the asset getter is completed.
+			if dispatched == 0 && getterCompleted {
+				break Loop
+			}
+
 		case <-doneCh:
 			// count tasks completed
 			metrics.TasksCompleted.With(stageLabel).Add(1)
 
 			atomic.AddInt32(&dispatched, ^int32(0))
-			if dispatched == 0 {
-				break Loop
-			}
 
 		case <-ctx.Done():
 			logrus.Info("context canceled")
 			break Loop
 
 		// spawn routines to collect inventory for assets
-		case asset := <-o.assetCh:
+		case asset, ok := <-o.assetCh:
+			// assetCh closed - getter completed
+			if !ok {
+				getterCompleted = true
+
+				continue
+			}
+
 			if asset == nil {
 				continue
 			}
 
 			// count assets received on the asset channel
 			metrics.AssetsReceived.With(stageLabel).Inc()
-
-			// measure tasks waiting queue size
-			metrics.TaskQueueSize.With(stageLabel).Set(float64(o.workers.WaitingQueueSize()))
-
-			for o.workers.WaitingQueueSize() > concurrency {
-				span.AddEvent("task queue size delay")
-
-				o.logger.WithFields(logrus.Fields{
-					"component":   "oob collector",
-					"queue size":  o.workers.WaitingQueueSize(),
-					"concurrency": concurrency,
-				}).Debug("delay for queue size to drop..")
-
-				// nolint:gomnd // delay is a magic number
-				time.Sleep(5 * time.Second)
-
-				// measure tasks waiting queue size, when this loop is active
-				metrics.TaskQueueSize.With(stageLabel).Set(float64(o.workers.WaitingQueueSize()))
-			}
 
 			// increment wait group
 			o.syncWg.Add(1)
@@ -180,6 +188,44 @@ Loop:
 	}
 
 	return nil
+}
+
+// taskQueueWait sets, unsets the asset getter pause flag.
+//
+// This enables the collector to 'push back' on the getter to pause assets being sent on the asset channel
+// based on the the number of tasks waiting in the worker queue.
+//
+// The asset getter pause flag is unset once the count of tasks waiting in the worker queue is below threshold levels.
+func (o *OutOfBandCollector) taskQueueWait(span trace.Span) {
+	// measure tasks waiting queue size
+	metrics.TaskQueueSize.With(stageLabel).Set(float64(o.workers.WaitingQueueSize()))
+
+	if o.workers.WaitingQueueSize() > o.config.CollectorOutofband.Concurrency {
+		if o.assetGetterPause.Value() {
+			// getter was previously paused
+			return
+		}
+
+		o.assetGetterPause.Pause()
+
+		o.logger.WithFields(logrus.Fields{
+			"component":   "oob collector",
+			"queue size":  o.workers.WaitingQueueSize(),
+			"concurrency": o.config.CollectorOutofband.Concurrency,
+		}).Trace("paused asset getter.")
+
+		return
+	}
+
+	if o.assetGetterPause.Value() {
+		o.assetGetterPause.UnPause()
+
+		o.logger.WithFields(logrus.Fields{
+			"component":   "oob collector",
+			"queue size":  o.workers.WaitingQueueSize(),
+			"concurrency": o.config.CollectorOutofband.Concurrency,
+		}).Trace("un-paused asset getter.")
+	}
 }
 
 // spawn runs the asset inventory collection and writes the collected inventory to the collectorCh
