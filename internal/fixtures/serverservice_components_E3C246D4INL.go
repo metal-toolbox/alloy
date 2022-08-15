@@ -9,9 +9,7 @@ import (
 )
 
 var (
-	// fixture dumped with litter.Dump
-	// see gist for filter func: https://gist.github.com/joelrebel/b7926b9f6101dbdde146e4bebe285be9
-	//
+	// To refresh this fixture, see docs/README.development
 	// nolint:simplifycompositelit // testdata
 	ServerServiceE3C246D4INLcomponents = serverservice.ServerComponentSlice{
 		serverservice.ServerComponent{
