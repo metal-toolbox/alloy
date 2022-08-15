@@ -6,7 +6,7 @@ import (
 
 	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/fixtures"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/metal-toolbox/alloy/internal/model"
 )
@@ -34,5 +34,5 @@ func Test_InbandInventory(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.DeepEqual(t, &model.AssetDevice{Device: fixtures.E3C246D4INL}, got)
+	assert.Equal(t, &model.AssetDevice{Device: fixtures.E3C246D4INL}, got)
 }
