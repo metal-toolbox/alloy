@@ -12,9 +12,11 @@ import (
 	logrusrv2 "github.com/bombsimon/logrusr/v2"
 	"github.com/gammazero/workerpool"
 	"github.com/metal-toolbox/alloy/internal/app"
+	"github.com/metal-toolbox/alloy/internal/helpers"
 	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sanity-io/litter"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -322,6 +324,15 @@ func (o *OutOfBandCollector) collect(ctx context.Context, asset *model.Asset) {
 				"model":      asset.Model,
 			}),
 	).Observe(time.Since(startTS).Seconds())
+
+	// For debugging and to capture test fixtures data.
+	if os.Getenv(model.EnvVarDumpFixtures) == "true" {
+		f := asset.ID + ".device.fixture"
+		o.logger.Info("oob device fixture dumped as file: ", f)
+
+		// nolint:gomnd // file permissions are clearer in this form.
+		_ = os.WriteFile(f, []byte(litter.Sdump(device)), 0o600)
+	}
 
 	o.collectorCh <- &model.AssetDevice{ID: asset.ID, Device: device}
 }

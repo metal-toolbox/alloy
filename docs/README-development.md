@@ -52,3 +52,15 @@ The `Inventory publisher` listens for asset devices from the inventory collector
 and proceeds to transform the data for publishing, and then publishes the data.
 
 Inventory publishers implement the `Publisher` interface.
+
+#### Debugging/fixture dump environment variables
+
+ Set `DEBUG_DUMP_FIXTURES=true` to have fixture data for `fixtures/device.go`, `fixtures/serverservice_components.*` dumped,
+ the objects are dumped to files in the current directory,
+ ```
+fc167440-18d3-4455-b5ee-1c8e347b3f36.device.fixture             # the device object returned from ironlib/bmclib
+fc167440-18d3-4455-b5ee-1c8e347b3f36.current.components.fixture # the current component data from server service
+fc167440-18d3-4455-b5ee-1c8e347b3f36.new.components.fixture     # the newer component data based on the device object from ironlib/bmclib
+ ```
+
+ Set `DEBUG_DUMP_DIFFERS=true` to have object differ changelogs from the `publish.registerChanges()` method dumped.
