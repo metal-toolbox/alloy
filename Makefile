@@ -30,7 +30,7 @@ endif
 	GOOS=linux GOARCH=amd64 go build -o alloy
 
 ## build docker image and tag as ghcr.io/metal-toolbox/alloy-inband:latest
-build-image-inband:
+build-image-inband: build-linux
 	@echo ">>>> NOTE: You may want to execute 'make build-image-nocache' depending on the Docker stages changed"
 	docker build --rm=true -f Dockerfile.inband -t ${DOCKER_REGISTRY}:latest  . \
 							 --label org.label-schema.schema-version=1.0 \
@@ -38,7 +38,7 @@ build-image-inband:
 							 --label org.label-schema.vcs-url=$(REPO)
 
 ## build docker image, ignoring the cache
-build-image-inband-nocache:
+build-image-inband-nocache: build-linux
 	docker build --no-cache --rm=true -f Dockerfile.inband -t ${DOCKER_REGISTRY}:latest  . \
 							 --label org.label-schema.schema-version=1.0 \
 							 --label org.label-schema.vcs-ref=$(GIT_COMMIT_FULL) \
