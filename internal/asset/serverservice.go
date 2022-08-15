@@ -58,6 +58,7 @@ func init() {
 
 // serverServiceGetter is an inventory asset getter
 type serverServiceGetter struct {
+	pauser  *helpers.Pauser
 	client  serverServiceRequestor
 	logger  *logrus.Entry
 	config  *model.Config
@@ -92,6 +93,7 @@ func NewServerServiceGetter(ctx context.Context, alloy *app.App) (Getter, error)
 	}
 
 	s := &serverServiceGetter{
+		pauser:  alloy.AssetGetterPause,
 		logger:  logger,
 		syncWg:  alloy.SyncWg,
 		config:  alloy.Config,
@@ -125,6 +127,11 @@ func (s *serverServiceGetter) ListByIDs(ctx context.Context, assetIDs []string) 
 	// submit inventory collection to worker pool
 	for _, assetID := range assetIDs {
 		assetID := assetID
+
+		// idle when pauser flag is set, unless context is canceled.
+		for s.pauser.Value() && ctx.Err() == nil {
+			time.Sleep(1 * time.Second)
+		}
 
 		// context canceled
 		if ctx.Err() != nil {
@@ -226,6 +233,11 @@ func (s *serverServiceGetter) dispatchQueries(ctx context.Context) error {
 
 		if (fetched + batchSize) >= total {
 			finalBatch = true
+		}
+
+		// idle when pause flag is set and context isn't canceled.
+		for s.pauser.Value() && ctx.Err() == nil {
+			time.Sleep(1 * time.Second)
 		}
 
 		// context canceled
