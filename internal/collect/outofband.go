@@ -35,7 +35,7 @@ func init() {
 
 const (
 	// concurrency is the default number of workers to concurrently query BMCs
-	concurrency = 10
+	concurrency = 20
 )
 
 // OutOfBand collector collects hardware, firmware inventory out of band
@@ -99,6 +99,8 @@ func (o *OutOfBandCollector) InventoryLocal(ctx context.Context) (*model.AssetDe
 // This method returns after all the routines it dispatched (to the worker pool) have returned.
 //
 // RunInventoryCollect implements the Collector interface.
+//
+// nolint:gocyclo // this method is better not split up in its current form.
 func (o *OutOfBandCollector) InventoryRemote(ctx context.Context) error {
 	// attach child span
 	ctx, span := tracer.Start(ctx, "Inventory()")
