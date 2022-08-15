@@ -15,6 +15,7 @@ import (
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sanity-io/litter"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
@@ -233,6 +234,21 @@ func (h *serverServicePublisher) registerChanges(ctx context.Context, serverID u
 		return errors.Wrap(ErrServerServiceQuery, err.Error())
 	}
 
+	// For debugging and to capture test fixtures data.
+	if os.Getenv(model.EnvVarDumpFixtures) == "true" {
+		current := serverID.String() + ".current.components.fixture"
+		h.logger.Info("components current fixture dumped as file: " + current)
+
+		// nolint:gomnd // file permissions are clearer in this form.
+		_ = os.WriteFile(current, []byte(litter.Sdump(currentInventory)), 0o600)
+
+		newc := serverID.String() + ".new.components.fixture"
+		h.logger.Info("components new fixture dumped as file: " + newc)
+
+		// nolint:gomnd // file permissions are clearer in this form.
+		_ = os.WriteFile(newc, []byte(litter.Sdump(newInventory)), 0o600)
+	}
+
 	// identify changes to be applied
 	add, update, remove, err := serverServiceChangeList(ctx, componentPtrSlice(currentInventory), newInventory)
 	if err != nil {
@@ -398,6 +414,14 @@ func serverServiceComponentsUpdated(currentObj, newObj *serverservice.ServerComp
 		return nil, nil
 	}
 
+	// For debugging dump differ data
+	if os.Getenv(model.EnvVarDumpDiffers) == "true" {
+		objChangesf := currentObj.ServerUUID.String() + ".objchanges.diff"
+
+		// nolint:gomnd // file permissions are clearer in this form.
+		_ = os.WriteFile(objChangesf, []byte(litter.Sdump(objChanges)), 0o600)
+	}
+
 	// compare attributes, versioned attributes
 	attributes, versionedAttributes, err := diffComponentObjectsAttributes(currentObj, newObj)
 	if err != nil {
@@ -443,6 +467,14 @@ func diffComponentObjectsAttributes(currentObj, changeObj *serverservice.ServerC
 
 	if len(attributeObjChanges) > 0 {
 		attributes = changeObj.Attributes
+	}
+
+	// For debugging dump differ data
+	if os.Getenv(model.EnvVarDumpDiffers) == "true" {
+		objChangesf := currentObj.ServerUUID.String() + ".attributes.diff"
+
+		// nolint:gomnd // file permissions are clearer in this form.
+		_ = os.WriteFile(objChangesf, []byte(litter.Sdump(attributeObjChanges)), 0o600)
 	}
 
 	// compare versioned attributes
@@ -499,6 +531,14 @@ func diffVersionedAttributes(currentObjs, newObjs []serverservice.VersionedAttri
 	}
 
 	if len(changes) > 0 {
+		// For debugging dump differ data
+		if os.Getenv(model.EnvVarDumpDiffers) == "true" {
+			objChangesf := currentObj.Namespace + ".versioned_attributes.diff"
+
+			// nolint:gomnd // file permissions are clearer in this form.
+			_ = os.WriteFile(objChangesf, []byte(litter.Sdump(objChangesf)), 0o600)
+		}
+
 		return &newObjs[0], err
 	}
 

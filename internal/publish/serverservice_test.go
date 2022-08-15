@@ -352,6 +352,9 @@ func Test_ServerService_RegisterChanges_ObjectsEqual(t *testing.T) {
 }
 
 func Test_ServerService_RegisterChanges_ObjectsUpdated(t *testing.T) {
+	// comment left here for future reference
+	//
+	// os.Setenv(model.EnvVarDumpDiffers, "true")
 	serverID, _ := uuid.Parse(fixtures.TestserverID_Dell_fc167440)
 	newBIOSFWVersion := "2.6.7"
 
@@ -371,6 +374,7 @@ func Test_ServerService_RegisterChanges_ObjectsUpdated(t *testing.T) {
 				}
 
 				w.Header().Set("Content-Type", "application/json")
+
 				_, _ = w.Write(resp)
 			case http.MethodPut:
 				b, err := io.ReadAll(r.Body)
