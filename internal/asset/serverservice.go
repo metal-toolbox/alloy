@@ -43,7 +43,7 @@ const (
 
 var (
 	// batchSize is the default number of assets to retrieve per request
-	batchSize = 5
+	batchSize = 10
 	// ErrServerServiceQuery is returned when a server service query fails.
 	ErrServerServiceQuery = errors.New("serverService query error")
 	// ErrServerServiceObject is returned when a server service object is found to be missing attributes.
@@ -146,7 +146,9 @@ func (s *serverServiceGetter) ListByIDs(ctx context.Context, assetIDs []string) 
 				metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
 			}
 
-			s.logger.Warn(err)
+			s.logger.WithField("serverID", assetID).Warn(err)
+
+			continue
 		}
 
 		// count assets retrieved

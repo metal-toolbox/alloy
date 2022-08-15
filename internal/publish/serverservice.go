@@ -120,13 +120,13 @@ func (h *serverServicePublisher) RunInventoryPublisher(ctx context.Context) erro
 		return err
 	}
 
-	for device := range h.collectorCh {
+	for asset := range h.collectorCh {
 		// context canceled
 		if ctx.Err() != nil {
 			break
 		}
 
-		if device == nil {
+		if asset == nil || asset.Device == nil {
 			continue
 		}
 
@@ -136,7 +136,7 @@ func (h *serverServicePublisher) RunInventoryPublisher(ctx context.Context) erro
 		// count dispatched worker task
 		metrics.TasksDispatched.With(stageLabel).Inc()
 
-		h.publish(ctx, device)
+		h.publish(ctx, asset)
 	}
 
 	return nil
