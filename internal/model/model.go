@@ -13,6 +13,11 @@ const (
 	ConcurrencyDefault = 5
 	ProfilingEndpoint  = "localhost:9091"
 	MetricsEndpoint    = "localhost:9090"
+	// EnvVarDumpFixtures when enabled, will dump data for assets, to be used as fixture data.
+	EnvVarDumpFixtures = "DEBUG_DUMP_FIXTURES"
+	// EnvVarDumpDiffers when enabled, will dump component differ data for debugging
+	// differences identified in component objects in the publish package.
+	EnvVarDumpDiffers = "DEBUG_DUMP_DIFFERS"
 )
 
 var (
