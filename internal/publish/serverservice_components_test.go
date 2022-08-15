@@ -46,6 +46,17 @@ func Test_ToComponentSlice(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			// zero component type IDs, serverIDs
+			for idx := range sc {
+				sc[idx].ComponentTypeID = ""
+				sc[idx].ServerUUID = uuid.Nil
+			}
+
+			for idx := range tc.expected {
+				tc.expected[idx].ComponentTypeID = ""
+				tc.expected[idx].ServerUUID = uuid.Nil
+			}
+
 			//
 			// left commented out here for future reference
 			//

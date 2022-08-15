@@ -89,6 +89,7 @@ func (h *serverServicePublisher) toComponentSlice(serverID uuid.UUID, device *mo
 	componentsTmp = append(componentsTmp, h.cplds(device.CPLDs)...)
 	componentsTmp = append(componentsTmp, h.gpus(device.GPUs)...)
 	componentsTmp = append(componentsTmp, h.storageControllers(device.StorageControllers)...)
+	componentsTmp = append(componentsTmp, h.enclosures(device.Enclosures)...)
 
 	components := []*serverservice.ServerComponent{}
 
@@ -600,6 +601,51 @@ func (h *serverServicePublisher) mainboard(c *common.Mainboard) *serverservice.S
 	)
 
 	return sc
+}
+
+func (h *serverServicePublisher) enclosures(enclosures []*common.Enclosure) []*serverservice.ServerComponent {
+	if enclosures == nil {
+		return nil
+	}
+
+	components := make([]*serverservice.ServerComponent, 0, len(enclosures))
+
+	for idx, c := range enclosures {
+		if strings.TrimSpace(c.Serial) == "" {
+			c.Serial = strconv.Itoa(idx)
+		}
+
+		sc, err := h.newComponent(common.SlugEnclosure, c.Vendor, c.Model, c.Serial, c.ProductName)
+		if err != nil {
+			h.logger.Error(err)
+
+			return nil
+		}
+
+		h.setAttributes(
+			sc,
+			&attributes{
+				ID:          c.ID,
+				Description: c.Description,
+				ProductName: c.ProductName,
+				Oem:         c.Oem,
+				Metadata:    c.Metadata,
+				ChassisType: c.ChassisType,
+			},
+		)
+
+		h.setVersionedAttributes(
+			sc,
+			&versionedAttributes{
+				Firmware: c.Firmware,
+				Status:   c.Status,
+			},
+		)
+
+		components = append(components, sc)
+	}
+
+	return components
 }
 
 func (h *serverServicePublisher) bmc(c *common.BMC) *serverservice.ServerComponent {
