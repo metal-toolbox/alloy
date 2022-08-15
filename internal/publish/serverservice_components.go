@@ -525,9 +525,18 @@ func (h *serverServicePublisher) dimms(dimms []*common.Memory) []*serverservice.
 	components := make([]*serverservice.ServerComponent, 0, len(dimms))
 
 	for idx, c := range dimms {
+		// skip empty dimm slots
+		if c.Vendor == "" && c.ProductName == "" && c.SizeBytes == 0 && c.ClockSpeedHz == 0 {
+			continue
+		}
+
+		// set incrementing serial when one isn't found
 		if strings.TrimSpace(c.Serial) == "" {
 			c.Serial = strconv.Itoa(idx)
 		}
+
+		// trim redundant prefix
+		c.Slot = strings.TrimPrefix(c.Slot, "DIMM.Socket.")
 
 		sc, err := h.newComponent(common.SlugPhysicalMem, c.Vendor, c.Model, c.Serial, c.ProductName)
 		if err != nil {
