@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_OutOfBandInventory(t *testing.T) {
+func Test_OutOfBandInventoryRemote(t *testing.T) {
 	// init alloy app
 	alloy, err := app.New(context.TODO(), app.KindInband, "", model.LogLevelInfo)
 	if err != nil {
