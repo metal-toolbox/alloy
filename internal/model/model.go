@@ -12,7 +12,7 @@ const (
 	LogLevelTrace      = 2
 	ConcurrencyDefault = 5
 	ProfilingEndpoint  = "localhost:9091"
-	MetricsEndpoint    = "localhost:9090"
+	MetricsEndpoint    = "0.0.0.0:9090"
 	// EnvVarDumpFixtures when enabled, will dump data for assets, to be used as fixture data.
 	EnvVarDumpFixtures = "DEBUG_DUMP_FIXTURES"
 	// EnvVarDumpDiffers when enabled, will dump component differ data for debugging
