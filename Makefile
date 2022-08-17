@@ -33,7 +33,7 @@ endif
 ## build docker image and tag as ghcr.io/metal-toolbox/alloy:latest
 build-image: build-linux
 	@echo ">>>> NOTE: You may want to execute 'make build-image-nocache' depending on the Docker stages changed"
-	docker build --rm=true -f Dockerfile.inband -t ${DOCKER_IMAGE}:latest  . \
+	docker build --rm=true -f Dockerfile -t ${DOCKER_IMAGE}:latest  . \
 							 --label org.label-schema.schema-version=1.0 \
 							 --label org.label-schema.vcs-ref=$(GIT_COMMIT_FULL) \
 							 --label org.label-schema.vcs-url=$(REPO)
@@ -53,6 +53,11 @@ build-image-inband-nocache: build-linux
 							 --label org.label-schema.vcs-ref=$(GIT_COMMIT_FULL) \
 							 --label org.label-schema.vcs-url=$(REPO)
 
+## build devel docker image
+build-image-devel: build-image
+	docker tag ${DOCKER_IMAGE}:latest localhost:5000/alloy:latest
+	docker push localhost:5000/alloy:latest
+	kind load docker-image localhost:5000/alloy:latest
 
 ## push docker image
 push-image:
