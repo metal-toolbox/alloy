@@ -183,7 +183,7 @@ func Test_validateRequiredAttribtues(t *testing.T) {
 	cases := []struct {
 		name        string
 		server      *serverservice.Server
-		secret      *serverservice.ServerSecret
+		secret      *serverservice.ServerCredential
 		expectedErr string
 	}{
 		{
@@ -201,38 +201,20 @@ func Test_validateRequiredAttribtues(t *testing.T) {
 		{
 			"server attributes slice empty",
 			&serverservice.Server{},
-			&serverservice.ServerSecret{},
+			&serverservice.ServerCredential{},
 			"server attributes slice empty",
 		},
 		{
-			"server secret value empty",
-			&serverservice.Server{Attributes: []serverservice.Attributes{{Namespace: attributeNamespace}}},
-			&serverservice.ServerSecret{},
-			"BMC secret empty",
+			"BMC password field empty",
+			&serverservice.Server{Attributes: []serverservice.Attributes{{Namespace: bmcAttributeNamespace}}},
+			&serverservice.ServerCredential{Username: "foo", Password: ""},
+			"BMC password field empty",
 		},
 		{
-			"server secret value invalid",
-			&serverservice.Server{Attributes: []serverservice.Attributes{{Namespace: attributeNamespace}}},
-			&serverservice.ServerSecret{Value: "foo"},
-			"invalid BMC secret",
-		},
-		{
-			"server secret value invalid",
-			&serverservice.Server{Attributes: []serverservice.Attributes{{Namespace: attributeNamespace}}},
-			&serverservice.ServerSecret{Value: "foo:"},
-			"invalid BMC secret",
-		},
-		{
-			"server secret value invalid",
-			&serverservice.Server{Attributes: []serverservice.Attributes{{Namespace: attributeNamespace}}},
-			&serverservice.ServerSecret{Value: ":asdasd"},
-			"invalid BMC secret",
-		},
-		{
-			"objects with valid attributes",
-			&serverservice.Server{Attributes: []serverservice.Attributes{{Namespace: attributeNamespace}}},
-			&serverservice.ServerSecret{Value: "user:hunter2"},
-			"",
+			"BMC username field empty",
+			&serverservice.Server{Attributes: []serverservice.Attributes{{Namespace: bmcAttributeNamespace}}},
+			&serverservice.ServerCredential{Username: "", Password: "123"},
+			"BMC username field empty",
 		},
 	}
 
@@ -253,7 +235,7 @@ func Test_toAsset(t *testing.T) {
 	cases := []struct {
 		name          string
 		server        *serverservice.Server
-		secret        *serverservice.ServerSecret
+		secret        *serverservice.ServerCredential
 		expectedAsset *model.Asset
 		expectedErr   string
 	}{
@@ -266,39 +248,39 @@ func Test_toAsset(t *testing.T) {
 					},
 				},
 			},
-			&serverservice.ServerSecret{Value: "user:hunter2"},
+			&serverservice.ServerCredential{Username: "foo", Password: "bar"},
 			nil,
-			"expected server attributes, got none",
+			"expected server attributes with BMC address, got none",
 		},
 		{
 			"Attributes missing BMC IP Address raises error",
 			&serverservice.Server{
 				Attributes: []serverservice.Attributes{
 					{
-						Namespace: attributeNamespace,
-						Data:      []byte(`{"foo": "bar"}`),
+						Namespace: bmcAttributeNamespace,
+						Data:      []byte(`{"namespace":"foo"}`),
 					},
 				},
 			},
-			&serverservice.ServerSecret{Value: "user:hunter2"},
+			&serverservice.ServerCredential{Username: "user", Password: "hunter2"},
 			nil,
-			"expected attribute empty: BMCIPAddress",
+			"expected BMC address attribute empty",
 		},
 		{
 			"Valid server, secret objects returns *model.Asset object",
 			&serverservice.Server{
 				Attributes: []serverservice.Attributes{
 					{
-						Namespace: attributeNamespace,
-						Data:      []byte(`{"BMCIPAddress": "127.0.0.1", "Vendor": "foo", "Model": "bar"}`),
+						Namespace: bmcAttributeNamespace,
+						Data:      []byte(`{"address":"127.0.0.1"}`),
 					},
 				},
 			},
-			&serverservice.ServerSecret{Value: "user:hunter2"},
+			&serverservice.ServerCredential{Username: "user", Password: "hunter2"},
 			&model.Asset{
 				ID:          "00000000-0000-0000-0000-000000000000",
-				Vendor:      "foo",
-				Model:       "bar",
+				Vendor:      "",
+				Model:       "",
 				Facility:    "",
 				BMCUsername: "user",
 				BMCPassword: "hunter2",
