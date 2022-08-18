@@ -3,7 +3,9 @@ package cmd
 import (
 	"flag"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/metal-toolbox/alloy/internal/app"
@@ -199,7 +201,23 @@ func (c *outOfBandCmd) collectAtIntervals(ctx context.Context, alloy *app.App, i
 		return errors.Wrap(errOutOfBandCollectInterval, "minimum collect interval is 1m")
 	}
 
+	signalCh := make(chan os.Signal, 1)
+
+	// register for SIGHUP
+	signal.Notify(signalCh, syscall.SIGHUP)
+
 	alloy.Logger.Info("inventory collection scheduled at interval: " + interval)
+
+	collectFunc := func() {
+		// set active flag to indicate the collector is currently active
+		c.active = true
+		defer func() { c.active = false }()
+
+		err := c.collect(ctx, alloy)
+		if err != nil {
+			alloy.Logger.Warn(err)
+		}
+	}
 
 Loop:
 	for {
@@ -209,16 +227,15 @@ Loop:
 				continue
 			}
 
-			go func() {
-				// set active flag to indicate the collector is currently active
-				c.active = true
-				defer func() { c.active = false }()
+			collectFunc()
+		case <-signalCh:
+			if c.active {
+				continue
+			}
 
-				err := c.collect(ctx, alloy)
-				if err != nil {
-					alloy.Logger.Warn(err)
-				}
-			}()
+			alloy.Logger.Info("SIGHUP received, running oob inventory collection..")
+			collectFunc()
+
 		case <-alloy.TermCh:
 			alloy.Logger.Info("got cancel signal, wait for spawned routines to complete...")
 			break Loop
