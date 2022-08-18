@@ -86,6 +86,8 @@ alloy outofband -asset-source serverService \
                 -collect-interval 1h -trace
 ```
 
+Sending a `SIGHUP` to the alloy process will force the collection to run at that instant.
+
 ###### Collect inventory in band - through the host OS
 
 Inband inventory collection requires various OS based utilites provided by the `ghcr.io/metal-toolbox/alloy-inband` docker image.
