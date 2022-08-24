@@ -317,15 +317,15 @@ func (r *serverServiceClient) AssetByID(ctx context.Context, id string) (*model.
 		return nil, errors.Wrap(ErrServerServiceQuery, err.Error())
 	}
 
-	// get bmc secret
-	secret, _, err := r.client.GetCredential(ctx, sid, serverservice.ServerCredentialTypeBMC)
+	// get bmc credential
+	credential, _, err := r.client.GetCredential(ctx, sid, serverservice.ServerCredentialTypeBMC)
 	if err != nil {
-		span.SetStatus(codes.Error, "GetSecret() failed")
+		span.SetStatus(codes.Error, "GetCredential() failed")
 
 		return nil, errors.Wrap(ErrServerServiceQuery, err.Error())
 	}
 
-	return toAsset(server, secret)
+	return toAsset(server, credential)
 }
 
 // assetByID queries serverService for the hardware asset by ID and returns an Asset object
@@ -364,14 +364,14 @@ func (r *serverServiceClient) AssetsByOffsetLimit(ctx context.Context, offset, l
 
 	// collect bmc secrets and structure as alloy asset
 	for _, server := range serverPtrSlice(servers) {
-		secret, _, err := r.client.GetCredential(ctx, server.UUID, serverservice.ServerCredentialTypeBMC)
+		credential, _, err := r.client.GetCredential(ctx, server.UUID, serverservice.ServerCredentialTypeBMC)
 		if err != nil {
 			span.SetStatus(codes.Error, "GetCredential() failed")
 
 			return nil, 0, errors.Wrap(ErrServerServiceQuery, err.Error())
 		}
 
-		asset, err := toAsset(server, secret)
+		asset, err := toAsset(server, credential)
 		if err != nil {
 			r.logger.Warn(err)
 			continue
@@ -383,7 +383,7 @@ func (r *serverServiceClient) AssetsByOffsetLimit(ctx context.Context, offset, l
 	return assets, int(response.TotalRecordCount), nil
 }
 
-func toAsset(server *serverservice.Server, secret *serverservice.ServerCredential) (*model.Asset, error) {
+func toAsset(server *serverservice.Server, credential *serverservice.ServerCredential) (*model.Asset, error) {
 	// attribute data is unpacked into this map
 	data := map[string]string{}
 
@@ -403,7 +403,7 @@ func toAsset(server *serverservice.Server, secret *serverservice.ServerCredentia
 		return nil, errors.Wrap(ErrServerServiceObject, "expected BMC address attribute empty")
 	}
 
-	if err := validateRequiredAttributes(server, secret); err != nil {
+	if err := validateRequiredAttributes(server, credential); err != nil {
 		return nil, errors.Wrap(ErrServerServiceObject, err.Error())
 	}
 
@@ -412,30 +412,30 @@ func toAsset(server *serverservice.Server, secret *serverservice.ServerCredentia
 		Model:       data[attributeKeyModel],
 		Vendor:      data[attributeKeyVendor],
 		Facility:    server.FacilityCode,
-		BMCUsername: secret.Username,
-		BMCPassword: secret.Password,
+		BMCUsername: credential.Username,
+		BMCPassword: credential.Password,
 		BMCAddress:  net.ParseIP(data[attributeKeyBMCIPAddress]),
 	}, nil
 }
 
-func validateRequiredAttributes(server *serverservice.Server, secret *serverservice.ServerCredential) error {
+func validateRequiredAttributes(server *serverservice.Server, credential *serverservice.ServerCredential) error {
 	if server == nil {
 		return errors.New("server object nil")
 	}
 
-	if secret == nil {
-		return errors.New("server secret object nil")
+	if credential == nil {
+		return errors.New("server credential object nil")
 	}
 
 	if len(server.Attributes) == 0 {
 		return errors.New("server attributes slice empty")
 	}
 
-	if secret.Username == "" {
+	if credential.Username == "" {
 		return errors.New("BMC username field empty")
 	}
 
-	if secret.Password == "" {
+	if credential.Password == "" {
 		return errors.New("BMC password field empty")
 	}
 
