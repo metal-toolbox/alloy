@@ -792,8 +792,8 @@ github.com/zsais/go-gin-prometheus v0.1.0 h1:bkLv1XCdzqVgQ36ScgRi09MA2UC1t3tAB6n
 go.etcd.io/etcd/api/v3 v3.5.0/go.mod h1:cbVKeC6lCfl7j/8jBhAK6aIYO9XOjdptoxU/nLQcPvs=
 go.etcd.io/etcd/client/pkg/v3 v3.5.0/go.mod h1:IJHfcCEKxYu1Os13ZdwCwIUTUVGYTSAM3YSwc9/Ac1g=
 go.etcd.io/etcd/client/v2 v2.305.0/go.mod h1:h9puh54ZTgAKtEbut2oe9P4L/oqKCVB6xsXlzd7alYQ=
-go.hollow.sh/serverservice v0.14.3-0.20220812121809-229659b72348 h1:sSFVCp/pA2CTaF0K6bG68iJ1DKPOqCM/Tz+82VrOkms=
-go.hollow.sh/serverservice v0.14.3-0.20220812121809-229659b72348/go.mod h1:fRgGNgymrryQ2GbcOK2CXUdMmTcQz+qfiM17DbRC9M0=
+go.hollow.sh/serverservice v0.14.2 h1:8NjFDGllMXSTLIGCVcZNRp1sjz0NrRiFWOIMUOWCWdI=
+go.hollow.sh/serverservice v0.14.2/go.mod h1:fRgGNgymrryQ2GbcOK2CXUdMmTcQz+qfiM17DbRC9M0=
 go.hollow.sh/toolbox v0.3.0 h1:yLbEwNCI8bouXM/Lny14Io8z3CGTOrKwDoxjcl/xLko=
 go.hollow.sh/toolbox v0.3.0/go.mod h1:gwADCiEOjbI7nUtdbOJZjor8J0tUwz1wS0tYDoTMu2o=
 go.opencensus.io v0.15.0/go.mod h1:UffZAU+4sDEINUGP/B7UfBBkq4fqLu9zXAX7ke6CHW0=
