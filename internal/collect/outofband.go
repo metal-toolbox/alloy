@@ -385,7 +385,7 @@ func (o *OutOfBandCollector) collect(ctx context.Context, asset *model.Asset) {
 	o.collectorCh <- &model.AssetDevice{ID: asset.ID, Device: device}
 }
 
-//  newBMCClient initializes a bmclib client with the given credentials
+// newBMCClient initializes a bmclib client with the given credentials
 func newBMCClient(ctx context.Context, asset *model.Asset, l *logrus.Logger) *bmclibv2.Client {
 	// attach child span
 	ctx, span := tracer.Start(ctx, "newBMCClient()")

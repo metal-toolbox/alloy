@@ -193,10 +193,10 @@ func Test_validateRequiredAttribtues(t *testing.T) {
 			"server object nil",
 		},
 		{
-			"server secret object nil",
+			"server credential object nil",
 			&serverservice.Server{},
 			nil,
-			"server secret object nil",
+			"server credential object nil",
 		},
 		{
 			"server attributes slice empty",

@@ -52,8 +52,9 @@ func newInbandCmd(rootCmd *rootCmd) *ffcli.Command {
 
 // Exec runs the inband collector command
 //
-// nolint:gocyclo // for now its ideal to have all the initialization in one method,
-//                   this will be refactored if theres going to be further changes.
+// nolint:gocyclo // for now its ideal to have all the initialization in one method.
+//
+//	TODO: refactor into separate methods for further changes.
 func (i *inbandCmd) Exec(ctx context.Context, _ []string) error {
 	if i.rootCmd.pprof {
 		helpers.EnablePProfile()
