@@ -47,7 +47,7 @@ type OutOfBandCollector struct {
 	syncWg           *sync.WaitGroup
 	assetCh          <-chan *model.Asset
 	termCh           <-chan os.Signal
-	collectorCh      chan<- *model.AssetDevice
+	collectorCh      chan<- *model.Asset
 	workers          *workerpool.WorkerPool
 }
 
@@ -88,7 +88,7 @@ func (o *OutOfBandCollector) SetMockGetter(getter interface{}) {
 }
 
 // InventoryLocal implements the Collector interface just to satisfy it.
-func (o *OutOfBandCollector) InventoryLocal(ctx context.Context) (*model.AssetDevice, error) {
+func (o *OutOfBandCollector) InventoryLocal(ctx context.Context) (*model.Asset, error) {
 	return nil, nil
 }
 
@@ -239,7 +239,17 @@ func (o *OutOfBandCollector) collect(ctx context.Context, asset *model.Asset) {
 	ctx, span := tracer.Start(ctx, "collect()")
 	defer span.End()
 
+	// set span attributes
 	span.SetAttributes(attribute.String("bmc.host", asset.BMCAddress.String()))
+
+	if asset.Vendor == "" {
+		asset.Vendor = "unknown"
+	}
+
+	if asset.Model == "" {
+		asset.Model = "unknown"
+	}
+
 	span.SetAttributes(attribute.String("bmc.vendor", asset.Vendor))
 	span.SetAttributes(attribute.String("bmc.model", asset.Model))
 
@@ -273,30 +283,14 @@ func (o *OutOfBandCollector) collect(ctx context.Context, asset *model.Asset) {
 
 		span.SetStatus(codes.Error, " BMC connection open: "+err.Error())
 
-		// count connection open error metric
-		metricBMCQueryErrorCount.With(
-			metrics.AddLabels(
-				stageLabel,
-				prometheus.Labels{
-					"query_kind": "conn_open",
-					"vendor":     asset.Vendor,
-					"model":      asset.Model,
-				}),
-		).Inc()
+		// increment connection open error count metric
+		metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "conn_open")
 
 		return
 	}
 
-	// measure BMC connection open
-	metricBMCQueryTimeSummary.With(
-		metrics.AddLabels(
-			stageLabel,
-			prometheus.Labels{
-				"query_kind": "conn_open",
-				"vendor":     asset.Vendor,
-				"model":      asset.Model,
-			}),
-	).Observe(time.Since(startTS).Seconds())
+	// measure BMC connection open query time
+	metricObserveBMCQueryTimeSummary(asset.Vendor, asset.Model, "conn_open", startTS)
 
 	defer func() {
 		// measure BMC connection close
@@ -311,34 +305,18 @@ func (o *OutOfBandCollector) collect(ctx context.Context, asset *model.Asset) {
 
 			span.SetStatus(codes.Error, " BMC connection close: "+err.Error())
 
-			// count connection close error metric
-			metricBMCQueryErrorCount.With(
-				metrics.AddLabels(
-					stageLabel,
-					prometheus.Labels{
-						"query_kind": "conn_close",
-						"vendor":     asset.Vendor,
-						"model":      asset.Model,
-					}),
-			).Inc()
+			// increment connection close error count metric
+			metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "conn_close")
 		}
 
-		// measure BMC connection close
-		metricBMCQueryTimeSummary.With(
-			metrics.AddLabels(
-				stageLabel,
-				prometheus.Labels{
-					"query_kind": "conn_close",
-					"vendor":     asset.Vendor,
-					"model":      asset.Model,
-				}),
-		).Observe(time.Since(startTS).Seconds())
+		// measure BMC connection open query time
+		metricObserveBMCQueryTimeSummary(asset.Vendor, asset.Model, "conn_close", startTS)
 	}()
 
 	// measure BMC inventory query
 	startTS = time.Now()
 
-	device, err := bmc.Inventory(ctx)
+	inventory, err := bmc.Inventory(ctx)
 	if err != nil {
 		o.logger.WithFields(
 			logrus.Fields{
@@ -348,30 +326,14 @@ func (o *OutOfBandCollector) collect(ctx context.Context, asset *model.Asset) {
 
 		span.SetStatus(codes.Error, " BMC Inventory(): "+err.Error())
 
-		// count inventory query error metric
-		metricBMCQueryErrorCount.With(
-			metrics.AddLabels(
-				stageLabel,
-				prometheus.Labels{
-					"query_kind": "inventory",
-					"vendor":     asset.Vendor,
-					"model":      asset.Model,
-				}),
-		).Inc()
+		// increment inventory query error count metric
+		metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "inventory")
 
 		return
 	}
 
-	// measure BMC inventory query
-	metricBMCQueryTimeSummary.With(
-		metrics.AddLabels(
-			stageLabel,
-			prometheus.Labels{
-				"query_kind": "inventory",
-				"vendor":     asset.Vendor,
-				"model":      asset.Model,
-			}),
-	).Observe(time.Since(startTS).Seconds())
+	// measure BMC inventory query time
+	metricObserveBMCQueryTimeSummary(asset.Vendor, asset.Model, "inventory", startTS)
 
 	// For debugging and to capture test fixtures data.
 	if os.Getenv(model.EnvVarDumpFixtures) == "true" {
@@ -379,10 +341,12 @@ func (o *OutOfBandCollector) collect(ctx context.Context, asset *model.Asset) {
 		o.logger.Info("oob device fixture dumped as file: ", f)
 
 		// nolint:gomnd // file permissions are clearer in this form.
-		_ = os.WriteFile(f, []byte(litter.Sdump(device)), 0o600)
+		_ = os.WriteFile(f, []byte(litter.Sdump(inventory)), 0o600)
 	}
 
-	o.collectorCh <- &model.AssetDevice{ID: asset.ID, Device: device}
+	asset.Inventory = inventory
+
+	o.collectorCh <- asset
 }
 
 // newBMCClient initializes a bmclib client with the given credentials

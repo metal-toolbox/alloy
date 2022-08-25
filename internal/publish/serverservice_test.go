@@ -343,7 +343,7 @@ func Test_ServerService_RegisterChanges_ObjectsEqual(t *testing.T) {
 		client: c,
 	}
 
-	device := &model.AssetDevice{ID: serverID.String(), Device: fixtures.CopyDevice(fixtures.R6515_fc167440)}
+	device := &model.Asset{ID: serverID.String(), Inventory: fixtures.CopyDevice(fixtures.R6515_fc167440)}
 
 	err = serverService.registerChanges(context.TODO(), serverID, device)
 	if err != nil {
@@ -424,14 +424,14 @@ func Test_ServerService_RegisterChanges_ObjectsUpdated(t *testing.T) {
 	}
 
 	// asset device fixture returned by the inventory collector
-	device := &model.AssetDevice{
-		ID:     serverID.String(),
-		Device: fixtures.CopyDevice(fixtures.R6515_fc167440),
+	device := &model.Asset{
+		ID:        serverID.String(),
+		Inventory: fixtures.CopyDevice(fixtures.R6515_fc167440),
 	}
 
 	// bump version on BIOS and BMC components
-	device.BIOS.Firmware.Installed = newBIOSFWVersion
-	device.BMC.Firmware.Installed = newBMCFWVersion
+	device.Inventory.BIOS.Firmware.Installed = newBIOSFWVersion
+	device.Inventory.BMC.Firmware.Installed = newBMCFWVersion
 
 	err = serverService.registerChanges(context.TODO(), serverID, device)
 	if err != nil {
@@ -502,13 +502,13 @@ func Test_ServerService_RegisterChanges_ObjectsAdded(t *testing.T) {
 	}
 
 	// asset device fixture returned by the inventory collector
-	device := &model.AssetDevice{
-		ID:     serverID.String(),
-		Device: fixtures.CopyDevice(fixtures.R6515_fc167440),
+	device := &model.Asset{
+		ID:        serverID.String(),
+		Inventory: fixtures.CopyDevice(fixtures.R6515_fc167440),
 	}
 
-	device.NICs = append(
-		device.NICs,
+	device.Inventory.NICs = append(
+		device.Inventory.NICs,
 		&common.NIC{
 			ID:          "NEW NIC!",
 			Description: "Just added!, totally incompatible",

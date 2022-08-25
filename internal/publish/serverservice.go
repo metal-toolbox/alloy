@@ -2,6 +2,7 @@ package publish
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"reflect"
 	"sort"
@@ -52,7 +53,7 @@ type serverServicePublisher struct {
 	logger      *logrus.Entry
 	config      *model.Config
 	syncWg      *sync.WaitGroup
-	collectorCh <-chan *model.AssetDevice
+	collectorCh <-chan *model.Asset
 	termCh      <-chan os.Signal
 	workers     *workerpool.WorkerPool
 	client      *serverservice.Client
@@ -63,7 +64,7 @@ type serverServicePublisher struct {
 func NewServerServicePublisher(ctx context.Context, alloy *app.App) (Publisher, error) {
 	logger := app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher-serverService"}, alloy.Logger)
 
-	client, err := helpers.NewServerServiceClient(alloy.Config, logger)
+	client, err := helpers.NewServerServiceClient(ctx, alloy.Config, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +86,7 @@ func NewServerServicePublisher(ctx context.Context, alloy *app.App) (Publisher, 
 // PublishOne publishes the given asset to the server service asset store.
 //
 // PublishOne implements the Publisher interface.
-func (h *serverServicePublisher) PublishOne(ctx context.Context, device *model.AssetDevice) error {
+func (h *serverServicePublisher) PublishOne(ctx context.Context, device *model.Asset) error {
 	if device == nil {
 		return nil
 	}
@@ -126,7 +127,7 @@ func (h *serverServicePublisher) RunInventoryPublisher(ctx context.Context) erro
 			break
 		}
 
-		if asset == nil || asset.Device == nil {
+		if asset == nil || asset.Inventory == nil {
 			continue
 		}
 
@@ -143,7 +144,7 @@ func (h *serverServicePublisher) RunInventoryPublisher(ctx context.Context) erro
 }
 
 // publish device information with hollow server service
-func (h *serverServicePublisher) publish(ctx context.Context, device *model.AssetDevice) {
+func (h *serverServicePublisher) publish(ctx context.Context, device *model.Asset) {
 	// attach child span
 	ctx, span := tracer.Start(ctx, "publish()")
 	defer span.End()
@@ -200,13 +201,103 @@ func (h *serverServicePublisher) publish(ctx context.Context, device *model.Asse
 	}
 }
 
+func (h *serverServicePublisher) createUpdateServerAttributes(ctx context.Context, serverID uuid.UUID, asset *model.Asset) error {
+	attributesMap := map[string]string{
+		model.ServerVendorAttributeKey: asset.Inventory.Vendor,
+		model.ServerModelAttributeKey:  asset.Inventory.Model,
+	}
+
+	attributesData, err := json.Marshal(attributesMap)
+	if err != nil {
+		return err
+	}
+
+	// current asset in the inventory has no vendor, model attributes set, create
+	if asset.Vendor == "unknown" && asset.Model == "unknown" {
+		attribute := serverservice.Attributes{
+			Namespace: model.ServerVendorAttributeNS,
+			Data:      attributesData,
+		}
+
+		_, err = h.client.CreateAttributes(ctx, serverID, attribute)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	// attributes are set but don't match, update
+	if asset.Vendor != asset.Inventory.Vendor || asset.Model != asset.Inventory.Model {
+		// update vendor, model attributes
+		_, err = h.client.UpdateAttributes(ctx, serverID, model.ServerVendorAttributeNS, attributesData)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (h *serverServicePublisher) createUpdateServerMetadataAttributes(ctx context.Context, serverID uuid.UUID, asset *model.Asset) error {
+	// no metadata reported for asset
+	if len(asset.Inventory.Metadata) == 0 {
+		return nil
+	}
+
+	metadata, err := json.Marshal(asset.Metadata)
+	if err != nil {
+		return err
+	}
+
+	// current asset metadata has no attributes set, create
+	attribute := serverservice.Attributes{
+		Namespace: model.ServerMetadataAttributeNS,
+		Data:      metadata,
+	}
+
+	if len(asset.Metadata) == 0 {
+		_, err = h.client.CreateAttributes(ctx, serverID, attribute)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	// update when metadata differs
+	if !helpers.MapsAreEqual(asset.Metadata, asset.Inventory.Metadata) {
+		return nil
+	}
+
+	// update vendor, model attributes
+	_, err = h.client.UpdateAttributes(ctx, serverID, model.ServerMetadataAttributeNS, metadata)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // registerChanges compares the current object in serverService with the device data and registers changes.
 //
 // nolint:gocyclo // the method caries out all steps to have device data compared and registered, for now its accepted as cyclomatic.
-func (h *serverServicePublisher) registerChanges(ctx context.Context, serverID uuid.UUID, device *model.AssetDevice) error {
+func (h *serverServicePublisher) registerChanges(ctx context.Context, serverID uuid.UUID, device *model.Asset) error {
 	// attach child span
 	ctx, span := tracer.Start(ctx, "registerChanges()")
 	defer span.End()
+
+	// create/update server vendor, model attributes
+	err := h.createUpdateServerAttributes(ctx, serverID, device)
+	if err != nil {
+		return errors.Wrap(ErrRegisterChanges, err.Error())
+	}
+
+	// create update server inventory metadata  attributes
+	err = h.createUpdateServerMetadataAttributes(ctx, serverID, device)
+	if err != nil {
+		return errors.Wrap(ErrRegisterChanges, err.Error())
+	}
 
 	// convert model.AssetDevice to server service component slice
 	newInventory, err := h.toComponentSlice(serverID, device)

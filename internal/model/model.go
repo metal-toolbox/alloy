@@ -27,26 +27,24 @@ var (
 
 // Asset represents attributes of an asset retrieved from the asset store
 type Asset struct {
-	// ID is the asset ID
+	// Inventory collected from the device
+	Inventory *common.Device
+	// The device metadata attribute from the inventory store
+	Metadata map[string]string
+	// The device ID from the inventory store
 	ID string
-	// Vendor is the asset vendor
+	// The device vendor attribute from the inventory store
 	Vendor string
-	// Model is the asset model
+	// The device model attribute from the inventory store
 	Model string
-	// The datacenter facility
+	// The datacenter facility attribute from the configuration
 	Facility string
-	// Username is the BMC login username
+	// Username is the BMC login username from the inventory store
 	BMCUsername string
-	// Password is the BMC login password
+	// Password is the BMC login password from the inventory store
 	BMCPassword string
-	// Address is the BMC IP address
+	// Address is the BMC IP address from the inventory store
 	BMCAddress net.IP
-}
-
-// AssetDevice embeds a common device along with its Asset ID
-type AssetDevice struct {
-	*common.Device
-	ID string
 }
 
 // Config holds application configuration read from a YAML or set by env variables.
@@ -68,10 +66,14 @@ type Config struct {
 	// ServerService is the Hollow server inventory store
 	// https://github.com/metal-toolbox/hollow-serverservice
 	ServerService struct {
-		Endpoint     string `mapstructure:"endpoint"`
-		AuthToken    string `mapstructure:"auth_token"`
-		FacilityCode string `mapstructure:"facility_code"`
-		Concurrency  int    `mapstructure:"concurrency"`
+		Endpoint             string   `mapstructure:"endpoint"`
+		OidcProviderEndpoint string   `mapstructure:"oidc_provider_endpoint"`
+		AudienceEndpoint     string   `mapstructure:"audience_endpoint"`
+		ClientSecret         string   `mapstructure:"client_secret"`
+		ClientID             string   `mapstructure:"client_id"`
+		ClientScopes         []string `mapstructure:"client_scopes"` // []string{"read:server", ..}
+		FacilityCode         string   `mapstructure:"facility_code"`
+		Concurrency          int      `mapstructure:"concurrency"`
 	} `mapstructure:"serverService"`
 
 	// AssetGetter is where alloy looks up assets information like BMC credentials

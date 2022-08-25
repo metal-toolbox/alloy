@@ -14,7 +14,7 @@ type Collector interface {
 	InventoryRemote(ctx context.Context) error
 
 	// InventoryLocal collects and returns inventory on the local host for the given asset.
-	InventoryLocal(ctx context.Context) (*model.AssetDevice, error)
+	InventoryLocal(ctx context.Context) (*model.Asset, error)
 
 	// SetMockGetter sets a mock device inventory getter to be used for tests.
 	SetMockGetter(getter interface{})
