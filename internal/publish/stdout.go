@@ -20,7 +20,7 @@ const (
 type stdoutPublisher struct {
 	logger      *logrus.Entry
 	syncWg      *sync.WaitGroup
-	collectorCh <-chan *model.AssetDevice
+	collectorCh <-chan *model.Asset
 	termCh      <-chan os.Signal
 }
 
@@ -62,7 +62,7 @@ func (p *stdoutPublisher) RunInventoryPublisher(ctx context.Context) error {
 // PublishOne publishes the device parameter by printing the device object to stdout.
 //
 // PublishOne implements the Publisher interface
-func (p *stdoutPublisher) PublishOne(ctx context.Context, device *model.AssetDevice) error {
+func (p *stdoutPublisher) PublishOne(ctx context.Context, device *model.Asset) error {
 	if device == nil {
 		return nil
 	}

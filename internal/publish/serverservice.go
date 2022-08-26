@@ -2,6 +2,7 @@ package publish
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"reflect"
 	"sort"
@@ -52,7 +53,7 @@ type serverServicePublisher struct {
 	logger      *logrus.Entry
 	config      *model.Config
 	syncWg      *sync.WaitGroup
-	collectorCh <-chan *model.AssetDevice
+	collectorCh <-chan *model.Asset
 	termCh      <-chan os.Signal
 	workers     *workerpool.WorkerPool
 	client      *serverservice.Client
@@ -85,7 +86,7 @@ func NewServerServicePublisher(ctx context.Context, alloy *app.App) (Publisher, 
 // PublishOne publishes the given asset to the server service asset store.
 //
 // PublishOne implements the Publisher interface.
-func (h *serverServicePublisher) PublishOne(ctx context.Context, device *model.AssetDevice) error {
+func (h *serverServicePublisher) PublishOne(ctx context.Context, device *model.Asset) error {
 	if device == nil {
 		return nil
 	}
@@ -126,7 +127,7 @@ func (h *serverServicePublisher) RunInventoryPublisher(ctx context.Context) erro
 			break
 		}
 
-		if asset == nil || asset.Device == nil {
+		if asset == nil || asset.Inventory == nil {
 			continue
 		}
 
@@ -143,7 +144,7 @@ func (h *serverServicePublisher) RunInventoryPublisher(ctx context.Context) erro
 }
 
 // publish device information with hollow server service
-func (h *serverServicePublisher) publish(ctx context.Context, device *model.AssetDevice) {
+func (h *serverServicePublisher) publish(ctx context.Context, device *model.Asset) {
 	// attach child span
 	ctx, span := tracer.Start(ctx, "publish()")
 	defer span.End()
@@ -310,7 +311,7 @@ func (h *serverServicePublisher) createUpdateServerMetadataAttributes(ctx contex
 // createUpdateServerComponents compares the current object in serverService with the device data and creates/updates server component data.
 //
 // nolint:gocyclo // the method caries out all steps to have device data compared and registered, for now its accepted as cyclomatic.
-func (h *serverServicePublisher) registerChanges(ctx context.Context, serverID uuid.UUID, device *model.AssetDevice) error {
+func (h *serverServicePublisher) createUpdateServerComponents(ctx context.Context, serverID uuid.UUID, device *model.Asset) error {
 	// attach child span
 	ctx, span := tracer.Start(ctx, "registerChanges()")
 	defer span.End()
