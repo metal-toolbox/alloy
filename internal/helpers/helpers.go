@@ -127,3 +127,22 @@ func newServerserviceClientWithOAuthOtel(ctx context.Context, cfg *model.Config,
 		retryableClient.StandardClient(),
 	)
 }
+
+func MapsAreEqual(currentMap, newMap map[string]string) bool {
+	if len(currentMap) != len(newMap) {
+		return false
+	}
+
+	for k, currVal := range currentMap {
+		newVal, keyExists := newMap[k]
+		if !keyExists {
+			return false
+		}
+
+		if newVal != currVal {
+			return false
+		}
+	}
+
+	return true
+}
