@@ -313,7 +313,7 @@ func (h *serverServicePublisher) createUpdateServerMetadataAttributes(ctx contex
 // nolint:gocyclo // the method caries out all steps to have device data compared and registered, for now its accepted as cyclomatic.
 func (h *serverServicePublisher) createUpdateServerComponents(ctx context.Context, serverID uuid.UUID, device *model.Asset) error {
 	// attach child span
-	ctx, span := tracer.Start(ctx, "registerChanges()")
+	ctx, span := tracer.Start(ctx, "createUpdateServerComponents()")
 	defer span.End()
 
 	// convert model.AssetDevice to server service component slice
