@@ -1,6 +1,9 @@
 package collect
 
 import (
+	"time"
+
+	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -34,4 +37,48 @@ func init() {
 		},
 		[]string{"stage", "query_kind", "model", "vendor"},
 	)
+}
+
+// collect BMC query count error if the BMC vendor, model attributes are available
+func metricIncrementBMCQueryErrorCount(assetVendor, assetModel, queryKind string) {
+	if assetModel == "" {
+		assetModel = "unknown"
+	}
+
+	if assetVendor == "" {
+		assetVendor = "unknown"
+	}
+
+	// count connection open error metric
+	metricBMCQueryErrorCount.With(
+		metrics.AddLabels(
+			stageLabel,
+			prometheus.Labels{
+				"query_kind": queryKind,
+				"vendor":     assetVendor,
+				"model":      assetModel,
+			}),
+	).Inc()
+}
+
+// collect BMC query time metrics
+func metricObserveBMCQueryTimeSummary(assetVendor, assetModel, queryKind string, startTS time.Time) {
+	if assetModel == "" {
+		assetModel = "unknown"
+	}
+
+	if assetVendor == "" {
+		assetVendor = "unknown"
+	}
+
+	// measure BMC query time from the given startTS
+	metricBMCQueryTimeSummary.With(
+		metrics.AddLabels(
+			stageLabel,
+			prometheus.Labels{
+				"query_kind": queryKind,
+				"vendor":     assetVendor,
+				"model":      assetModel,
+			}),
+	).Observe(time.Since(startTS).Seconds())
 }
