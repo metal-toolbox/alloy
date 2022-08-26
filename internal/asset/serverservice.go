@@ -32,13 +32,9 @@ const (
 
 	// server service attribute to look up the BMC IP Address in
 	bmcAttributeNamespace = "sh.hollow.bmc_info"
-	// server BMC address attribute key
-	attributeKeyBMCIPAddress = "address"
 
-	// server model attribute key
-	attributeKeyModel = "Model"
-	// server vendor attribute key
-	attributeKeyVendor = "Vendor"
+	// server server service BMC address attribute key found under the bmcAttributeNamespace
+	bmcIPAddressAttributeKey = "address"
 )
 
 var (
@@ -79,17 +75,9 @@ type serverServiceRequestor interface {
 func NewServerServiceGetter(ctx context.Context, alloy *app.App) (Getter, error) {
 	logger := alloy.Logger.WithField("component", "getter-serverService")
 
-	client, err := helpers.NewServerServiceClient(alloy.Config, logger)
+	client, err := helpers.NewServerServiceClient(ctx, alloy.Config, logger)
 	if err != nil {
 		return nil, err
-	}
-
-	if facility := os.Getenv("SERVERSERVICE_FACILITY_CODE"); facility != "" {
-		alloy.Config.ServerService.FacilityCode = facility
-	}
-
-	if alloy.Config.ServerService.FacilityCode == "" {
-		return nil, errors.Wrap(model.ErrConfig, "expected serverService facility code, got empty")
 	}
 
 	s := &serverServiceGetter{
@@ -384,38 +372,103 @@ func (r *serverServiceClient) AssetsByOffsetLimit(ctx context.Context, offset, l
 }
 
 func toAsset(server *serverservice.Server, credential *serverservice.ServerCredential) (*model.Asset, error) {
-	// attribute data is unpacked into this map
-	data := map[string]string{}
-
-	for _, attribute := range server.Attributes {
-		if attribute.Namespace == bmcAttributeNamespace {
-			if err := json.Unmarshal(attribute.Data, &data); err != nil {
-				return nil, errors.Wrap(ErrServerServiceObject, "bmc address attribute: "+err.Error())
-			}
-		}
-	}
-
-	if len(data) == 0 {
-		return nil, errors.Wrap(ErrServerServiceObject, "expected server attributes with BMC address, got none")
-	}
-
-	if data[attributeKeyBMCIPAddress] == "" {
-		return nil, errors.Wrap(ErrServerServiceObject, "expected BMC address attribute empty")
-	}
-
 	if err := validateRequiredAttributes(server, credential); err != nil {
+		return nil, errors.Wrap(ErrServerServiceObject, err.Error())
+	}
+
+	serverAttributes, err := serverAttributes(server.Attributes)
+	if err != nil {
+		return nil, errors.Wrap(ErrServerServiceObject, err.Error())
+	}
+
+	serverMetadataAttributes, err := serverMetadataAttributes(server.Attributes)
+	if err != nil {
 		return nil, errors.Wrap(ErrServerServiceObject, err.Error())
 	}
 
 	return &model.Asset{
 		ID:          server.UUID.String(),
-		Model:       data[attributeKeyModel],
-		Vendor:      data[attributeKeyVendor],
+		Serial:      serverAttributes[model.ServerSerialAttributeKey],
+		Model:       serverAttributes[model.ServerModelAttributeKey],
+		Vendor:      serverAttributes[model.ServerVendorAttributeKey],
+		Metadata:    serverMetadataAttributes,
 		Facility:    server.FacilityCode,
 		BMCUsername: credential.Username,
 		BMCPassword: credential.Password,
-		BMCAddress:  net.ParseIP(data[attributeKeyBMCIPAddress]),
+		BMCAddress:  net.ParseIP(serverAttributes[bmcIPAddressAttributeKey]),
 	}, nil
+}
+
+// serverMetadataAttributes parses the server service server metdata attribute data
+// and returns a map containing the server metadata
+func serverMetadataAttributes(attributes []serverservice.Attributes) (map[string]string, error) {
+	metadata := map[string]string{}
+
+	for _, attribute := range attributes {
+		// bmc address attribute
+		if attribute.Namespace == model.ServerMetadataAttributeNS {
+			if err := json.Unmarshal(attribute.Data, &metadata); err != nil {
+				return nil, errors.Wrap(ErrServerServiceObject, "server metadata attribute: "+err.Error())
+			}
+		}
+	}
+
+	return metadata, nil
+}
+
+// serverAttributes parses the server service attribute data
+// and returns a map containing the bmc address, server serial, vendor, model attributes.
+func serverAttributes(attributes []serverservice.Attributes) (map[string]string, error) {
+	// returned server attributes map
+	sAttributes := map[string]string{}
+
+	// bmc IP Address attribute data is unpacked into this map
+	bmcData := map[string]string{}
+
+	// server vendor, model attribute data is unpacked into this map
+	serverVendorData := map[string]string{}
+
+	for _, attribute := range attributes {
+		// bmc address attribute
+		if attribute.Namespace == bmcAttributeNamespace {
+			if err := json.Unmarshal(attribute.Data, &bmcData); err != nil {
+				return nil, errors.Wrap(ErrServerServiceObject, "bmc address attribute: "+err.Error())
+			}
+		}
+
+		// server vendor, model attributes
+		if attribute.Namespace == model.ServerVendorAttributeNS {
+			if err := json.Unmarshal(attribute.Data, &serverVendorData); err != nil {
+				return nil, errors.Wrap(ErrServerServiceObject, "server vendor attribute: "+err.Error())
+			}
+		}
+	}
+
+	if len(bmcData) == 0 {
+		return nil, errors.New("expected server attributes with BMC address, got none")
+	}
+
+	// set bmc address attribute
+	sAttributes[bmcIPAddressAttributeKey] = bmcData[bmcIPAddressAttributeKey]
+	if sAttributes[bmcIPAddressAttributeKey] == "" {
+		return nil, errors.New("expected BMC address attribute empty")
+	}
+
+	// set server vendor, model attributes in the returned map
+	serverAttributes := []string{
+		model.ServerSerialAttributeKey,
+		model.ServerModelAttributeKey,
+		model.ServerVendorAttributeKey,
+	}
+
+	for _, key := range serverAttributes {
+		sAttributes[key] = serverVendorData[key]
+		if sAttributes[key] == "" {
+			sAttributes[key] = "unknown"
+		}
+	}
+
+	return sAttributes, nil
 }
 
 func validateRequiredAttributes(server *serverservice.Server, credential *serverservice.ServerCredential) error {
