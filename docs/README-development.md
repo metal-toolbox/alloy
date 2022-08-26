@@ -63,4 +63,4 @@ fc167440-18d3-4455-b5ee-1c8e347b3f36.current.components.fixture # the current co
 fc167440-18d3-4455-b5ee-1c8e347b3f36.new.components.fixture     # the newer component data based on the device object from ironlib/bmclib
  ```
 
- Set `DEBUG_DUMP_DIFFERS=true` to have object differ changelogs from the `publish.registerChanges()` method dumped.
+ Set `DEBUG_DUMP_DIFFERS=true` to have object differ changelogs from the `publish.CreateUpdateServerComponents()` method dumped.

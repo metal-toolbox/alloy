@@ -300,7 +300,7 @@ func newVersionAttributes(t *testing.T, data json.RawMessage, value string) *ver
 	return va
 }
 
-func Test_ServerService_RegisterChanges_ObjectsEqual(t *testing.T) {
+func Test_ServerService_CreateUpdateServerComponents_ObjectsEqual(t *testing.T) {
 	serverID, _ := uuid.Parse(fixtures.TestserverID_Dell_fc167440)
 	handler := http.NewServeMux()
 	// get components query
@@ -343,15 +343,15 @@ func Test_ServerService_RegisterChanges_ObjectsEqual(t *testing.T) {
 		client: c,
 	}
 
-	device := &model.AssetDevice{ID: serverID.String(), Device: fixtures.CopyDevice(fixtures.R6515_fc167440)}
+	device := &model.Asset{ID: serverID.String(), Inventory: fixtures.CopyDevice(fixtures.R6515_fc167440)}
 
-	err = serverService.registerChanges(context.TODO(), serverID, device)
+	err = serverService.createUpdateServerComponents(context.TODO(), serverID, device)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
-func Test_ServerService_RegisterChanges_ObjectsUpdated(t *testing.T) {
+func Test_ServerService_CreateUpdateServerComponents_ObjectsUpdated(t *testing.T) {
 	// comment left here for future reference
 	//
 	// os.Setenv(model.EnvVarDumpDiffers, "true")
@@ -424,22 +424,22 @@ func Test_ServerService_RegisterChanges_ObjectsUpdated(t *testing.T) {
 	}
 
 	// asset device fixture returned by the inventory collector
-	device := &model.AssetDevice{
-		ID:     serverID.String(),
-		Device: fixtures.CopyDevice(fixtures.R6515_fc167440),
+	device := &model.Asset{
+		ID:        serverID.String(),
+		Inventory: fixtures.CopyDevice(fixtures.R6515_fc167440),
 	}
 
 	// bump version on BIOS and BMC components
-	device.BIOS.Firmware.Installed = newBIOSFWVersion
-	device.BMC.Firmware.Installed = newBMCFWVersion
+	device.Inventory.BIOS.Firmware.Installed = newBIOSFWVersion
+	device.Inventory.BMC.Firmware.Installed = newBMCFWVersion
 
-	err = serverService.registerChanges(context.TODO(), serverID, device)
+	err = serverService.createUpdateServerComponents(context.TODO(), serverID, device)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
-func Test_ServerService_RegisterChanges_ObjectsAdded(t *testing.T) {
+func Test_ServerService_CreateUpdateServerComponents_ObjectsAdded(t *testing.T) {
 	serverID, _ := uuid.Parse(fixtures.TestserverID_Dell_fc167440)
 
 	fixtureNICSerial := "c00l"
