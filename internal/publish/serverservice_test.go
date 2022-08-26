@@ -520,7 +520,353 @@ func Test_ServerService_RegisterChanges_ObjectsAdded(t *testing.T) {
 		},
 	)
 
-	err = serverService.registerChanges(context.TODO(), serverID, device)
+	err = serverService.createUpdateServerComponents(context.TODO(), serverID, device)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func Test_ServerService_CreateUpdateServerAttributes_Create(t *testing.T) {
+	// test: createUpdateServerAttributes creates server attributes when its undefined in server service
+	serverID, _ := uuid.Parse(fixtures.TestserverID_Dell_fc167440)
+
+	// the device with model, vendor, serial as unknown in server service
+	// with inventory from the device with the actual model, vendor, serial attributes
+	device := &model.Asset{
+		Model:  "unknown",
+		Vendor: "unknown",
+		Serial: "unknown",
+		ID:     serverID.String(),
+		Inventory: &common.Device{
+			Common: common.Common{
+				Model:  "foobar",
+				Vendor: "test",
+				Serial: "lala",
+			},
+		},
+	}
+
+	handler := http.NewServeMux()
+	// get components query
+	handler.HandleFunc(
+		fmt.Sprintf("/api/v1/servers/%s/attributes", serverID.String()),
+		func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodPost:
+				// the response here is
+				resp, err := os.ReadFile("../fixtures/serverservice_server_fc167440.json")
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				b, err := io.ReadAll(r.Body)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				// unpack attributes posted by method
+				attributes := &serverservice.Attributes{}
+				if err = json.Unmarshal(b, attributes); err != nil {
+					t.Fatal(err)
+				}
+
+				// asset NS is as expected
+				assert.Equal(t, model.ServerVendorAttributeNS, attributes.Namespace)
+
+				// unpack attributes data
+				data := map[string]string{}
+				if err = json.Unmarshal(attributes.Data, &data); err != nil {
+					t.Fatal(err)
+				}
+
+				// asset attributes data matches device attributes
+				assert.Equal(t, device.Inventory.Model, data[model.ServerModelAttributeKey])
+				assert.Equal(t, device.Inventory.Serial, data[model.ServerSerialAttributeKey])
+				assert.Equal(t, device.Inventory.Vendor, data[model.ServerVendorAttributeKey])
+
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write(resp)
+			default:
+				t.Fatal("expected POST request, got: " + r.Method)
+			}
+		},
+	)
+
+	mock := httptest.NewServer(handler)
+	cr := retryablehttp.NewClient()
+	// nil logger to prevent debug logs
+	cr.Logger = nil
+
+	c, err := serverservice.NewClientWithToken(
+		"hunter2",
+		mock.URL,
+		cr.StandardClient(),
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	serverService := serverServicePublisher{
+		logger: app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher"}, logrus.New()),
+		slugs:  fixtures.ServerServiceSlugMap(),
+		client: c,
+	}
+
+	err = serverService.createUpdateServerAttributes(context.TODO(), serverID, device)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func Test_ServerService_CreateUpdateServerAttributes_Update(t *testing.T) {
+	// test: createUpdateServerAttributes updates server attributes when either of them are missing
+	serverID, _ := uuid.Parse(fixtures.TestserverID_Dell_fc167440)
+
+	// the device with model, vendor, serial as unknown in server service
+	// with inventory from the device with the actual model, vendor, serial attributes
+	device := &model.Asset{
+		Model:  "unknown",
+		Vendor: "test",
+		Serial: "unknown",
+		ID:     serverID.String(),
+		Inventory: &common.Device{
+			Common: common.Common{
+				Model:  "foobar",
+				Vendor: "test",
+				Serial: "lala",
+			},
+		},
+	}
+
+	handler := http.NewServeMux()
+	// get components query
+	handler.HandleFunc(
+		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), model.ServerVendorAttributeNS),
+		func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodPut:
+				// the response here is
+				resp, err := os.ReadFile("../fixtures/serverservice_server_fc167440.json")
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				b, err := io.ReadAll(r.Body)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				// unpack attributes posted by method
+				attributes := &serverservice.Attributes{}
+				if err = json.Unmarshal(b, attributes); err != nil {
+					t.Fatal(err)
+				}
+
+				// unpack attributes data
+				data := map[string]string{}
+				if err = json.Unmarshal(attributes.Data, &data); err != nil {
+					t.Fatal(err)
+				}
+
+				// asset attributes data matches device attributes
+				assert.Equal(t, device.Inventory.Model, data[model.ServerModelAttributeKey])
+				assert.Equal(t, device.Inventory.Serial, data[model.ServerSerialAttributeKey])
+				assert.Equal(t, device.Inventory.Vendor, data[model.ServerVendorAttributeKey])
+
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write(resp)
+			default:
+				t.Fatal("expected PUT request, got: " + r.Method)
+			}
+		},
+	)
+
+	mock := httptest.NewServer(handler)
+	cr := retryablehttp.NewClient()
+	// nil logger to prevent debug logs
+	cr.Logger = nil
+
+	c, err := serverservice.NewClientWithToken(
+		"hunter2",
+		mock.URL,
+		cr.StandardClient(),
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	serverService := serverServicePublisher{
+		logger: app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher"}, logrus.New()),
+		slugs:  fixtures.ServerServiceSlugMap(),
+		client: c,
+	}
+
+	err = serverService.createUpdateServerAttributes(context.TODO(), serverID, device)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func Test_ServerService_CreateUpdateServerMetadataAttributes_Create(t *testing.T) {
+	// test: createUpdateServerMetadataAttributes creats server metadata attributes when its undefined in server service.
+	serverID, _ := uuid.Parse(fixtures.TestserverID_Dell_fc167440)
+
+	device := &model.Asset{
+		Metadata: map[string]string{},
+		Inventory: &common.Device{
+			Common: common.Common{
+				Metadata: map[string]string{"foo": "bar"},
+			},
+		},
+	}
+
+	handler := http.NewServeMux()
+	// get components query
+	handler.HandleFunc(
+		fmt.Sprintf("/api/v1/servers/%s/attributes", serverID.String()),
+		func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodPost:
+				// the response here is
+				resp, err := os.ReadFile("../fixtures/serverservice_server_fc167440.json")
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				b, err := io.ReadAll(r.Body)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				// unpack attributes posted by method
+				attributes := &serverservice.Attributes{}
+				if err = json.Unmarshal(b, attributes); err != nil {
+					t.Fatal(err)
+				}
+
+				// asset NS is as expected
+				assert.Equal(t, model.ServerMetadataAttributeNS, attributes.Namespace)
+
+				// unpack attributes data
+				data := map[string]string{}
+				if err = json.Unmarshal(attributes.Data, &data); err != nil {
+					t.Fatal(err)
+				}
+
+				assert.Equal(t, device.Inventory.Metadata, data)
+
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write(resp)
+			default:
+				t.Fatal("expected POST request, got: " + r.Method)
+			}
+		},
+	)
+
+	mock := httptest.NewServer(handler)
+	cr := retryablehttp.NewClient()
+	// nil logger to prevent debug logs
+	cr.Logger = nil
+
+	c, err := serverservice.NewClientWithToken(
+		"hunter2",
+		mock.URL,
+		cr.StandardClient(),
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	serverService := serverServicePublisher{
+		logger: app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher"}, logrus.New()),
+		slugs:  fixtures.ServerServiceSlugMap(),
+		client: c,
+	}
+
+	err = serverService.createUpdateServerMetadataAttributes(context.TODO(), serverID, device)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func Test_ServerService_CreateUpdateServerMetadataAttributes_Update(t *testing.T) {
+	// test: createUpdateServerMetadataAttributes updates server metadata attributes when it differs.
+	serverID, _ := uuid.Parse(fixtures.TestserverID_Dell_fc167440)
+
+	device := &model.Asset{
+		Metadata: map[string]string{"foo": "bar"},
+		Inventory: &common.Device{
+			Common: common.Common{
+				Metadata: map[string]string{"foo": "bar", "test": "lala"},
+			},
+		},
+	}
+
+	handler := http.NewServeMux()
+	// get components query
+	handler.HandleFunc(
+		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), model.ServerMetadataAttributeNS),
+		func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodPut:
+				// the response here is
+				resp, err := os.ReadFile("../fixtures/serverservice_server_fc167440.json")
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				b, err := io.ReadAll(r.Body)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				// unpack attributes posted by method
+				attributes := &serverservice.Attributes{}
+				if err = json.Unmarshal(b, attributes); err != nil {
+					t.Fatal(err)
+				}
+
+				// unpack attributes data
+				data := map[string]string{}
+				if err = json.Unmarshal(attributes.Data, &data); err != nil {
+					t.Fatal(err)
+				}
+
+				assert.Equal(t, device.Inventory.Metadata, data)
+
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write(resp)
+			default:
+				t.Fatal("expected PUT request, got: " + r.Method)
+			}
+		},
+	)
+
+	mock := httptest.NewServer(handler)
+	cr := retryablehttp.NewClient()
+	// nil logger to prevent debug logs
+	cr.Logger = nil
+
+	c, err := serverservice.NewClientWithToken(
+		"hunter2",
+		mock.URL,
+		cr.StandardClient(),
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	serverService := serverServicePublisher{
+		logger: app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher"}, logrus.New()),
+		slugs:  fixtures.ServerServiceSlugMap(),
+		client: c,
+	}
+
+	err = serverService.createUpdateServerMetadataAttributes(context.TODO(), serverID, device)
 	if err != nil {
 		t.Fatal(err)
 	}
