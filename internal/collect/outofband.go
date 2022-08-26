@@ -47,7 +47,7 @@ type OutOfBandCollector struct {
 	syncWg           *sync.WaitGroup
 	assetCh          <-chan *model.Asset
 	termCh           <-chan os.Signal
-	collectorCh      chan<- *model.AssetDevice
+	collectorCh      chan<- *model.Asset
 	workers          *workerpool.WorkerPool
 }
 
@@ -88,7 +88,7 @@ func (o *OutOfBandCollector) SetMockGetter(getter interface{}) {
 }
 
 // InventoryLocal implements the Collector interface just to satisfy it.
-func (o *OutOfBandCollector) InventoryLocal(ctx context.Context) (*model.AssetDevice, error) {
+func (o *OutOfBandCollector) InventoryLocal(ctx context.Context) (*model.Asset, error) {
 	return nil, nil
 }
 
@@ -379,10 +379,14 @@ func (o *OutOfBandCollector) collect(ctx context.Context, asset *model.Asset) {
 		o.logger.Info("oob device fixture dumped as file: ", f)
 
 		// nolint:gomnd // file permissions are clearer in this form.
-		_ = os.WriteFile(f, []byte(litter.Sdump(device)), 0o600)
+		_ = os.WriteFile(f, []byte(litter.Sdump(inventory)), 0o600)
 	}
 
-	o.collectorCh <- &model.AssetDevice{ID: asset.ID, Device: device}
+	// format the device inventory vendor attribute so its consistent
+	inventory.Vendor = common.FormatVendorName(inventory.Vendor)
+	asset.Inventory = inventory
+
+	o.collectorCh <- asset
 }
 
 // newBMCClient initializes a bmclib client with the given credentials
