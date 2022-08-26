@@ -72,24 +72,24 @@ func componentPtrSlice(components serverservice.ServerComponentSlice) []*servers
 }
 
 // toComponentSlice converts an model.AssetDevice object to the server service component slice object
-func (h *serverServicePublisher) toComponentSlice(serverID uuid.UUID, device *model.AssetDevice) ([]*serverservice.ServerComponent, error) {
+func (h *serverServicePublisher) toComponentSlice(serverID uuid.UUID, device *model.Asset) ([]*serverservice.ServerComponent, error) {
 	componentsTmp := []*serverservice.ServerComponent{}
 	componentsTmp = append(componentsTmp,
-		h.bios(device.BIOS),
-		h.bmc(device.BMC),
-		h.mainboard(device.Mainboard),
+		h.bios(device.Inventory.BIOS),
+		h.bmc(device.Inventory.BMC),
+		h.mainboard(device.Inventory.Mainboard),
 	)
 
-	componentsTmp = append(componentsTmp, h.dimms(device.Memory)...)
-	componentsTmp = append(componentsTmp, h.nics(device.NICs)...)
-	componentsTmp = append(componentsTmp, h.drives(device.Drives)...)
-	componentsTmp = append(componentsTmp, h.psus(device.PSUs)...)
-	componentsTmp = append(componentsTmp, h.cpus(device.CPUs)...)
-	componentsTmp = append(componentsTmp, h.tpms(device.TPMs)...)
-	componentsTmp = append(componentsTmp, h.cplds(device.CPLDs)...)
-	componentsTmp = append(componentsTmp, h.gpus(device.GPUs)...)
-	componentsTmp = append(componentsTmp, h.storageControllers(device.StorageControllers)...)
-	componentsTmp = append(componentsTmp, h.enclosures(device.Enclosures)...)
+	componentsTmp = append(componentsTmp, h.dimms(device.Inventory.Memory)...)
+	componentsTmp = append(componentsTmp, h.nics(device.Inventory.NICs)...)
+	componentsTmp = append(componentsTmp, h.drives(device.Inventory.Drives)...)
+	componentsTmp = append(componentsTmp, h.psus(device.Inventory.PSUs)...)
+	componentsTmp = append(componentsTmp, h.cpus(device.Inventory.CPUs)...)
+	componentsTmp = append(componentsTmp, h.tpms(device.Inventory.TPMs)...)
+	componentsTmp = append(componentsTmp, h.cplds(device.Inventory.CPLDs)...)
+	componentsTmp = append(componentsTmp, h.gpus(device.Inventory.GPUs)...)
+	componentsTmp = append(componentsTmp, h.storageControllers(device.Inventory.StorageControllers)...)
+	componentsTmp = append(componentsTmp, h.enclosures(device.Inventory.Enclosures)...)
 
 	components := []*serverservice.ServerComponent{}
 

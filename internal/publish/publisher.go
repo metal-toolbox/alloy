@@ -13,5 +13,5 @@ type Publisher interface {
 	RunInventoryPublisher(ctx context.Context) error
 
 	// PublishOne publishes the given device information to the configured publish target
-	PublishOne(ctx context.Context, device *model.AssetDevice) error
+	PublishOne(ctx context.Context, device *model.Asset) error
 }

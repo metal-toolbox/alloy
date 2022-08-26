@@ -502,13 +502,13 @@ func Test_ServerService_RegisterChanges_ObjectsAdded(t *testing.T) {
 	}
 
 	// asset device fixture returned by the inventory collector
-	device := &model.AssetDevice{
-		ID:     serverID.String(),
-		Device: fixtures.CopyDevice(fixtures.R6515_fc167440),
+	device := &model.Asset{
+		ID:        serverID.String(),
+		Inventory: fixtures.CopyDevice(fixtures.R6515_fc167440),
 	}
 
-	device.NICs = append(
-		device.NICs,
+	device.Inventory.NICs = append(
+		device.Inventory.NICs,
 		&common.NIC{
 			ID:          "NEW NIC!",
 			Description: "Just added!, totally incompatible",
