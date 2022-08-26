@@ -15,7 +15,7 @@ import (
 type InbandCollector struct {
 	deviceManager ironlibm.DeviceManager
 	logger        *logrus.Entry
-	collectorCh   chan<- *model.AssetDevice
+	collectorCh   chan<- *model.Asset
 	termCh        <-chan os.Signal
 	mock          bool
 }
@@ -37,7 +37,7 @@ func (i *InbandCollector) SetMockGetter(getter interface{}) {
 }
 
 // InventoryLocal implements the Collector interface to collect inventory locally (inband).
-func (i *InbandCollector) InventoryLocal(ctx context.Context) (*model.AssetDevice, error) {
+func (i *InbandCollector) InventoryLocal(ctx context.Context) (*model.Asset, error) {
 	if !i.mock {
 		var err error
 
@@ -52,7 +52,7 @@ func (i *InbandCollector) InventoryLocal(ctx context.Context) (*model.AssetDevic
 		return nil, err
 	}
 
-	return &model.AssetDevice{Device: device}, nil
+	return &model.Asset{Inventory: device}, nil
 }
 
 // InventoryRemote implements is present here to satisfy the Collector interface.

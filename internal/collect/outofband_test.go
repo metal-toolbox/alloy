@@ -33,7 +33,7 @@ func Test_OutOfBandInventoryRemote(t *testing.T) {
 
 	// mock assets the collector will collect OOB inventory for
 	mockAssets := fixtures.MockAssets
-	got := []*model.AssetDevice{}
+	got := []*model.Asset{}
 
 	// background routine to get assets from the store for which inventory is collected
 	// mocks an AssetGetter
