@@ -68,10 +68,14 @@ type Config struct {
 	// ServerService is the Hollow server inventory store
 	// https://github.com/metal-toolbox/hollow-serverservice
 	ServerService struct {
-		Endpoint     string `mapstructure:"endpoint"`
-		AuthToken    string `mapstructure:"auth_token"`
-		FacilityCode string `mapstructure:"facility_code"`
-		Concurrency  int    `mapstructure:"concurrency"`
+		Endpoint             string   `mapstructure:"endpoint"`
+		OidcProviderEndpoint string   `mapstructure:"oidc_provider_endpoint"`
+		AudienceEndpoint     string   `mapstructure:"audience_endpoint"`
+		ClientSecret         string   `mapstructure:"client_secret"`
+		ClientID             string   `mapstructure:"client_id"`
+		ClientScopes         []string `mapstructure:"client_scopes"` // []string{"read:server", ..}
+		FacilityCode         string   `mapstructure:"facility_code"`
+		Concurrency          int      `mapstructure:"concurrency"`
 	} `mapstructure:"serverService"`
 
 	// AssetGetter is where alloy looks up assets information like BMC credentials
