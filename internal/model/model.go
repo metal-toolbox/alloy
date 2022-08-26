@@ -27,26 +27,26 @@ var (
 
 // Asset represents attributes of an asset retrieved from the asset store
 type Asset struct {
-	// ID is the asset ID
+	// Inventory collected from the device
+	Inventory *common.Device
+	// The device metadata attribute
+	Metadata map[string]string
+	// The device ID from the inventory store
 	ID string
-	// Vendor is the asset vendor
+	// The device vendor attribute
 	Vendor string
-	// Model is the asset model
+	// The device model attribute
 	Model string
-	// The datacenter facility
+	// The device serial attribute
+	Serial string
+	// The datacenter facility attribute from the configuration
 	Facility string
-	// Username is the BMC login username
+	// Username is the BMC login username from the inventory store
 	BMCUsername string
-	// Password is the BMC login password
+	// Password is the BMC login password from the inventory store
 	BMCPassword string
-	// Address is the BMC IP address
+	// Address is the BMC IP address from the inventory store
 	BMCAddress net.IP
-}
-
-// AssetDevice embeds a common device along with its Asset ID
-type AssetDevice struct {
-	*common.Device
-	ID string
 }
 
 // Config holds application configuration read from a YAML or set by env variables.
