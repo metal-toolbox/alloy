@@ -19,22 +19,22 @@ func Test_ToComponentSlice(t *testing.T) {
 
 	testcases := []struct {
 		name     string
-		device   *model.AssetDevice
+		device   *model.Asset
 		expected []*serverservice.ServerComponent
 	}{
 		{
 			"E3C246D4INL",
-			&model.AssetDevice{Device: fixtures.CopyDevice(fixtures.E3C246D4INL)},
+			&model.Asset{Inventory: fixtures.CopyDevice(fixtures.E3C246D4INL)},
 			componentPtrSlice(fixtures.ServerServiceE3C246D4INLcomponents),
 		},
 		{
 			"R6515_A",
-			&model.AssetDevice{Device: fixtures.CopyDevice(fixtures.R6515_f0c8e4ac)},
+			&model.Asset{Inventory: fixtures.CopyDevice(fixtures.R6515_f0c8e4ac)},
 			componentPtrSlice(fixtures.ServerServiceR6515Components_f0c8e4ac),
 		},
 		{
 			"R6515_B",
-			&model.AssetDevice{Device: fixtures.CopyDevice(fixtures.R6515_fc167440)},
+			&model.Asset{Inventory: fixtures.CopyDevice(fixtures.R6515_fc167440)},
 			componentPtrSlice(fixtures.ServerServiceR6515Components_fc167440),
 		},
 	}
