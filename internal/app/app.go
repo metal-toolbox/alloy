@@ -33,7 +33,7 @@ type App struct {
 	// AssetCh is where the asset getter retrieves assets from the asset store for the inventory collector to consume.
 	AssetCh chan *model.Asset
 	// CollectorCh is where the asset inventory information is written, for the publisher to consume.
-	CollectorCh chan *model.AssetDevice
+	CollectorCh chan *model.Asset
 	// TermCh is the channel to terminate the app based on a signal
 	TermCh chan os.Signal
 	// Sync waitgroup to wait for running go routines on termination.
@@ -61,7 +61,7 @@ func New(ctx context.Context, kind, cfgFile string, loglevel int) (app *App, err
 		AssetGetterPause: helpers.NewPauser(),
 		Config:           cfg,
 		AssetCh:          make(chan *model.Asset),
-		CollectorCh:      make(chan *model.AssetDevice),
+		CollectorCh:      make(chan *model.Asset),
 		TermCh:           make(chan os.Signal),
 		SyncWg:           &sync.WaitGroup{},
 		Logger:           logrus.New(),
@@ -87,7 +87,7 @@ func New(ctx context.Context, kind, cfgFile string, loglevel int) (app *App, err
 // InitAssetCollectorChannels is a helper method to initialize the asset and collector channels.
 func (a *App) InitAssetCollectorChannels() {
 	a.AssetCh = make(chan *model.Asset)
-	a.CollectorCh = make(chan *model.AssetDevice)
+	a.CollectorCh = make(chan *model.Asset)
 }
 
 func configLoad(kind, cfgFile string) (config *model.Config, err error) {

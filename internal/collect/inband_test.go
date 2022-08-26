@@ -26,7 +26,7 @@ func Test_InbandInventory(t *testing.T) {
 	collector := NewInbandCollector(alloy)
 	collector.SetMockGetter(mockIronlib)
 
-	var got *model.AssetDevice
+	var got *model.Asset
 
 	// collect inventory
 	got, err = collector.InventoryLocal(context.TODO())
@@ -34,5 +34,5 @@ func Test_InbandInventory(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, &model.AssetDevice{Device: fixtures.E3C246D4INL}, got)
+	assert.Equal(t, &model.Asset{Inventory: fixtures.E3C246D4INL}, got)
 }
