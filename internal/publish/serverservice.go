@@ -63,7 +63,7 @@ type serverServicePublisher struct {
 func NewServerServicePublisher(ctx context.Context, alloy *app.App) (Publisher, error) {
 	logger := app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher-serverService"}, alloy.Logger)
 
-	client, err := helpers.NewServerServiceClient(alloy.Config, logger)
+	client, err := helpers.NewServerServiceClient(ctx, alloy.Config, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +190,28 @@ func (h *serverServicePublisher) publish(ctx context.Context, device *model.Asse
 		return
 	}
 
-	err = h.registerChanges(ctx, server.UUID, device)
+	// create/update server serial, vendor, model attributes
+	err = h.createUpdateServerAttributes(ctx, server.UUID, device)
+	if err != nil {
+		h.logger.WithFields(
+			logrus.Fields{
+				"id":  server.UUID.String(),
+				"err": err,
+			}).Warn("error in server attributes update")
+	}
+
+	// create update server metadata attributes
+	err = h.createUpdateServerMetadataAttributes(ctx, server.UUID, device)
+	if err != nil {
+		h.logger.WithFields(
+			logrus.Fields{
+				"id":  server.UUID.String(),
+				"err": err,
+			}).Warn("error in server metadata attributes update")
+	}
+
+	// create update server component
+	err = h.createUpdateServerComponents(ctx, server.UUID, device)
 	if err != nil {
 		h.logger.WithFields(
 			logrus.Fields{
@@ -200,7 +221,93 @@ func (h *serverServicePublisher) publish(ctx context.Context, device *model.Asse
 	}
 }
 
-// registerChanges compares the current object in serverService with the device data and registers changes.
+// createUpdateServerAttributes creates/updates the server serial, vendor, model attributes
+func (h *serverServicePublisher) createUpdateServerAttributes(ctx context.Context, serverID uuid.UUID, asset *model.Asset) error {
+	attributesMap := map[string]string{
+		model.ServerSerialAttributeKey: asset.Inventory.Serial,
+		model.ServerVendorAttributeKey: asset.Inventory.Vendor,
+		model.ServerModelAttributeKey:  asset.Inventory.Model,
+	}
+
+	attributesData, err := json.Marshal(attributesMap)
+	if err != nil {
+		return err
+	}
+
+	// create, when current asset in the inventory has no serial vendor, model attributes set
+	if asset.Serial == "unknown" &&
+		asset.Vendor == "unknown" &&
+		asset.Model == "unknown" {
+		attribute := serverservice.Attributes{
+			Namespace: model.ServerVendorAttributeNS,
+			Data:      attributesData,
+		}
+
+		_, err = h.client.CreateAttributes(ctx, serverID, attribute)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	// update, when attributes are set but don't match
+	if asset.Serial != asset.Inventory.Serial ||
+		asset.Vendor != asset.Inventory.Vendor ||
+		asset.Model != asset.Inventory.Model {
+		// update vendor, model attributes
+		_, err = h.client.UpdateAttributes(ctx, serverID, model.ServerVendorAttributeNS, attributesData)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// createUpdateServerMetadataAttributes creates/updates metadata attributes of a server
+func (h *serverServicePublisher) createUpdateServerMetadataAttributes(ctx context.Context, serverID uuid.UUID, asset *model.Asset) error {
+	// no metadata reported in inventory from device
+	if len(asset.Inventory.Metadata) == 0 {
+		return nil
+	}
+
+	// marshal metadata from device
+	metadata, err := json.Marshal(asset.Inventory.Metadata)
+	if err != nil {
+		return err
+	}
+
+	attribute := serverservice.Attributes{
+		Namespace: model.ServerMetadataAttributeNS,
+		Data:      metadata,
+	}
+
+	// current asset metadata has no attributes set, create
+	if len(asset.Metadata) == 0 {
+		_, err = h.client.CreateAttributes(ctx, serverID, attribute)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	// update when metadata differs
+	if helpers.MapsAreEqual(asset.Metadata, asset.Inventory.Metadata) {
+		return nil
+	}
+
+	// update vendor, model attributes
+	_, err = h.client.UpdateAttributes(ctx, serverID, model.ServerMetadataAttributeNS, metadata)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// createUpdateServerComponents compares the current object in serverService with the device data and creates/updates server component data.
 //
 // nolint:gocyclo // the method caries out all steps to have device data compared and registered, for now its accepted as cyclomatic.
 func (h *serverServicePublisher) registerChanges(ctx context.Context, serverID uuid.UUID, device *model.AssetDevice) error {
