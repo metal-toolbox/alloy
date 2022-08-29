@@ -22,6 +22,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: [lint-test]
     steps:
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.18'
+
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -50,7 +55,7 @@ jobs:
            file: Dockerfile.inband
 
       - name: Scan image - Alloy
-        id: scan
+        id: scan-Alloy-image
         uses: anchore/scan-action@v3
         with:
           image: ghcr.io/metal-toolbox/alloy:latest
@@ -59,7 +64,7 @@ jobs:
           fail-build: false
 
       - name: Scan image - Alloy inband
-        id: scan
+        id: scan-Alloy-inband-image
         uses: anchore/scan-action@v3
         with:
           image: ghcr.io/metal-toolbox/alloy-inband:latest
