@@ -7,6 +7,7 @@ require (
 	github.com/bmc-toolbox/common v0.0.0-20220808122349-335517678873
 	github.com/bombsimon/logrusr/v2 v2.0.1
 	github.com/coreos/go-oidc v2.2.1+incompatible
+	github.com/coreos/go-oidc/v3 v3.2.0
 	github.com/equinix-labs/otel-init-go v0.0.5
 	github.com/gammazero/workerpool v1.1.3
 	github.com/google/uuid v1.3.0
