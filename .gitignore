@@ -5,7 +5,10 @@
 
 # Application binary itself
 /alloy
+/alloy-osx
 
 *~
 .*.swp
 .*.swo
+
+dist/
