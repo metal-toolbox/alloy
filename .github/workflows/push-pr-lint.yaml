@@ -25,8 +25,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: build binary
+        run: make build-linux
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
+
+      - name: Build Alloy Docker image - no push
+        id: dockerbuild-alloy
+        uses: docker/build-push-action@v3
+        with:
+           context: .
+           push: false
+           tags: ghcr.io/metal-toolbox/alloy:latest
+           file: Dockerfile
 
       - name: Build Alloy inband Docker image - no push
         id: dockerbuild-alloy-inband
@@ -37,16 +49,25 @@ jobs:
            tags: ghcr.io/metal-toolbox/alloy-inband:latest
            file: Dockerfile.inband
 
-      - name: Scan image
+      - name: Scan image - Alloy
         id: scan
         uses: anchore/scan-action@v3
         with:
           image: ghcr.io/metal-toolbox/alloy:latest
           acs-report-enable: true
-          # TODO(jaosorior): Fail build once we migrate off CentOS.
+          # TODO(joel): Fail build once we migrate off CentOS.
           fail-build: false
 
-      # TODO(jaosorior): Uncomment once we migrate off CentOS.
+      - name: Scan image - Alloy inband
+        id: scan
+        uses: anchore/scan-action@v3
+        with:
+          image: ghcr.io/metal-toolbox/alloy-inband:latest
+          acs-report-enable: true
+          # TODO(joel): Fail build once we migrate off CentOS.
+          fail-build: false
+
+      # TODO(joel): Uncomment once we migrate off CentOS.
       # - name: upload Anchore scan SARIF report
       #   uses: github/codeql-action/upload-sarif@v2
       #   with:
