@@ -300,6 +300,33 @@ func newVersionAttributes(t *testing.T, data json.RawMessage, value string) *ver
 	return va
 }
 
+func testPublisherInstance(t *testing.T, mockURL string) *serverServicePublisher {
+	t.Helper()
+
+	cr := retryablehttp.NewClient()
+
+	// comment out to enable debug logs
+	cr.Logger = nil
+
+	c, err := serverservice.NewClientWithToken(
+		"hunter2",
+		mockURL,
+		cr.StandardClient(),
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return &serverServicePublisher{
+		logger:               app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher"}, logrus.New()),
+		slugs:                fixtures.ServerServiceSlugMap(),
+		client:               c,
+		attributeNS:          model.ServerComponentAttributeNS(app.KindOutOfBand),
+		versionedAttributeNS: model.ServerComponentVersionedAttributeNS(app.KindOutOfBand),
+	}
+}
+
 func Test_ServerService_CreateUpdateServerComponents_ObjectsEqual(t *testing.T) {
 	serverID, _ := uuid.Parse(fixtures.TestserverID_Dell_fc167440)
 	handler := http.NewServeMux()
@@ -323,29 +350,11 @@ func Test_ServerService_CreateUpdateServerComponents_ObjectsEqual(t *testing.T) 
 	)
 
 	mock := httptest.NewServer(handler)
-	cr := retryablehttp.NewClient()
-	// nil logger to prevent debug logs
-	cr.Logger = nil
-
-	c, err := serverservice.NewClientWithToken(
-		"hunter2",
-		mock.URL,
-		cr.StandardClient(),
-	)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	serverService := serverServicePublisher{
-		logger: app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher"}, logrus.New()),
-		slugs:  fixtures.ServerServiceSlugMap(),
-		client: c,
-	}
+	p := testPublisherInstance(t, mock.URL)
 
 	device := &model.Asset{ID: serverID.String(), Inventory: fixtures.CopyDevice(fixtures.R6515_fc167440)}
 
-	err = serverService.createUpdateServerComponents(context.TODO(), serverID, device)
+	err := p.createUpdateServerComponents(context.TODO(), serverID, device)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -403,25 +412,7 @@ func Test_ServerService_CreateUpdateServerComponents_ObjectsUpdated(t *testing.T
 	)
 
 	mock := httptest.NewServer(handler)
-	cr := retryablehttp.NewClient()
-	// nil logger to prevent debug logs
-	cr.Logger = nil
-
-	c, err := serverservice.NewClientWithToken(
-		"hunter2",
-		mock.URL,
-		cr.StandardClient(),
-	)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	serverService := serverServicePublisher{
-		logger: app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher"}, logrus.New()),
-		slugs:  fixtures.ServerServiceSlugMap(),
-		client: c,
-	}
+	p := testPublisherInstance(t, mock.URL)
 
 	// asset device fixture returned by the inventory collector
 	device := &model.Asset{
@@ -433,7 +424,7 @@ func Test_ServerService_CreateUpdateServerComponents_ObjectsUpdated(t *testing.T
 	device.Inventory.BIOS.Firmware.Installed = newBIOSFWVersion
 	device.Inventory.BMC.Firmware.Installed = newBMCFWVersion
 
-	err = serverService.createUpdateServerComponents(context.TODO(), serverID, device)
+	err := p.createUpdateServerComponents(context.TODO(), serverID, device)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -481,26 +472,6 @@ func Test_ServerService_CreateUpdateServerComponents_ObjectsAdded(t *testing.T) 
 		},
 	)
 
-	mock := httptest.NewServer(handler)
-	cr := retryablehttp.NewClient()
-	cr.Logger = nil
-
-	c, err := serverservice.NewClientWithToken(
-		"hunter2",
-		mock.URL,
-		cr.StandardClient(),
-	)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	serverService := serverServicePublisher{
-		logger: app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher"}, logrus.New()),
-		slugs:  fixtures.ServerServiceSlugMap(),
-		client: c,
-	}
-
 	// asset device fixture returned by the inventory collector
 	device := &model.Asset{
 		ID:        serverID.String(),
@@ -520,7 +491,10 @@ func Test_ServerService_CreateUpdateServerComponents_ObjectsAdded(t *testing.T) 
 		},
 	)
 
-	err = serverService.createUpdateServerComponents(context.TODO(), serverID, device)
+	mock := httptest.NewServer(handler)
+	p := testPublisherInstance(t, mock.URL)
+
+	err := p.createUpdateServerComponents(context.TODO(), serverID, device)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -593,27 +567,9 @@ func Test_ServerService_CreateUpdateServerAttributes_Create(t *testing.T) {
 	)
 
 	mock := httptest.NewServer(handler)
-	cr := retryablehttp.NewClient()
-	// nil logger to prevent debug logs
-	cr.Logger = nil
+	p := testPublisherInstance(t, mock.URL)
 
-	c, err := serverservice.NewClientWithToken(
-		"hunter2",
-		mock.URL,
-		cr.StandardClient(),
-	)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	serverService := serverServicePublisher{
-		logger: app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher"}, logrus.New()),
-		slugs:  fixtures.ServerServiceSlugMap(),
-		client: c,
-	}
-
-	err = serverService.createUpdateServerAttributes(context.TODO(), serverID, device)
+	err := p.createUpdateServerAttributes(context.TODO(), serverID, device)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -683,27 +639,9 @@ func Test_ServerService_CreateUpdateServerAttributes_Update(t *testing.T) {
 	)
 
 	mock := httptest.NewServer(handler)
-	cr := retryablehttp.NewClient()
-	// nil logger to prevent debug logs
-	cr.Logger = nil
+	p := testPublisherInstance(t, mock.URL)
 
-	c, err := serverservice.NewClientWithToken(
-		"hunter2",
-		mock.URL,
-		cr.StandardClient(),
-	)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	serverService := serverServicePublisher{
-		logger: app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher"}, logrus.New()),
-		slugs:  fixtures.ServerServiceSlugMap(),
-		client: c,
-	}
-
-	err = serverService.createUpdateServerAttributes(context.TODO(), serverID, device)
+	err := p.createUpdateServerAttributes(context.TODO(), serverID, device)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -766,27 +704,9 @@ func Test_ServerService_CreateUpdateServerMetadataAttributes_Create(t *testing.T
 	)
 
 	mock := httptest.NewServer(handler)
-	cr := retryablehttp.NewClient()
-	// nil logger to prevent debug logs
-	cr.Logger = nil
+	p := testPublisherInstance(t, mock.URL)
 
-	c, err := serverservice.NewClientWithToken(
-		"hunter2",
-		mock.URL,
-		cr.StandardClient(),
-	)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	serverService := serverServicePublisher{
-		logger: app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher"}, logrus.New()),
-		slugs:  fixtures.ServerServiceSlugMap(),
-		client: c,
-	}
-
-	err = serverService.createUpdateServerMetadataAttributes(context.TODO(), serverID, device)
+	err := p.createUpdateServerMetadataAttributes(context.TODO(), serverID, device)
 	if err != nil {
 		t.Fatal(err)
 	}
