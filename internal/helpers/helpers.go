@@ -146,3 +146,15 @@ func MapsAreEqual(currentMap, newMap map[string]string) bool {
 
 	return true
 }
+
+func WriteDebugFile(name, dump string) {
+	// nolint:gomnd // file permission is clear as is
+	f, err := os.OpenFile(name, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		return
+	}
+
+	defer f.Close()
+
+	_, _ = f.WriteString(dump)
+}
