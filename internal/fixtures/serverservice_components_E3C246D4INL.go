@@ -55,7 +55,7 @@ var (
 			Serial: "0",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -131,7 +131,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -272,7 +272,7 @@ var (
 			Serial: "196231220000153",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -401,7 +401,7 @@ var (
 			Serial: "F0F9053F",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -629,7 +629,7 @@ var (
 			Serial: "F0F90894",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -857,7 +857,7 @@ var (
 			Serial: "b4:96:91:70:26:c8",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -1142,7 +1142,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -1236,7 +1236,7 @@ var (
 			Serial: "PHYF001300HB480BGN",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -1409,7 +1409,7 @@ var (
 			Serial: "PHYF001209KL480BGN",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -1582,7 +1582,7 @@ var (
 			Serial: "0",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -1780,7 +1780,7 @@ var (
 			Serial: "0",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
