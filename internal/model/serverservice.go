@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"net/url"
 	"os"
 
@@ -8,14 +9,17 @@ import (
 )
 
 const (
-	// EnvServerserviceSkipOAuth when set to true will skip server service OAuth
+	// EnvServerserviceSkipOAuth when set to true will skip server service OAuth.
 	EnvVarServerserviceSkipOAuth = "SERVERSERVICE_SKIP_OAUTH"
 
-	// server vendor, model attributes are stored in this namespace
-	ServerVendorAttributeNS = "sh.hollow.alloy.server_vendor_attributes"
+	// serverservice namespace prefix the data is stored in.
+	ServerServiceNSPrefix = "sh.hollow.alloy"
 
-	// additional server metadata are stored in this namespace
-	ServerMetadataAttributeNS = "sh.hollow.alloy.server_metadata_attributes"
+	// server vendor, model attributes are stored in this namespace.
+	ServerVendorAttributeNS = ServerServiceNSPrefix + ".server_vendor_attributes"
+
+	// additional server metadata are stored in this namespace.
+	ServerMetadataAttributeNS = ServerServiceNSPrefix + ".server_metadata_attributes"
 
 	// server service server serial attribute key
 	ServerSerialAttributeKey = "serial"
@@ -26,6 +30,16 @@ const (
 	// server service server vendor attribute key
 	ServerVendorAttributeKey = "vendor"
 )
+
+// ServerServiceAttributeNS returns the namespace server component attributes are stored in.
+func ServerComponentAttributeNS(appKind string) string {
+	return fmt.Sprintf("%s.alloy.%s.metadata", ServerServiceNSPrefix, appKind)
+}
+
+// ServerComponentVersionedAttributeNS returns the namespace server component versioned attributes are stored in,
+func ServerComponentVersionedAttributeNS(appKind string) string {
+	return fmt.Sprintf("%s.alloy.%s.status", ServerServiceNSPrefix, appKind)
+}
 
 // LoadServerServiceEnvVars sets any env SERVERSERVICE_* configuration parameters
 func (c *Config) LoadServerServiceEnvVars() {
