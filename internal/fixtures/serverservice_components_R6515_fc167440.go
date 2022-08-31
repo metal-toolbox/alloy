@@ -56,7 +56,7 @@ var (
 			Serial: "0",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -118,7 +118,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -311,7 +311,7 @@ var (
 			Serial: "0",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -341,7 +341,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -676,7 +676,7 @@ var (
 			Serial: "53737518",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -807,7 +807,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -908,7 +908,7 @@ var (
 			Serial: "537374F7",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -1039,7 +1039,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -1140,7 +1140,7 @@ var (
 			Serial: "53737489",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -1271,7 +1271,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -1372,7 +1372,7 @@ var (
 			Serial: "537374FE",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -1503,7 +1503,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -1604,7 +1604,7 @@ var (
 			Serial: "537374F0",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -1735,7 +1735,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -1836,7 +1836,7 @@ var (
 			Serial: "5373745B",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -1967,7 +1967,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -2068,7 +2068,7 @@ var (
 			Serial: "53737450",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -2199,7 +2199,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -2300,7 +2300,7 @@ var (
 			Serial: "53737520",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -2431,7 +2431,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -2532,7 +2532,7 @@ var (
 			Serial: "0",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -2607,7 +2607,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -2742,7 +2742,7 @@ var (
 			Serial: "MYFLMIT04P00HQ",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -2854,7 +2854,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -3104,7 +3104,7 @@ var (
 			Serial: "201827F5890A",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -3403,7 +3403,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -3638,7 +3638,7 @@ var (
 			Serial: "201827F58A0E",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -3937,7 +3937,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -4172,7 +4172,7 @@ var (
 			Serial: "2",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -4308,7 +4308,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -4423,7 +4423,7 @@ var (
 			Serial: "3",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -4559,7 +4559,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -4674,7 +4674,7 @@ var (
 			Serial: "CNDED0005L1PQV",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -4738,7 +4738,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -4875,7 +4875,7 @@ var (
 			Serial: "CNDED0005L1PQZ",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -4939,7 +4939,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -5076,7 +5076,7 @@ var (
 			Serial: "0",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -5282,7 +5282,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -5420,7 +5420,7 @@ var (
 			Serial: "0",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -5456,7 +5456,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -5639,7 +5639,7 @@ var (
 			Serial: "0",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -5677,7 +5677,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -5824,7 +5824,7 @@ var (
 			Serial: "0",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -5883,7 +5883,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -6085,7 +6085,7 @@ var (
 			Serial: "1",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -6134,7 +6134,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -6322,7 +6322,7 @@ var (
 			Serial: "2",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -6380,7 +6380,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -6493,7 +6493,7 @@ var (
 			Serial: "3",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -6551,7 +6551,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -6664,7 +6664,7 @@ var (
 			Serial: "0",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -7039,7 +7039,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -7140,7 +7140,7 @@ var (
 			Serial: "1",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -7315,7 +7315,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -7416,7 +7416,7 @@ var (
 			Serial: "2",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -7527,7 +7527,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "server.components",
+					Namespace: "",
 					Data: json.RawMessage{
 						123,
 						34,
