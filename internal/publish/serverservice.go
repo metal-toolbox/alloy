@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/gammazero/workerpool"
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/helpers"
@@ -590,8 +591,8 @@ func diffComponentObjectsAttributes(currentObj, changeObj *serverservice.ServerC
 	if os.Getenv(model.EnvVarDumpDiffers) == "true" {
 		objChangesf := currentObj.ServerUUID.String() + ".attributes.diff"
 
-		// nolint:gomnd // file permissions are clearer in this form.
-		_ = os.WriteFile(objChangesf, []byte(litter.Sdump(attributeObjChanges)), 0o600)
+		// write cmp diff for readability
+		helpers.WriteDebugFile(objChangesf, cmp.Diff(currentObj.Attributes, changeObj.Attributes))
 	}
 
 	// compare versioned attributes
@@ -652,8 +653,8 @@ func diffVersionedAttributes(currentObjs, newObjs []serverservice.VersionedAttri
 		if os.Getenv(model.EnvVarDumpDiffers) == "true" {
 			objChangesf := currentObj.Namespace + ".versioned_attributes.diff"
 
-			// nolint:gomnd // file permissions are clearer in this form.
-			_ = os.WriteFile(objChangesf, []byte(litter.Sdump(objChangesf)), 0o600)
+			// write cmp diff for readability
+			helpers.WriteDebugFile(objChangesf, cmp.Diff(currentObj, newObjs[0]))
 		}
 
 		return &newObjs[0], err
