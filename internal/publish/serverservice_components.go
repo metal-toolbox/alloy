@@ -803,7 +803,7 @@ func (h *serverServicePublisher) setAttributes(component *serverservice.ServerCo
 	component.Attributes = append(
 		component.Attributes,
 		serverservice.Attributes{
-			Namespace: namespace,
+			Namespace: h.attributeNS,
 			Data:      data,
 		},
 	)
@@ -834,7 +834,7 @@ func (h *serverServicePublisher) setVersionedAttributes(component *serverservice
 	component.VersionedAttributes = append(
 		component.VersionedAttributes,
 		serverservice.VersionedAttributes{
-			Namespace: namespace,
+			Namespace: h.versionedAttributeNS,
 			Data:      data,
 		},
 	)

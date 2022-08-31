@@ -846,28 +846,44 @@ func Test_ServerService_CreateUpdateServerMetadataAttributes_Update(t *testing.T
 	)
 
 	mock := httptest.NewServer(handler)
-	cr := retryablehttp.NewClient()
-	// nil logger to prevent debug logs
-	cr.Logger = nil
+	p := testPublisherInstance(t, mock.URL)
 
-	c, err := serverservice.NewClientWithToken(
-		"hunter2",
-		mock.URL,
-		cr.StandardClient(),
+	err := p.createUpdateServerMetadataAttributes(context.TODO(), serverID, device)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func Test_filterByAttributeNamespace(t *testing.T) {
+	components := componentPtrSlice(
+		fixtures.CopyServerServiceComponentSlice(
+			fixtures.ServerServiceR6515Components_fc167440,
+		),
 	)
 
-	if err != nil {
-		t.Fatal(err)
-	}
+	// the fixture is expected to contain atleast 2 components with a attribute and versioned attribute
+	assert.Equal(t, 1, len(components[0].Attributes))
+	assert.Equal(t, 1, len(components[0].VersionedAttributes))
+	assert.Equal(t, 1, len(components[1].Attributes))
+	assert.Equal(t, 1, len(components[1].VersionedAttributes))
 
-	serverService := serverServicePublisher{
-		logger: app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher"}, logrus.New()),
-		slugs:  fixtures.ServerServiceSlugMap(),
-		client: c,
-	}
+	// update namespace on component[0] (bios) attributes
+	components[0].Attributes[0].Namespace = model.ServerComponentAttributeNS(app.KindOutOfBand)
 
-	err = serverService.createUpdateServerMetadataAttributes(context.TODO(), serverID, device)
-	if err != nil {
-		t.Fatal(err)
-	}
+	// update namespace on component[1] (bmc) versioned attributes
+	components[1].VersionedAttributes[0].Namespace = model.ServerComponentVersionedAttributeNS(app.KindOutOfBand)
+
+	// init publisher
+	p := testPublisherInstance(t, "foobar")
+
+	// run method under test
+	p.filterByAttributeNamespace(components)
+
+	// expect component with set namepace to be included
+	assert.Equal(t, 1, len(components[0].Attributes))
+	assert.Equal(t, 1, len(components[1].VersionedAttributes))
+
+	// components with unexpected namespaces are excluded
+	assert.Equal(t, 0, len(components[1].Attributes))
+	assert.Equal(t, 0, len(components[0].VersionedAttributes))
 }
