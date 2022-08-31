@@ -28,7 +28,6 @@ import (
 
 const (
 	KindServerService = "serverService"
-	namespace         = "server.components"
 )
 
 var (
@@ -50,14 +49,16 @@ func init() {
 
 // serverServicePublisher publishes asset inventory to serverService
 type serverServicePublisher struct {
-	logger      *logrus.Entry
-	config      *model.Config
-	syncWg      *sync.WaitGroup
-	collectorCh <-chan *model.Asset
-	termCh      <-chan os.Signal
-	workers     *workerpool.WorkerPool
-	client      *serverservice.Client
-	slugs       map[string]*serverservice.ServerComponentType
+	logger               *logrus.Entry
+	config               *model.Config
+	syncWg               *sync.WaitGroup
+	collectorCh          <-chan *model.Asset
+	termCh               <-chan os.Signal
+	workers              *workerpool.WorkerPool
+	client               *serverservice.Client
+	slugs                map[string]*serverservice.ServerComponentType
+	attributeNS          string
+	versionedAttributeNS string
 }
 
 // NewServerServicePublisher returns a serverService publisher to submit inventory data.
@@ -70,14 +71,16 @@ func NewServerServicePublisher(ctx context.Context, alloy *app.App) (Publisher, 
 	}
 
 	p := &serverServicePublisher{
-		logger:      logger,
-		config:      alloy.Config,
-		syncWg:      alloy.SyncWg,
-		collectorCh: alloy.CollectorCh,
-		termCh:      alloy.TermCh,
-		workers:     workerpool.New(concurrency),
-		client:      client,
-		slugs:       make(map[string]*serverservice.ServerComponentType),
+		logger:               logger,
+		config:               alloy.Config,
+		syncWg:               alloy.SyncWg,
+		collectorCh:          alloy.CollectorCh,
+		termCh:               alloy.TermCh,
+		workers:              workerpool.New(concurrency),
+		client:               client,
+		slugs:                make(map[string]*serverservice.ServerComponentType),
+		attributeNS:          model.ServerComponentAttributeNS(alloy.Config.AppKind),
+		versionedAttributeNS: model.ServerComponentVersionedAttributeNS(alloy.Config.AppKind),
 	}
 
 	return p, nil
@@ -357,8 +360,14 @@ func (h *serverServicePublisher) createUpdateServerComponents(ctx context.Contex
 		_ = os.WriteFile(newc, []byte(litter.Sdump(newInventory)), 0o600)
 	}
 
+	// convert to a pointer slice since this data is passed around
+	currentInventoryPtrSlice := componentPtrSlice(currentInventory)
+
+	// in place filter attributes, versioned attributes that are not of relevance to this instance of Alloy.
+	h.filterByAttributeNamespace(currentInventoryPtrSlice)
+
 	// identify changes to be applied
-	add, update, remove, err := serverServiceChangeList(ctx, componentPtrSlice(currentInventory), newInventory)
+	add, update, remove, err := serverServiceChangeList(ctx, currentInventoryPtrSlice, newInventory)
 	if err != nil {
 		return errors.Wrap(ErrRegisterChanges, err.Error())
 	}
@@ -651,4 +660,32 @@ func diffVersionedAttributes(currentObjs, newObjs []serverservice.VersionedAttri
 	}
 
 	return nil, nil
+}
+
+// filterByAttributeNamespace removes any components attributes, versioned that is
+// not related to this instance (inband/out-of-band) of Alloy.
+//
+// This is to ensure that this instance of Alloy is only working with the data that
+// is part of the defined attributes, versioned attributes namespaces
+func (h *serverServicePublisher) filterByAttributeNamespace(components []*serverservice.ServerComponent) {
+	for cIdx, component := range components {
+		attributes := []serverservice.Attributes{}
+		versionedAttributes := []serverservice.VersionedAttributes{}
+
+		for idx, attribute := range component.Attributes {
+			if attribute.Namespace == h.attributeNS {
+				attributes = append(attributes, component.Attributes[idx])
+			}
+		}
+
+		components[cIdx].Attributes = attributes
+
+		for idx, versionedAttribute := range component.VersionedAttributes {
+			if versionedAttribute.Namespace == h.versionedAttributeNS {
+				versionedAttributes = append(versionedAttributes, component.VersionedAttributes[idx])
+			}
+		}
+
+		components[cIdx].VersionedAttributes = versionedAttributes
+	}
 }
