@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"flag"
+	"math/rand"
 	"os"
 	"os/signal"
 	"strings"
@@ -38,6 +39,10 @@ type outOfBandCmd struct {
 	// collectInterval when defined runs alloy in a forever loop collecting inventory at the given interval value.
 	collectInterval string
 
+	// collectSplay when set adds additional time to the collectInterval
+	// the additional time added is between zero and the collectSplay time.Duration value
+	collectSplay string
+
 	// assetListAll sets up the asset getter to fetch all assets from the store.
 	assetListAll bool
 
@@ -60,6 +65,7 @@ func newOutOfBandCmd(rootCmd *rootCmd) *ffcli.Command {
 	fs.BoolVar(&c.assetListAll, "all", false, "Collect inventory for all assets.")
 	fs.StringVar(&c.assetSourceCSVFile, "csv-file", "", "Source assets from csv file (required when -asset-source=csv)")
 	fs.StringVar(&c.collectInterval, "collect-interval", "", "run as a process, collecting inventory at the given interval in the time.Duration string format - 12h, 5d...")
+	fs.StringVar(&c.collectSplay, "collect-splay", "0s", "")
 
 	rootCmd.RegisterFlags(fs)
 
@@ -96,8 +102,34 @@ func (c *outOfBandCmd) Exec(ctx context.Context, _ []string) error {
 	// serve metrics endpoint
 	metrics.ListenAndServe()
 
+	// collect interval parameter was specified
 	if c.collectInterval != "" {
-		return c.collectAtIntervals(ctx, alloy, c.collectInterval)
+		// parse collect interval
+		interval, err := time.ParseDuration(c.collectInterval)
+		if err != nil {
+			return errors.Wrap(errOutOfBandCollectInterval, err.Error())
+		}
+
+		if interval < time.Duration(1*time.Minute) {
+			return errors.Wrap(errOutOfBandCollectInterval, "minimum collect interval is 1m")
+		}
+
+		// collection interval to be randomized based on splay value
+		if c.collectSplay != "0s" {
+			// parse splay interval
+			splay, err := time.ParseDuration(c.collectSplay)
+			if err != nil {
+				return errors.Wrap(errOutOfBandCollectInterval, err.Error())
+			}
+
+			// randomize to given splay value and add to interval
+			rand.Seed(time.Now().UnixNano())
+
+			// nolint:gosec // the random value generated here isn't critical
+			interval += time.Duration(rand.Int63n(int64(splay)))
+		}
+
+		return c.collectAtIntervals(ctx, alloy, interval)
 	}
 
 	return c.collect(ctx, alloy)
@@ -191,22 +223,10 @@ func (c *outOfBandCmd) validateFlagPublish() error {
 	}
 }
 
-func (c *outOfBandCmd) collectAtIntervals(ctx context.Context, alloy *app.App, interval string) error {
-	tInterval, err := time.ParseDuration(interval)
-	if err != nil {
-		return errors.Wrap(errOutOfBandCollectInterval, err.Error())
-	}
-
-	if tInterval < time.Duration(1*time.Minute) {
-		return errors.Wrap(errOutOfBandCollectInterval, "minimum collect interval is 1m")
-	}
-
-	signalCh := make(chan os.Signal, 1)
-
+func (c *outOfBandCmd) collectAtIntervals(ctx context.Context, alloy *app.App, interval time.Duration) error {
 	// register for SIGHUP
+	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, syscall.SIGHUP)
-
-	alloy.Logger.Info("inventory collection scheduled at interval: " + interval)
 
 	collectFunc := func() {
 		// set active flag to indicate the collector is currently active
@@ -219,10 +239,12 @@ func (c *outOfBandCmd) collectAtIntervals(ctx context.Context, alloy *app.App, i
 		}
 	}
 
+	alloy.Logger.Info("inventory collection scheduled at interval: " + interval.String())
+
 Loop:
 	for {
 		select {
-		case <-time.NewTicker(tInterval).C:
+		case <-time.NewTicker(interval).C:
 			if c.active {
 				continue
 			}
