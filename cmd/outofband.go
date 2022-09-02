@@ -16,6 +16,7 @@ import (
 	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/metal-toolbox/alloy/internal/publish"
+	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel"
 
 	"github.com/peterbourgon/ff/v3/ffcli"
@@ -233,13 +234,26 @@ func (c *outOfBandCmd) collectAtIntervals(ctx context.Context, alloy *app.App, i
 		c.active = true
 		defer func() { c.active = false }()
 
+		// start measure total collection time
+		startTS := time.Now()
+
 		err := c.collect(ctx, alloy)
 		if err != nil {
 			alloy.Logger.Warn(err)
 		}
+
+		// measure total collection tim
+		metrics.CollectTotalTimeSummary.With(
+			prometheus.Labels{"collect_kind": app.KindOutOfBand},
+		).Observe(time.Since(startTS).Seconds())
 	}
 
 	alloy.Logger.Info("inventory collection scheduled at interval: " + interval.String())
+
+	// record next scheduled alloy run
+	metrics.OOBCollectScheduleTimestamp.With(
+		prometheus.Labels{"timestamp": "true"},
+	).Set(float64(interval))
 
 Loop:
 	for {

@@ -19,6 +19,9 @@ var (
 
 	// metricBMCQueryErrorCount counts the number of query errors - when querying information from BMCs.
 	metricBMCQueryErrorCount *prometheus.CounterVec
+
+	// metricBMCInventoryActive indicates when inventory collection is active.
+	metricBMCInventoryActive *prometheus.GaugeVec
 )
 
 func init() {
@@ -36,6 +39,14 @@ func init() {
 			Help: "A counter metric to measure the total count of errors when querying the BMC.",
 		},
 		[]string{"stage", "query_kind", "model", "vendor"},
+	)
+
+	metricBMCInventoryActive = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "alloy_bmc_inventory_active",
+			Help: "A gauge metric that indicates BMC inventory collection is active.",
+		},
+		[]string{"active"},
 	)
 }
 

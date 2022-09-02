@@ -45,8 +45,22 @@ type Asset struct {
 	BMCUsername string
 	// Password is the BMC login password from the inventory store
 	BMCPassword string
+	// Errors is a map of errors,
+	// where the key is the stage at which the error occurred,
+	// and the value is the error.
+	Errors map[string]string
 	// Address is the BMC IP address from the inventory store
 	BMCAddress net.IP
+}
+
+// IncludeError includes the given error key and value in the asset
+// which is then available to the publisher for reporting.
+func (a *Asset) IncludeError(key, value string) {
+	if a.Errors == nil {
+		a.Errors = map[string]string{}
+	}
+
+	a.Errors[key] = value
 }
 
 // Config holds application configuration read from a YAML or set by env variables.
