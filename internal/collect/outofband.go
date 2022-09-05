@@ -3,6 +3,7 @@ package collect
 import (
 	"context"
 	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -11,11 +12,12 @@ import (
 	"github.com/bmc-toolbox/common"
 	logrusrv2 "github.com/bombsimon/logrusr/v2"
 	"github.com/gammazero/workerpool"
+	"github.com/jacobweinstock/registrar"
 	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/helpers"
 	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/metal-toolbox/alloy/internal/model"
-	"github.com/prometheus/client_golang/prometheus"
+	"github.com/pkg/errors"
 	"github.com/sanity-io/litter"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -26,7 +28,8 @@ import (
 
 var (
 	// The outofband collector tracer
-	tracer trace.Tracer
+	tracer     trace.Tracer
+	ErrConnect = errors.New("error connecting to BMC")
 )
 
 func init() {
@@ -36,6 +39,9 @@ func init() {
 const (
 	// concurrency is the default number of workers to concurrently query BMCs
 	concurrency = 20
+
+	// logoutTimeout is the timeout value for each bmc logout attempt.
+	logoutTimeout = "1m"
 )
 
 // OutOfBand collector collects hardware, firmware inventory out of band
@@ -49,6 +55,7 @@ type OutOfBandCollector struct {
 	termCh           <-chan os.Signal
 	collectorCh      chan<- *model.Asset
 	workers          *workerpool.WorkerPool
+	logoutTimeout    time.Duration
 }
 
 // oobGetter interface defines methods that the bmclib client exposes
@@ -63,6 +70,11 @@ type oobGetter interface {
 func NewOutOfBandCollector(alloy *app.App) Collector {
 	logger := app.NewLogrusEntryFromLogger(logrus.Fields{"component": "collector.outofband"}, alloy.Logger)
 
+	lt, err := time.ParseDuration(logoutTimeout)
+	if err != nil {
+		panic(err)
+	}
+
 	c := &OutOfBandCollector{
 		logger:           logger,
 		assetCh:          alloy.AssetCh,
@@ -70,6 +82,7 @@ func NewOutOfBandCollector(alloy *app.App) Collector {
 		syncWg:           alloy.SyncWg,
 		config:           alloy.Config,
 		collectorCh:      alloy.CollectorCh,
+		logoutTimeout:    lt,
 		assetGetterPause: alloy.AssetGetterPause,
 	}
 
@@ -232,9 +245,6 @@ func (o *OutOfBandCollector) taskQueueWait(span trace.Span) {
 
 // spawn runs the asset inventory collection and writes the collected inventory to the collectorCh
 func (o *OutOfBandCollector) collect(ctx context.Context, asset *model.Asset) {
-	// bmc is the bmc client instance
-	var bmc oobGetter
-
 	// attach child span
 	ctx, span := tracer.Start(ctx, "collect()")
 	defer span.End()
@@ -246,65 +256,64 @@ func (o *OutOfBandCollector) collect(ctx context.Context, asset *model.Asset) {
 		logrus.Fields{
 			"serverID": asset.ID,
 			"IP":       asset.BMCAddress.String(),
-		}).Trace("collecting inventory for asset..")
+		}).Trace("login to BMC..")
 
-	if o.mockClient == nil {
-		bmc = newBMCClient(
-			ctx,
-			asset,
-			o.logger.Logger,
-		)
-	} else {
-		// mock client for tests
-		bmc = o.mockClient
-	}
-
-	// measure BMC connection open
-	startTS := time.Now()
-
-	if err := bmc.Open(ctx); err != nil {
+	// login
+	bmc, err := o.bmcLogin(ctx, asset)
+	if err != nil {
 		o.logger.WithFields(
 			logrus.Fields{
 				"serverID": asset.ID,
 				"IP":       asset.BMCAddress.String(),
 				"err":      err,
-			}).Warn("error in bmc connection open")
+			}).Warn("BMC login error")
 
-		span.SetStatus(codes.Error, " BMC connection open: "+err.Error())
-
-		// increment connection open error count metric
-		metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "conn_open")
+		o.collectorCh <- asset
 
 		return
 	}
 
-	// measure BMC connection open query time
-	metricObserveBMCQueryTimeSummary(asset.Vendor, asset.Model, "conn_open", startTS)
+	// defer logout
+	//
+	// ctx is not passed to bmcLogout to ensure that
+	// the bmc logout is carried out even if the context is canceled.
+	defer o.bmcLogout(bmc, asset)
 
-	defer func() {
-		// measure BMC connection close
-		startTS = time.Now()
+	o.logger.WithFields(
+		logrus.Fields{
+			"serverID": asset.ID,
+			"IP":       asset.BMCAddress.String(),
+		}).Trace("collecting inventory from asset BMC..")
 
-		if err := bmc.Close(ctx); err != nil {
-			o.logger.WithFields(
-				logrus.Fields{
-					"serverID": asset.ID,
-					"IP":       asset.BMCAddress.String(),
-					"err":      err,
-				}).Warn("error in bmc connection close")
-
-			span.SetStatus(codes.Error, " BMC connection close: "+err.Error())
+	// collect inventory
+	err = o.bmcInventory(ctx, bmc, asset)
+	if err != nil {
+		o.logger.WithFields(
+			logrus.Fields{
+				"serverID": asset.ID,
+				"IP":       asset.BMCAddress.String(),
+				"err":      err,
+			}).Warn("BMC inventory error")
+	}
 
 			// increment connection close error count metric
 			metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "conn_close")
 		}
 
-		// measure BMC connection open query time
-		metricObserveBMCQueryTimeSummary(asset.Vendor, asset.Model, "conn_close", startTS)
-	}()
+	o.collectorCh <- asset
+}
 
+// bmcInventory collects inventory data from he BMC
+// it updates the asset.Inventory attribute with the data collected.
+//
+// If any errors occurred in the collection, those are included in the asset.Errors attribute.
+func (o *OutOfBandCollector) bmcInventory(ctx context.Context, bmc oobGetter, asset *model.Asset) error {
 	// measure BMC inventory query
-	startTS = time.Now()
+	startTS := time.Now()
+
+	// attach child span
+	ctx, span := tracer.Start(ctx, "inventory()")
+	defer span.End()
 
 	inventory, err := bmc.Inventory(ctx)
 	if err != nil {
@@ -326,7 +335,7 @@ func (o *OutOfBandCollector) collect(ctx context.Context, asset *model.Asset) {
 			metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "inventory")
 		}
 
-		return
+		return err
 	}
 
 	// measure BMC inventory query time
@@ -345,17 +354,94 @@ func (o *OutOfBandCollector) collect(ctx context.Context, asset *model.Asset) {
 	inventory.Vendor = common.FormatVendorName(inventory.Vendor)
 	asset.Inventory = inventory
 
-	o.collectorCh <- asset
+	return nil
+}
+
+// bmcLogin initiates the BMC session
+//
+// when theres an error in the login process, asset.Errors is updated to include that information.
+func (o *OutOfBandCollector) bmcLogin(ctx context.Context, asset *model.Asset) (oobGetter, error) {
+	// bmc is the bmc client instance
+	var bmc oobGetter
+
+	// attach child span
+	ctx, span := tracer.Start(ctx, "bmcLogin()")
+	defer span.End()
+
+	if o.mockClient == nil {
+		bmc = newBMCClient(
+			ctx,
+			asset,
+			o.logger.Logger,
+		)
+	} else {
+		// mock client for tests
+		bmc = o.mockClient
+	}
+
+	// measure BMC connection open
+	startTS := time.Now()
+
+	// initiate bmc login session
+	if err := bmc.Open(ctx); err != nil {
+		span.SetStatus(codes.Error, " BMC login: "+err.Error())
+
+		if strings.Contains(err.Error(), "operation timed out") {
+			asset.IncludeError("login_error", "operation timed out in "+time.Since(startTS).String())
+			metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "conn_timeout")
+		}
+
+		if strings.Contains(err.Error(), "401: ") || strings.Contains(err.Error(), "failed to login") {
+			asset.IncludeError("login_error", "unauthorized")
+			metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "unauthorized")
+		}
+
+		return nil, errors.Wrap(ErrConnect, err.Error())
+	}
+
+	// measure BMC connection open query time
+	metricObserveBMCQueryTimeSummary(asset.Vendor, asset.Model, "conn_open", startTS)
+
+	return bmc, nil
+}
+
+func (o *OutOfBandCollector) bmcLogout(bmc oobGetter, asset *model.Asset) {
+	// measure BMC connection close
+	startTS := time.Now()
+
+	ctx, cancel := context.WithTimeout(context.Background(), o.logoutTimeout)
+	defer cancel()
+
+	// attach child span
+	ctx, span := tracer.Start(ctx, "bmcLogout()")
+	defer span.End()
+
+	o.logger.WithFields(
+		logrus.Fields{
+			"serverID": asset.ID,
+			"IP":       asset.BMCAddress.String(),
+		}).Trace("bmc connection close")
+
+	if err := bmc.Close(ctx); err != nil {
+		o.logger.WithFields(
+			logrus.Fields{
+				"serverID": asset.ID,
+				"IP":       asset.BMCAddress.String(),
+				"err":      err,
+			}).Warn("error in bmc connection close")
+
+		span.SetStatus(codes.Error, " BMC connection close: "+err.Error())
+
+		// increment connection close error count metric
+		metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "conn_close")
+	}
+
+	// measure BMC connection open query time
+	metricObserveBMCQueryTimeSummary(asset.Vendor, asset.Model, "conn_close", startTS)
 }
 
 // newBMCClient initializes a bmclib client with the given credentials
 func newBMCClient(ctx context.Context, asset *model.Asset, l *logrus.Logger) *bmclibv2.Client {
-	// attach child span
-	ctx, span := tracer.Start(ctx, "newBMCClient()")
-	defer span.End()
-
-	setTraceSpanAssetAttributes(span, asset)
-
 	logger := logrus.New()
 	logger.Formatter = l.Formatter
 
