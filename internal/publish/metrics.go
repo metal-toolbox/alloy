@@ -16,6 +16,9 @@ var (
 
 	// metricServerServiceDataChanges measures the number of server component data additions, updates, deletes.
 	metricServerServiceDataChanges *prometheus.GaugeVec
+
+	// metricInventorized count measures the number of assets inventorized - both successful and not.
+	metricInventorized *prometheus.GaugeVec
 )
 
 func init() {
@@ -33,5 +36,14 @@ func init() {
 			Help: "A gauge metric to measure the number of additions, updates, deletions to server service data",
 		},
 		[]string{"stage", "change_kind"},
+	)
+
+	metricInventorized = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "alloy_assets_inventoried_count",
+			Help: "A gauge metric to count the total assets inventoried - successful and not.",
+		},
+		// status is one of success/failure
+		[]string{"status"},
 	)
 }

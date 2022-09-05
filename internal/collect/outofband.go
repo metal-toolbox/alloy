@@ -318,7 +318,13 @@ func (o *OutOfBandCollector) collect(ctx context.Context, asset *model.Asset) {
 		span.SetStatus(codes.Error, " BMC Inventory(): "+err.Error())
 
 		// increment inventory query error count metric
-		metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "inventory")
+		if strings.Contains(err.Error(), "no compatible System Odata IDs identified") {
+			asset.IncludeError("inventory_error", "redfish_incompatible: no compatible System Odata IDs identified")
+			metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "redfish_incompatible")
+		} else {
+			asset.IncludeError("inventory_error", err.Error())
+			metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "inventory")
+		}
 
 		return
 	}
