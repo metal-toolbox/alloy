@@ -103,6 +103,15 @@ func (c *outOfBandCmd) Exec(ctx context.Context, _ []string) error {
 	// serve metrics endpoint
 	metrics.ListenAndServe()
 
+	// setup cancel context with cancel func
+	ctx, cancelFunc := context.WithCancel(ctx)
+
+	// routine listens for termination signal and cancels the context
+	go func() {
+		<-alloy.TermCh
+		cancelFunc()
+	}()
+
 	// collect interval parameter was specified
 	if c.collectInterval != "" {
 		// parse collect interval
@@ -238,6 +247,7 @@ func (c *outOfBandCmd) collectAtIntervals(ctx context.Context, alloy *app.App, i
 
 		defer func() {
 			c.active = false
+
 			metrics.OOBCollectionActive.Set(0)
 		}()
 
@@ -288,7 +298,7 @@ Loop:
 			alloy.Logger.Info("SIGHUP received, running oob inventory collection..")
 			collectFunc()
 
-		case <-alloy.TermCh:
+		case <-ctx.Done():
 			alloy.Logger.Info("got cancel signal, wait for spawned routines to complete...")
 			break Loop
 		}
@@ -325,9 +335,6 @@ func (c *outOfBandCmd) collect(ctx context.Context, alloy *app.App) error {
 		return err
 	}
 
-	// setup cancel context with cancel func
-	ctx, cancelFunc := context.WithCancel(ctx)
-
 	// spawn asset getter as a routine
 	alloy.SyncWg.Add(1)
 
@@ -337,12 +344,12 @@ func (c *outOfBandCmd) collect(ctx context.Context, alloy *app.App) error {
 		if c.assetIDList != "" {
 			if err := getter.ListByIDs(ctx, strings.Split(c.assetIDList, ",")); err != nil {
 				alloy.Logger.WithField("err", err).Error("error running asset getter routine")
-				cancelFunc()
+				return
 			}
 		} else {
 			if err := getter.ListAll(ctx); err != nil {
 				alloy.Logger.WithField("err", err).Error("error running asset getter routine")
-				cancelFunc()
+				return
 			}
 		}
 
@@ -357,16 +364,10 @@ func (c *outOfBandCmd) collect(ctx context.Context, alloy *app.App) error {
 
 		if err := publisher.RunInventoryPublisher(ctx); err != nil {
 			alloy.Logger.WithField("err", err).Error("error running inventory publisher routine")
-			cancelFunc()
+			return
 		}
 
 		alloy.Logger.Trace("publisher done")
-	}()
-
-	// routine listens for termination signal
-	go func() {
-		<-alloy.TermCh
-		cancelFunc()
 	}()
 
 	// spawn out of band collector as a routine
