@@ -16,7 +16,7 @@ import (
 
 func Test_OutOfBandInventoryRemote(t *testing.T) {
 	// init alloy app
-	alloy, err := app.New(context.TODO(), app.KindInband, "", model.LogLevelInfo)
+	alloy, err := app.New(context.TODO(), app.KindOutOfBand, "", model.LogLevelInfo)
 	if err != nil {
 		t.Fatal(err)
 	}

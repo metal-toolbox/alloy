@@ -46,8 +46,8 @@ const (
 
 // OutOfBand collector collects hardware, firmware inventory out of band
 type OutOfBandCollector struct {
-	assetGetterPause *helpers.Pauser
 	mockClient       oobGetter
+	assetGetterPause *helpers.Pauser
 	logger           *logrus.Entry
 	config           *model.Config
 	syncWg           *sync.WaitGroup
@@ -154,10 +154,6 @@ Loop:
 
 			atomic.AddInt32(&dispatched, ^int32(0))
 
-		case <-ctx.Done():
-			logrus.Info("context canceled")
-			break Loop
-
 		// spawn routines to collect inventory for assets
 		case asset, ok := <-o.assetCh:
 			// assetCh closed - getter completed
@@ -186,10 +182,7 @@ Loop:
 					func() {
 						defer o.syncWg.Done()
 						defer func() {
-							// notify done only when the context is not canceled.
-							if ctx.Err() == nil {
-								doneCh <- struct{}{}
-							}
+							doneCh <- struct{}{}
 						}()
 
 						// count dispatched worker task
@@ -296,9 +289,10 @@ func (o *OutOfBandCollector) collect(ctx context.Context, asset *model.Asset) {
 			}).Warn("BMC inventory error")
 	}
 
-			// increment connection close error count metric
-			metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "conn_close")
-		}
+	// return if the context has been canceled.
+	if ctx.Err() != nil {
+		return
+	}
 
 	o.collectorCh <- asset
 }
