@@ -125,7 +125,9 @@ func (c *outOfBandCmd) Exec(ctx context.Context, _ []string) error {
 			// randomize to given splay value and add to interval
 			rand.Seed(time.Now().UnixNano())
 
-			// nolint:gosec // the random value generated here isn't critical
+			// nolint:gosec // Ideally this should be using crypto/rand,
+			//                 although the generated random value here is just used to add jitter/splay to
+			//                 the interval value and is not used outside of this context.
 			interval += time.Duration(rand.Int63n(int64(splay)))
 		}
 
