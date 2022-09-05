@@ -467,24 +467,30 @@ func newBMCClient(ctx context.Context, asset *model.Asset, l *logrus.Logger) *bm
 		bmclibv2.WithLogger(logruslogr),
 	)
 
-	// measure BMC compatibility query
-	startTS := time.Now()
-
-	// filter BMC providers based on compatibility
+	// set bmclibv2 driver
 	//
-	// TODO(joel) : when the vendor is known, bmclib could be given hints so as to skip the compatibility check.
-	bmcClient.Registry.Drivers = bmcClient.Registry.FilterForCompatible(ctx)
+	// The bmclib drivers here are limited to the HTTPS means of connection,
+	// that is, drivers like ipmi are excluded.
+	switch asset.Vendor {
+	case common.VendorDell, common.VendorHPE:
+		// Set to the bmclib ProviderProtocol value
+		// https://github.com/bmc-toolbox/bmclib/blob/v2/providers/redfish/redfish.go#L26
+		bmcClient.Registry.Drivers = bmcClient.Registry.Using("redfish")
+	case common.VendorAsrockrack:
+		// https://github.com/bmc-toolbox/bmclib/blob/v2/providers/asrockrack/asrockrack.go#L20
+		bmcClient.Registry.Drivers = bmcClient.Registry.Using("vendorapi")
+	default:
+		// attempt both drivers when vendor is unknown
+		drivers := append(registrar.Drivers{},
+			bmcClient.Registry.Using("redfish")...,
+		)
 
-	// measure BMC compatibility check query
-	metricBMCQueryTimeSummary.With(
-		metrics.AddLabels(
-			stageLabel,
-			prometheus.Labels{
-				"query_kind": "compatibility_check",
-				"vendor":     asset.Vendor,
-				"model":      asset.Model,
-			}),
-	).Observe(time.Since(startTS).Seconds())
+		drivers = append(drivers,
+			bmcClient.Registry.Using("vendorapi")...,
+		)
+
+		bmcClient.Registry.Drivers = drivers
+	}
 
 	return bmcClient
 }
