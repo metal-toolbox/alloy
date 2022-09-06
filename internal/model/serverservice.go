@@ -21,6 +21,9 @@ const (
 	// additional server metadata are stored in this namespace.
 	ServerMetadataAttributeNS = ServerServiceNSPrefix + ".server_metadata_attributes"
 
+	// errors that occurred when connecting/collecting inventory from the bmc are stored here.
+	ServerBMCErrorsAttributeNS = ServerServiceNSPrefix + ".server_bmc_errors"
+
 	// server service server serial attribute key
 	ServerSerialAttributeKey = "serial"
 
