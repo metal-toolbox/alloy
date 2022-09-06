@@ -690,3 +690,226 @@ func Test_ServerService_CreateUpdateServerMetadataAttributes_Update(t *testing.T
 		t.Fatal(err)
 	}
 }
+
+func Test_ServerService_CreateUpdateServerBMCErrorAttributes_NoErrorsNoChanges(t *testing.T) {
+	// tests - no errors were reported by the collection, nor are there any currently registered in server service
+	serverID, _ := uuid.Parse(fixtures.TestserverID_Dell_fc167440)
+
+	handler := http.NewServeMux()
+
+	// get components query
+	handler.HandleFunc(
+		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), model.ServerBMCErrorsAttributeNS),
+		func(w http.ResponseWriter, r *http.Request) {
+			t.Fatal("expected no request, got: " + r.Method)
+		},
+	)
+
+	mock := httptest.NewServer(handler)
+	p := testPublisherInstance(t, mock.URL)
+
+	err := p.createUpdateServerBMCErrorAttributes(context.TODO(), serverID, nil, &model.Asset{})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func Test_ServerService_CreateUpdateServerBMCErrorAttributes_HasErrorsNoChanges(t *testing.T) {
+	// tests - errors were reported by the collection, the same errors are currently registered.
+	serverID, _ := uuid.Parse(fixtures.TestserverID_Dell_fc167440)
+
+	handler := http.NewServeMux()
+
+	// get components query
+	handler.HandleFunc(
+		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), model.ServerBMCErrorsAttributeNS),
+		func(w http.ResponseWriter, r *http.Request) {
+			t.Fatal("expected no request, got: " + r.Method)
+		},
+	)
+
+	mock := httptest.NewServer(handler)
+	p := testPublisherInstance(t, mock.URL)
+
+	errs := []byte(`{"login_error": "bmc gave up"}`)
+	errAttribs := &serverservice.Attributes{Data: errs}
+
+	asset := &model.Asset{Errors: map[string]string{"login_error": "bmc gave up"}}
+
+	err := p.createUpdateServerBMCErrorAttributes(context.TODO(), serverID, errAttribs, asset)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func Test_ServerService_CreateUpdateServerBMCErrorAttributes_RegisteredErrorsPurged(t *testing.T) {
+	// tests - no errors were reported by the collection, although there are error registered in server service for the server,
+	// the registered error is then purged.
+	serverID, _ := uuid.Parse(fixtures.TestserverID_Dell_fc167440)
+
+	handler := http.NewServeMux()
+
+	// get components query
+	handler.HandleFunc(
+		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), model.ServerBMCErrorsAttributeNS),
+		func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodPut:
+				// the response here is
+				resp, err := os.ReadFile("../fixtures/serverservice_server_fc167440.json")
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				b, err := io.ReadAll(r.Body)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				// unpack attributes posted by method
+				attributes := &serverservice.Attributes{}
+				if err = json.Unmarshal(b, attributes); err != nil {
+					t.Fatal(err)
+				}
+
+				// unpack attributes data
+				data := map[string]string{}
+				if err = json.Unmarshal(attributes.Data, &data); err != nil {
+					t.Fatal(err)
+				}
+
+				assert.Equal(t, 0, len(data))
+
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write(resp)
+			default:
+				t.Fatal("expected PUT request, got: " + r.Method)
+			}
+		},
+	)
+
+	mock := httptest.NewServer(handler)
+	p := testPublisherInstance(t, mock.URL)
+
+	errAttribs := &serverservice.Attributes{Data: []byte(`{"login_error": "bmc gave up"}`)}
+
+	err := p.createUpdateServerBMCErrorAttributes(context.TODO(), serverID, errAttribs, &model.Asset{})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func Test_ServerService_CreateUpdateServerBMCErrorAttributes_Create(t *testing.T) {
+	// test: createUpdateServerMetadataAttributes updates server metadata attributes when it differs.
+	serverID, _ := uuid.Parse(fixtures.TestserverID_Dell_fc167440)
+
+	handler := http.NewServeMux()
+
+	device := &model.Asset{Errors: map[string]string{"login_error": "password was not hunter2"}}
+
+	// get components query
+	handler.HandleFunc(
+		fmt.Sprintf("/api/v1/servers/%s/attributes", serverID.String()),
+		func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodPost:
+				// the response here is
+				resp, err := os.ReadFile("../fixtures/serverservice_server_fc167440.json")
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				b, err := io.ReadAll(r.Body)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				// unpack attributes posted by method
+				attributes := &serverservice.Attributes{}
+				if err = json.Unmarshal(b, attributes); err != nil {
+					t.Fatal(err)
+				}
+
+				// unpack attributes data
+				data := map[string]string{}
+				if err = json.Unmarshal(attributes.Data, &data); err != nil {
+					t.Fatal(err)
+				}
+
+				assert.Equal(t, device.Errors, data)
+
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write(resp)
+			default:
+				t.Fatal("expected POST request, got: " + r.Method)
+			}
+		},
+	)
+
+	mock := httptest.NewServer(handler)
+	p := testPublisherInstance(t, mock.URL)
+
+	err := p.createUpdateServerBMCErrorAttributes(context.TODO(), serverID, nil, device)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func Test_ServerService_CreateUpdateServerBMCErrorAttributes_Updated(t *testing.T) {
+	// tests - errors were reported by the collection, there are error registered in server service for the server, update
+	serverID, _ := uuid.Parse(fixtures.TestserverID_Dell_fc167440)
+
+	handler := http.NewServeMux()
+
+	// get components query
+	handler.HandleFunc(
+		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), model.ServerBMCErrorsAttributeNS),
+		func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodPut:
+				// the response here is
+				resp, err := os.ReadFile("../fixtures/serverservice_server_fc167440.json")
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				b, err := io.ReadAll(r.Body)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				// unpack attributes posted by method
+				attributes := &serverservice.Attributes{}
+				if err = json.Unmarshal(b, attributes); err != nil {
+					t.Fatal(err)
+				}
+
+				// unpack attributes data
+				data := map[string]string{}
+				if err = json.Unmarshal(attributes.Data, &data); err != nil {
+					t.Fatal(err)
+				}
+
+				assert.Equal(t, map[string]string{"login_error": "bmc on vacation"}, data)
+
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write(resp)
+			default:
+				t.Fatal("expected PUT request, got: " + r.Method)
+			}
+		},
+	)
+
+	mock := httptest.NewServer(handler)
+	p := testPublisherInstance(t, mock.URL)
+
+	errs := []byte(`{"login_error": "bmc gave up"}`)
+	errAttribs := &serverservice.Attributes{Data: errs}
+
+	asset := &model.Asset{Errors: map[string]string{"login_error": "bmc on vacation"}}
+
+	err := p.createUpdateServerBMCErrorAttributes(context.TODO(), serverID, errAttribs, asset)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
