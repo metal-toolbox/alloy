@@ -126,11 +126,6 @@ func (h *serverServicePublisher) RunInventoryPublisher(ctx context.Context) erro
 	}
 
 	for asset := range h.collectorCh {
-		// context canceled
-		if ctx.Err() != nil {
-			break
-		}
-
 		if asset == nil || asset.Inventory == nil {
 			continue
 		}
