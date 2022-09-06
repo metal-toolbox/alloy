@@ -187,6 +187,9 @@ func (h *serverServicePublisher) publish(ctx context.Context, device *model.Asse
 		return
 	}
 
+	// count devices with no errors
+	metricInventorized.With(prometheus.Labels{"status": "success"}).Add(1)
+
 	// create/update server serial, vendor, model attributes
 	err = h.createUpdateServerAttributes(ctx, server.UUID, device)
 	if err != nil {
