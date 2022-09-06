@@ -100,6 +100,69 @@ func (h *serverServicePublisher) createUpdateServerMetadataAttributes(ctx contex
 	return nil
 }
 
+// createUpdateServerMetadataAttributes creates/updates metadata attributes of a server
+// nolint:gocyclo // (joel) theres a bunch of validation going on here, I'll split the method out if theres more to come.
+func (h *serverServicePublisher) createUpdateServerBMCErrorAttributes(ctx context.Context, serverID uuid.UUID, current *serverservice.Attributes, asset *model.Asset) error {
+	// 1. no errors reported, none currently present
+	if len(asset.Errors) == 0 {
+		// server has no bmc errors registered
+		if current == nil || len(current.Data) == 0 {
+			return nil
+		}
+
+		// server has bmc errors registered, update the attributes to purge existing errors
+		_, err := h.client.UpdateAttributes(ctx, serverID, model.ServerBMCErrorsAttributeNS, []byte(`{}`))
+		if err != nil {
+			return err
+		}
+
+		// no errors, nothing to update
+		return nil
+	}
+
+	// marshal new data
+	newData, err := json.Marshal(asset.Errors)
+	if err != nil {
+		return err
+	}
+
+	attribute := serverservice.Attributes{
+		Namespace: model.ServerBMCErrorsAttributeNS,
+		Data:      newData,
+	}
+
+	// 2. current data has no BMC error attributes object, create
+	if current == nil || len(current.Data) == 0 {
+		_, err = h.client.CreateAttributes(ctx, serverID, attribute)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	// 3. current asset has some error attributes set, compare and update
+	currentData := map[string]string{}
+
+	err = json.Unmarshal(current.Data, &currentData)
+	if err != nil {
+		return err
+	}
+
+	// data is equal
+	if helpers.MapsAreEqual(currentData, asset.Errors) {
+		return nil
+	}
+
+	// update vendor, model attributes
+	_, err = h.client.UpdateAttributes(ctx, serverID, model.ServerBMCErrorsAttributeNS, newData)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func diffComponentObjectsAttributes(currentObj, changeObj *serverservice.ServerComponent) ([]serverservice.Attributes, []serverservice.VersionedAttributes, error) {
 	var attributes []serverservice.Attributes
 
@@ -222,4 +285,15 @@ func (h *serverServicePublisher) filterByAttributeNamespace(components []*server
 
 		components[cIdx].VersionedAttributes = versionedAttributes
 	}
+}
+
+// attributeByNamespace returns the attribute in the slice that matches the namespace
+func attributeByNamespace(ns string, attributes []serverservice.Attributes) *serverservice.Attributes {
+	for _, attribute := range attributes {
+		if attribute.Namespace == ns {
+			return &attribute
+		}
+	}
+
+	return nil
 }
