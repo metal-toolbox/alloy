@@ -125,6 +125,13 @@ func (c *csvee) loadAssets(ctx context.Context, csvReader io.ReadCloser) ([]*mod
 		username := strings.TrimSpace(rec[2])
 		password := strings.TrimSpace(rec[3])
 
+		var vendor string
+
+		// nolint:gomnd // field 4 is the vendor name, and its optional.
+		if len(rec) > 4 {
+			vendor = strings.TrimSpace(rec[4])
+		}
+
 		_, err := uuid.Parse(strings.TrimSpace(id))
 		if err != nil {
 			return nil, errors.Wrap(ErrCSVSource, err.Error()+": "+id)
@@ -150,6 +157,7 @@ func (c *csvee) loadAssets(ctx context.Context, csvReader io.ReadCloser) ([]*mod
 				BMCUsername: username,
 				BMCPassword: password,
 				BMCAddress:  parsedIP,
+				Vendor:      vendor,
 			},
 		)
 	}
