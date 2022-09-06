@@ -33,6 +33,15 @@ var (
 
 	// ServerServiceQueryErrorCount counts the number of query errors - when querying the asset store.
 	ServerServiceQueryErrorCount *prometheus.CounterVec
+
+	// OOBCollectScheduleTimestamp includes the timestamp of the next OOB collection scheduled run.
+	OOBCollectScheduleTimestamp *prometheus.GaugeVec
+
+	// CollectTotalTimeSummary measures how the total time spent collecting inventory in each alloy run.
+	CollectTotalTimeSummary *prometheus.SummaryVec
+
+	// OOBCollectionActive indicates when inventory collection is active.
+	OOBCollectionActive prometheus.Gauge
 )
 
 func init() {
@@ -91,6 +100,30 @@ func init() {
 			Help: "A counter metric to measure the total count of errors when the asset store.",
 		},
 		[]string{"stage"},
+	)
+
+	OOBCollectScheduleTimestamp = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "alloy_oob_collect_schedule_ts",
+			Help: "A gauge metric that indicates when the next alloy run is scheduled.",
+		},
+		[]string{"timestamp"},
+	)
+
+	CollectTotalTimeSummary = promauto.NewSummaryVec(
+		prometheus.SummaryOpts{
+			Name: "alloy_collect_duration_seconds",
+			Help: "A summary metric to measure the total time spent to complete collecting inventory in each run.",
+		},
+		// collect_kind is one of inband/outofband
+		[]string{"collect_kind"},
+	)
+
+	OOBCollectionActive = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "alloy_oob_collection_active",
+			Help: "A gauge metric that indicates OOB BMC based inventory collection is active.",
+		},
 	)
 }
 
