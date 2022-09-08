@@ -23,6 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: returntocorp/semgrep
+      volumes:
+        - semgrep-go/semgrep-go
     # Skip any PR created by dependabot to avoid permission issues
     if: (github.actor != 'dependabot[bot]')
     steps:
@@ -32,7 +34,11 @@ jobs:
           name: dgryski/semgrep-go
       - name: Checkout Alloy code
         uses: actions/checkout@v3
-      - run: semgrep ci --config "p/golang" --config "p/trailofbits" -f ../semgrep-go
+      - run: |
+          pwd
+          ls ../
+          ls -lta
+      - run: semgrep ci --config "p/golang" --config "p/trailofbits" -f ../semgrep-go .
   build:
     runs-on: ubuntu-latest
     needs: [lint-test]
