@@ -39,7 +39,7 @@ jobs:
           pwd
           ls ../
           ls -lta
-      - run: semgrep ci --config "p/golang" --config "p/trailofbits" -f ../semgrep-go .
+      - run: semgrep ci --config "p/golang" --config "p/trailofbits" -f ../semgrep-go
   build:
     runs-on: ubuntu-latest
     needs: [lint-test]
