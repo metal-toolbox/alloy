@@ -23,8 +23,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: returntocorp/semgrep
-      volumes:
-        - semgrep-go/semgrep-go
     # Skip any PR created by dependabot to avoid permission issues
     if: (github.actor != 'dependabot[bot]')
     steps:
@@ -41,7 +39,7 @@ jobs:
           pwd
           ls ../
           ls -lta
-      - run: semgrep ci --config "p/golang" --config "p/trailofbits" -f semgrep-go --include alloy
+      - run: semgrep ci --config "p/golang" --config "p/trailofbits" -f semgrep-go --include alloy --exclude alloy.yaml
   build:
     runs-on: ubuntu-latest
     needs: [lint-test]
