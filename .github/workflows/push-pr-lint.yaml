@@ -25,14 +25,14 @@ jobs:
       image: returntocorp/semgrep
     # Skip any PR created by dependabot to avoid permission issues
     if: (github.actor != 'dependabot[bot]')
-      steps:
-        - name: clone dgryski semgrep rules
-          uses: actions/checkout@v3
-          with:
-            name: dgryski/semgrep-go
-        - name: Checkout Alloy code
-          uses: actions/checkout@v3
-        - run: semgrep ci --config "p/golang" --config "p/trailofbits" -f ../semgrep-go
+    steps:
+      - name: clone dgryski semgrep rules
+        uses: actions/checkout@v3
+        with:
+          name: dgryski/semgrep-go
+      - name: Checkout Alloy code
+        uses: actions/checkout@v3
+      - run: semgrep ci --config "p/golang" --config "p/trailofbits" -f ../semgrep-go
   build:
     runs-on: ubuntu-latest
     needs: [lint-test]
