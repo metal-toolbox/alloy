@@ -609,8 +609,8 @@ github.com/mattn/go-sqlite3 v1.14.10 h1:MLn+5bFRlWMGoSRmJour3CL1w/qL96mvipqpwQW/
 github.com/mattn/go-sqlite3 v1.14.10/go.mod h1:NyWgC/yNuGj7Q9rpYnZvas74GogHl5/Z4A/KQRfk6bU=
 github.com/matttproud/golang_protobuf_extensions v1.0.1 h1:4hp9jkHxhMHkqkrB3Ix0jegS5sx/RkqARlsWZ6pIwiU=
 github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
-github.com/metal-toolbox/ironlib v0.1.1-staging.0.20220620125540-b6f10fbbba26 h1:WyAA/M5VTF/YEd/YGaJy0/WGY0suu4G1H4k7UHHVbEY=
-github.com/metal-toolbox/ironlib v0.1.1-staging.0.20220620125540-b6f10fbbba26/go.mod h1:fADbYgPiBep99SDckbH6OefRraTTdgp8TaAstn5WB4Y=
+github.com/metal-toolbox/ironlib v0.1.1-staging h1:NNtHxrZi6eZqT6pUiGLr7woGjwKP7uA5PJx+68eIgQQ=
+github.com/metal-toolbox/ironlib v0.1.1-staging/go.mod h1:KBIWTZR2FSPkdPfNrvrka1wglKoJl0zMPdLEdPv/obc=
 github.com/miekg/dns v1.0.14/go.mod h1:W1PPwlIAgtquWBMBEV9nkV9Cazfe8ScdGz/Lj7v3Nrg=
 github.com/miekg/dns v1.1.26/go.mod h1:bPDLeHnStXmXAq1m/Ch/hvfNHr14JKNPMBo3VZKjuso=
 github.com/mitchellh/cli v1.0.0/go.mod h1:hNIlj7HEI86fIcpObd7a0FcrxTWetlwJDGcceTlRvqc=
