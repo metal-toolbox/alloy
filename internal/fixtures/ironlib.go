@@ -25,6 +25,6 @@ func (m *MockIronlib) SetMockDevice(d *common.Device) {
 	m.device = d
 }
 
-func (m *MockIronlib) GetInventory(ctx context.Context) (*common.Device, error) {
+func (m *MockIronlib) GetInventory(ctx context.Context, dynamic bool) (*common.Device, error) {
 	return m.device, nil
 }
