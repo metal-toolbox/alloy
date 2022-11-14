@@ -47,7 +47,7 @@ func (i *InbandCollector) InventoryLocal(ctx context.Context) (*model.Asset, err
 		}
 	}
 
-	device, err := i.deviceManager.GetInventory(ctx)
+	device, err := i.deviceManager.GetInventory(ctx, false)
 	if err != nil {
 		return nil, err
 	}
