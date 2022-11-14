@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/coreos/go-oidc"
 	"github.com/hashicorp/go-retryablehttp"
@@ -14,7 +15,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/oauth2/clientcredentials"
 
-	// nolint:gosec,G108 // pprof path is only exposed over localhost
+	// nolint:gosec // pprof path is only exposed over localhost
 	_ "net/http/pprof"
 
 	serverservice "go.hollow.sh/serverservice/pkg/api/v1"
@@ -23,7 +24,14 @@ import (
 // EnablePProfile enables the profiling endpoint
 func EnablePProfile() {
 	go func() {
-		log.Println(http.ListenAndServe(model.ProfilingEndpoint, nil))
+		server := &http.Server{
+			Addr:              model.ProfilingEndpoint,
+			ReadHeaderTimeout: 2 * time.Second, // nolint:gomnd // time duration value is clear as is.
+		}
+
+		if err := server.ListenAndServe(); err != nil {
+			log.Println(err)
+		}
 	}()
 
 	log.Println("profiling enabled: " + model.ProfilingEndpoint + "/debug/pprof")
