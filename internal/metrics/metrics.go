@@ -3,6 +3,7 @@ package metrics
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/prometheus/client_golang/prometheus"
@@ -132,8 +133,12 @@ func ListenAndServe() {
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
 
-		err := http.ListenAndServe(model.MetricsEndpoint, nil)
-		if err != nil {
+		server := &http.Server{
+			Addr:              model.MetricsEndpoint,
+			ReadHeaderTimeout: 2 * time.Second, // nolint:gomnd // time duration value is clear as is.
+		}
+
+		if err := server.ListenAndServe(); err != nil {
 			log.Println(err)
 		}
 	}()
