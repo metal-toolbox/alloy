@@ -187,8 +187,8 @@ func (h *serverServicePublisher) publish(ctx context.Context, device *model.Asse
 		return
 	}
 
-	// create/update server bmc error attributes
-	if len(device.Errors) > 0 {
+	// create/update server bmc error attributes - for out of band data collection
+	if h.config.AppKind == app.KindOutOfBand && len(device.Errors) > 0 {
 		err = h.createUpdateServerBMCErrorAttributes(
 			ctx,
 			server.UUID,
