@@ -10,7 +10,7 @@ var (
 		Common: common.Common{
 			Oem:         false,
 			Description: "",
-			Vendor:      "Packet",
+			Vendor:      "packet",
 			Model:       "c3.small.x86 (To Be Filled By O.E.M.)",
 			Serial:      "D5S0R8000105",
 			ProductName: "",
