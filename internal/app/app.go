@@ -92,6 +92,7 @@ func (a *App) InitAssetCollectorChannels() {
 
 func configLoad(kind, cfgFile string) (config *model.Config, err error) {
 	cfg := configDefault()
+	cfg.AppKind = kind
 
 	if cfgFile == "" {
 		return cfg, nil
@@ -116,7 +117,6 @@ func configLoad(kind, cfgFile string) (config *model.Config, err error) {
 // configDefault returns a default app configuration
 func configDefault() *model.Config {
 	return &model.Config{
-		AppKind:  KindInband,
 		LogLevel: 0,
 	}
 }
