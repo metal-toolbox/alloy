@@ -61,7 +61,7 @@ func newOutOfBandCmd(rootCmd *rootCmd) *ffcli.Command {
 	}
 
 	fs := flag.NewFlagSet("alloy outofband", flag.ExitOnError)
-	fs.StringVar(&c.assetSourceKind, "asset-source", "", "Source from where asset information are to be retrieved (csv|emapi)")
+	fs.StringVar(&c.assetSourceKind, "asset-source", "", "Source from where asset information are to be retrieved (csv|serverService)")
 	fs.StringVar(&c.assetIDList, "asset-ids", "", "Collect inventory for the given comma separated list of asset IDs.")
 	fs.BoolVar(&c.assetListAll, "all", false, "Collect inventory for all assets.")
 	fs.StringVar(&c.assetSourceCSVFile, "csv-file", "", "Source assets from csv file (required when -asset-source=csv)")
