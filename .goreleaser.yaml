@@ -10,7 +10,13 @@ builds:
     goos:
       - linux
       - darwin
-      - windows
+    ldflags:
+      - -X "github.com/metal-toolbox/alloy/internal/version.AppVersion={{ .Version }}"
+        -X "github.com/metal-toolbox/alloy/internal/version.GoVersion={{ .Env.GOVERSION }}"
+        -X "github.com/metal-toolbox/alloy/internal/version.GitCommit={{ .Commit }}"
+        -X "github.com/metal-toolbox/alloy/internal/version.GitBranch={{ .Branch }}"
+        -X "github.com/metal-toolbox/alloy/internal/version.BuildDate={{ .Date }}"
+
 
 archives:
   - id: go
@@ -20,7 +26,6 @@ archives:
       amd64: 64bit
       darwin: macOS
       linux: Linux
-      windows: Windows
     files:
       - README.md
 
