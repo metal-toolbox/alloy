@@ -2,18 +2,48 @@ package fixtures
 
 import (
 	"encoding/json"
+	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
 	serverservice "go.hollow.sh/serverservice/pkg/api/v1"
 )
 
+// returns the serverservice JSON response for this servers component data
+func ServerServiceR6515Components_fc167440_JSON() []byte {
+	asBytes, err := json.Marshal(ServerServiceR6515Components_fc167440)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	records := []byte(`{
+		"page_size": 100,
+		"page": 1,
+		"page_count": 29,
+		"_links": {
+			"self": {
+				"href": "/api/v1/servers/fc167440-18d3-4455-b5ee-1c8e347b3f36/components"
+			},
+			"first": {
+				"href": "/api/v1/servers/fc167440-18d3-4455-b5ee-1c8e347b3f36/components?page=1"
+			},
+			"last": {
+				"href": "/api/v1/servers/fc167440-18d3-4455-b5ee-1c8e347b3f36/components?page=0"
+			}
+		},
+		"records": %s
+		}`)
+
+	return []byte(fmt.Sprintf(string(records), asBytes))
+}
+
 var (
 	TestserverID_Dell_fc167440 = "fc167440-18d3-4455-b5ee-1c8e347b3f36"
 
 	// To refresh this fixture, see docs/README.development
 	ServerServiceR6515Components_fc167440 = serverservice.ServerComponentSlice{
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -56,7 +86,7 @@ var (
 			Serial: "0",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -118,7 +148,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -262,13 +292,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "7bc49965-d653-4ae7-be3d-1a2eb3a60c6f",
+			ComponentTypeID:   "262e1a12-25a0-4d84-8c79-b3941603d48e",
 			ComponentTypeName: "BIOS",
 			ComponentTypeSlug: "bios",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -311,7 +341,7 @@ var (
 			Serial: "0",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -341,7 +371,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -578,13 +608,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "ccf6e601-9c5e-426e-b7ba-17a311db4318",
+			ComponentTypeID:   "e96c8557-4a71-4887-a3bb-28b6f90e5489",
 			ComponentTypeName: "BMC",
 			ComponentTypeSlug: "bmc",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -627,13 +657,13 @@ var (
 			Serial:              "0",
 			Attributes:          nil,
 			VersionedAttributes: nil,
-			ComponentTypeID:     "d777e2a7-b55a-405a-9d5d-3300d0bb3687",
+			ComponentTypeID:     "1e0c3417-d63c-4fd5-88f7-4c525c70da12",
 			ComponentTypeName:   "Mainboard",
 			ComponentTypeSlug:   "mainboard",
 			CreatedAt:           time.Time{},
 			UpdatedAt:           time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -676,7 +706,7 @@ var (
 			Serial: "53737518",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -807,7 +837,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -859,13 +889,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "5e71916a-5702-4f5c-8a5d-8307e1a6c728",
+			ComponentTypeID:   "5ac890cc-dd92-4609-9615-ca4b05b62a8e",
 			ComponentTypeName: "PhysicalMemory",
 			ComponentTypeSlug: "physicalmemory",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -908,7 +938,7 @@ var (
 			Serial: "537374F7",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -1039,7 +1069,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -1091,13 +1121,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "5e71916a-5702-4f5c-8a5d-8307e1a6c728",
+			ComponentTypeID:   "5ac890cc-dd92-4609-9615-ca4b05b62a8e",
 			ComponentTypeName: "PhysicalMemory",
 			ComponentTypeSlug: "physicalmemory",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -1140,7 +1170,7 @@ var (
 			Serial: "53737489",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -1271,7 +1301,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -1323,13 +1353,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "5e71916a-5702-4f5c-8a5d-8307e1a6c728",
+			ComponentTypeID:   "5ac890cc-dd92-4609-9615-ca4b05b62a8e",
 			ComponentTypeName: "PhysicalMemory",
 			ComponentTypeSlug: "physicalmemory",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -1372,7 +1402,7 @@ var (
 			Serial: "537374FE",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -1503,7 +1533,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -1555,13 +1585,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "5e71916a-5702-4f5c-8a5d-8307e1a6c728",
+			ComponentTypeID:   "5ac890cc-dd92-4609-9615-ca4b05b62a8e",
 			ComponentTypeName: "PhysicalMemory",
 			ComponentTypeSlug: "physicalmemory",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -1604,7 +1634,7 @@ var (
 			Serial: "537374F0",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -1735,7 +1765,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -1787,13 +1817,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "5e71916a-5702-4f5c-8a5d-8307e1a6c728",
+			ComponentTypeID:   "5ac890cc-dd92-4609-9615-ca4b05b62a8e",
 			ComponentTypeName: "PhysicalMemory",
 			ComponentTypeSlug: "physicalmemory",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -1836,7 +1866,7 @@ var (
 			Serial: "5373745B",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -1967,7 +1997,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -2019,13 +2049,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "5e71916a-5702-4f5c-8a5d-8307e1a6c728",
+			ComponentTypeID:   "5ac890cc-dd92-4609-9615-ca4b05b62a8e",
 			ComponentTypeName: "PhysicalMemory",
 			ComponentTypeSlug: "physicalmemory",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -2068,7 +2098,7 @@ var (
 			Serial: "53737450",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -2199,7 +2229,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -2251,13 +2281,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "5e71916a-5702-4f5c-8a5d-8307e1a6c728",
+			ComponentTypeID:   "5ac890cc-dd92-4609-9615-ca4b05b62a8e",
 			ComponentTypeName: "PhysicalMemory",
 			ComponentTypeSlug: "physicalmemory",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -2300,7 +2330,7 @@ var (
 			Serial: "53737520",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -2431,7 +2461,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -2483,13 +2513,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "5e71916a-5702-4f5c-8a5d-8307e1a6c728",
+			ComponentTypeID:   "5ac890cc-dd92-4609-9615-ca4b05b62a8e",
 			ComponentTypeName: "PhysicalMemory",
 			ComponentTypeSlug: "physicalmemory",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -2532,7 +2562,7 @@ var (
 			Serial: "0",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -2607,7 +2637,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -2693,13 +2723,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "67947287-0ef4-43a3-892c-5d5aecdc7b3c",
+			ComponentTypeID:   "5850ede2-d6d6-4df7-89d6-eab9110a9113",
 			ComponentTypeName: "NIC",
 			ComponentTypeSlug: "nic",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -2742,7 +2772,7 @@ var (
 			Serial: "MYFLMIT04P00HQ",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -2854,7 +2884,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -3055,13 +3085,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "67947287-0ef4-43a3-892c-5d5aecdc7b3c",
+			ComponentTypeID:   "5850ede2-d6d6-4df7-89d6-eab9110a9113",
 			ComponentTypeName: "NIC",
 			ComponentTypeSlug: "nic",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -3104,7 +3134,7 @@ var (
 			Serial: "201827F5890A",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -3403,7 +3433,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -3589,13 +3619,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "168e1a69-520c-4727-b639-e9ed4d075489",
+			ComponentTypeID:   "3717d747-3cc3-4800-822c-4c7a9ac2c314",
 			ComponentTypeName: "Drive",
 			ComponentTypeSlug: "drive",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -3638,7 +3668,7 @@ var (
 			Serial: "201827F58A0E",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -3937,7 +3967,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -4123,13 +4153,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "168e1a69-520c-4727-b639-e9ed4d075489",
+			ComponentTypeID:   "3717d747-3cc3-4800-822c-4c7a9ac2c314",
 			ComponentTypeName: "Drive",
 			ComponentTypeSlug: "drive",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -4172,7 +4202,7 @@ var (
 			Serial: "2",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -4308,7 +4338,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -4374,13 +4404,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "168e1a69-520c-4727-b639-e9ed4d075489",
+			ComponentTypeID:   "3717d747-3cc3-4800-822c-4c7a9ac2c314",
 			ComponentTypeName: "Drive",
 			ComponentTypeSlug: "drive",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -4423,7 +4453,7 @@ var (
 			Serial: "3",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -4559,7 +4589,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -4625,13 +4655,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "168e1a69-520c-4727-b639-e9ed4d075489",
+			ComponentTypeID:   "3717d747-3cc3-4800-822c-4c7a9ac2c314",
 			ComponentTypeName: "Drive",
 			ComponentTypeSlug: "drive",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -4674,7 +4704,7 @@ var (
 			Serial: "CNDED0005L1PQV",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -4738,7 +4768,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -4826,13 +4856,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "9e5d6728-2045-45a1-91b9-197e2b9788e6",
+			ComponentTypeID:   "d51b438b-a767-459e-8eda-fd0700a46686",
 			ComponentTypeName: "Power-Supply",
 			ComponentTypeSlug: "power-supply",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -4875,7 +4905,7 @@ var (
 			Serial: "CNDED0005L1PQZ",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -4939,7 +4969,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -5027,13 +5057,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "9e5d6728-2045-45a1-91b9-197e2b9788e6",
+			ComponentTypeID:   "d51b438b-a767-459e-8eda-fd0700a46686",
 			ComponentTypeName: "Power-Supply",
 			ComponentTypeSlug: "power-supply",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -5076,7 +5106,7 @@ var (
 			Serial: "0",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -5282,7 +5312,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -5371,13 +5401,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "18df3eff-c3a5-4ad0-b43e-e6d95b2a2eaa",
+			ComponentTypeID:   "75fc736e-fe42-4495-8e62-02d46fd08528",
 			ComponentTypeName: "CPU",
 			ComponentTypeSlug: "cpu",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -5420,7 +5450,7 @@ var (
 			Serial: "0",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -5456,7 +5486,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -5590,13 +5620,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "5645f5e9-f678-46e1-a15e-816ef3e1ac49",
+			ComponentTypeID:   "79ad53a2-0c05-4912-a156-8311bd54017d",
 			ComponentTypeName: "TPM",
 			ComponentTypeSlug: "tpm",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -5639,7 +5669,7 @@ var (
 			Serial: "0",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -5677,7 +5707,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -5775,13 +5805,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "656c49be-70a9-4bde-b05b-5c0a8b03771c",
+			ComponentTypeID:   "ce396912-210e-4f6e-902d-9f07a8efe092",
 			ComponentTypeName: "CPLD",
 			ComponentTypeSlug: "cpld",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -5824,7 +5854,7 @@ var (
 			Serial: "0",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -5883,7 +5913,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -6036,13 +6066,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "f88c0e78-6ff1-49e2-bb08-13b1a9a66d44",
+			ComponentTypeID:   "ef563926-8011-4985-bc4a-7ed7e9933971",
 			ComponentTypeName: "StorageController",
 			ComponentTypeSlug: "storagecontroller",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -6085,7 +6115,7 @@ var (
 			Serial: "1",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -6134,7 +6164,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -6273,13 +6303,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "f88c0e78-6ff1-49e2-bb08-13b1a9a66d44",
+			ComponentTypeID:   "ef563926-8011-4985-bc4a-7ed7e9933971",
 			ComponentTypeName: "StorageController",
 			ComponentTypeSlug: "storagecontroller",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -6322,7 +6352,7 @@ var (
 			Serial: "2",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -6380,7 +6410,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -6444,13 +6474,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "f88c0e78-6ff1-49e2-bb08-13b1a9a66d44",
+			ComponentTypeID:   "ef563926-8011-4985-bc4a-7ed7e9933971",
 			ComponentTypeName: "StorageController",
 			ComponentTypeSlug: "storagecontroller",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -6493,7 +6523,7 @@ var (
 			Serial: "3",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -6551,7 +6581,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -6615,13 +6645,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "f88c0e78-6ff1-49e2-bb08-13b1a9a66d44",
+			ComponentTypeID:   "ef563926-8011-4985-bc4a-7ed7e9933971",
 			ComponentTypeName: "StorageController",
 			ComponentTypeSlug: "storagecontroller",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -6664,7 +6694,7 @@ var (
 			Serial: "0",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -7039,7 +7069,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -7091,13 +7121,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "6c05ab98-72f3-40d2-927e-437b068729ea",
+			ComponentTypeID:   "9f5f39a4-82ed-4870-ab32-268bec45c8c8",
 			ComponentTypeName: "Enclosure",
 			ComponentTypeSlug: "enclosure",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -7140,7 +7170,7 @@ var (
 			Serial: "1",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -7315,7 +7345,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -7367,13 +7397,13 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "6c05ab98-72f3-40d2-927e-437b068729ea",
+			ComponentTypeID:   "9f5f39a4-82ed-4870-ab32-268bec45c8c8",
 			ComponentTypeName: "Enclosure",
 			ComponentTypeSlug: "enclosure",
 			CreatedAt:         time.Time{},
 			UpdatedAt:         time.Time{},
 		},
-		serverservice.ServerComponent{
+		{
 			UUID: uuid.UUID{
 				0,
 				0,
@@ -7416,7 +7446,7 @@ var (
 			Serial: "2",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -7527,7 +7557,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "",
+					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -7579,7 +7609,7 @@ var (
 					CreatedAt:      time.Time{},
 				},
 			},
-			ComponentTypeID:   "6c05ab98-72f3-40d2-927e-437b068729ea",
+			ComponentTypeID:   "9f5f39a4-82ed-4870-ab32-268bec45c8c8",
 			ComponentTypeName: "Enclosure",
 			ComponentTypeSlug: "enclosure",
 			CreatedAt:         time.Time{},
