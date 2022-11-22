@@ -47,6 +47,26 @@ func NewCSVGetter(ctx context.Context, alloy *app.App, csvReader io.ReadCloser) 
 func (c *csvee) SetClient(client interface{}) {
 }
 
+// AssetByID returns one asset from the inventory identified by its identifier.
+func (c *csvee) AssetByID(ctx context.Context, assetID string) (*model.Asset, error) {
+	// attach child span
+	ctx, span := tracer.Start(ctx, "AssetByID()")
+	defer span.End()
+
+	assets, err := c.loadAssets(ctx, c.csvReader)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, asset := range assets {
+		if asset.ID == assetID {
+			return asset, nil
+		}
+	}
+
+	return nil, errors.Wrap(ErrAssetNotFound, assetID)
+}
+
 // ListAll runs the csv asset getter which returns all assets on the assetCh
 func (c *csvee) ListAll(ctx context.Context) error {
 	// channel close tells the channel reader we're done

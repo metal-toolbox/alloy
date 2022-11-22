@@ -103,6 +103,15 @@ func (s *serverServiceGetter) SetClient(c interface{}) {
 	s.client = c.(serverServiceRequestor)
 }
 
+// AssetByID returns one asset from the inventory identified by its identifier.
+func (s *serverServiceGetter) AssetByID(ctx context.Context, assetID string) (*model.Asset, error) {
+	// attach child span
+	ctx, span := tracer.Start(ctx, "AssetByID()")
+	defer span.End()
+
+	return s.client.AssetByID(ctx, assetID)
+}
+
 // ListByIDs implements the Getter interface to query the inventory for the assetIDs and return found assets over the asset channel.
 func (s *serverServiceGetter) ListByIDs(ctx context.Context, assetIDs []string) error {
 	// attach child span
