@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"flag"
+	"os"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/metal-toolbox/alloy/internal/app"
+	"github.com/metal-toolbox/alloy/internal/asset"
 	"github.com/metal-toolbox/alloy/internal/collect"
 	"github.com/metal-toolbox/alloy/internal/helpers"
 	"github.com/metal-toolbox/alloy/internal/model"
@@ -21,6 +23,13 @@ type inbandCmd struct {
 	// assetID when specified is assigned to the device
 	// it is required when publishing to server service.
 	assetID string
+
+	// assets source is the cli flag for where assets are to be retrieved from.
+	// supported sources: csv OR serverService
+	assetSourceKind string
+
+	// assetSourceCSVFile is required when assetSource is set to csv.
+	assetSourceCSVFile string
 
 	// timeout time.Duration string value is used to timeout the inventory collection operation.
 	timeout string
@@ -38,6 +47,7 @@ func newInbandCmd(rootCmd *rootCmd) *ffcli.Command {
 	fs := flag.NewFlagSet("alloy inband", flag.ExitOnError)
 	fs.StringVar(&c.assetID, "asset-id", "", "The inventory asset identifier - required when publishing to server service.")
 	fs.StringVar(&c.timeout, "timeout", "10m", "timeout inventory collection if the duration exceeds the given parameter, accepted values are int time.Duration string format - 12h, 5d...")
+	fs.StringVar(&c.assetSourceKind, "asset-source", "", "Source from where asset information are to be retrieved (csv|serverService)")
 
 	rootCmd.RegisterFlags(fs)
 
@@ -77,6 +87,17 @@ func (i *inbandCmd) Exec(ctx context.Context, _ []string) error {
 		return err
 	}
 
+	// init asset getter
+	getter, err := i.initAssetGetter(ctx, alloy)
+	if err != nil {
+		return err
+	}
+
+	inventoryAsset, err := getter.AssetByID(ctx, i.assetID)
+	if err != nil {
+		return errors.Wrap(err, "inventory lookup for asset failed, asset ID: "+i.assetID)
+	}
+
 	// init publisher
 	publisher, err := i.initAssetPublisher(ctx, alloy)
 	if err != nil {
@@ -100,7 +121,7 @@ func (i *inbandCmd) Exec(ctx context.Context, _ []string) error {
 	// doneCh is where the collect publish routines notify when complete.
 	doneCh := make(chan struct{})
 
-	// collect routine
+	// collect and publish routine
 	go func() {
 		defer func() {
 			if ctx.Err() == nil {
@@ -114,6 +135,8 @@ func (i *inbandCmd) Exec(ctx context.Context, _ []string) error {
 		}
 
 		device.ID = i.assetID
+		device.Model = inventoryAsset.Model
+		device.Vendor = inventoryAsset.Vendor
 
 		err = publisher.PublishOne(ctx, device)
 		if err != nil {
@@ -150,5 +173,32 @@ func (i *inbandCmd) initAssetPublisher(ctx context.Context, alloy *app.App) (pub
 		return publish.NewServerServicePublisher(ctx, alloy)
 	default:
 		return nil, errors.Wrap(model.ErrConfig, "unknown inventory publisher: "+i.rootCmd.publisherKind)
+	}
+}
+
+// initAssetGetter initializes the Asset Getter which retrieves asset information to collect inventory data.
+func (i *inbandCmd) initAssetGetter(ctx context.Context, alloy *app.App) (asset.Getter, error) {
+	switch i.assetSourceKind {
+	case asset.SourceKindCSV:
+		if i.assetSourceCSVFile != "" {
+			alloy.Config.AssetGetter.Csv.File = i.assetSourceCSVFile
+		}
+
+		if alloy.Config.AssetGetter.Csv.File == "" {
+			return nil, errors.Wrap(model.ErrConfig, "csv asset source requires a csv file parameter")
+		}
+
+		fh, err := os.Open(i.assetSourceCSVFile)
+		if err != nil {
+			return nil, err
+		}
+
+		// init csv asset source
+		return asset.NewCSVGetter(ctx, alloy, fh)
+
+	case asset.SourceKindServerService:
+		return asset.NewServerServiceGetter(ctx, alloy)
+	default:
+		return nil, errors.Wrap(model.ErrConfig, "unknown asset getter: "+i.assetSourceKind)
 	}
 }
