@@ -34,5 +34,5 @@ func Test_InbandInventory(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, &model.Asset{Inventory: fixtures.E3C246D4INL}, got)
+	assert.Equal(t, &model.Asset{Inventory: fixtures.E3C246D4INL, Vendor: "unknown", Model: "unknown", Serial: "unknown"}, got)
 }
