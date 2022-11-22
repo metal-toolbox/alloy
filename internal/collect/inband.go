@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/bmc-toolbox/common"
 	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/metal-toolbox/ironlib"
@@ -47,12 +48,14 @@ func (i *InbandCollector) InventoryLocal(ctx context.Context) (*model.Asset, err
 		}
 	}
 
-	device, err := i.deviceManager.GetInventory(ctx, false)
+	device, err := i.deviceManager.GetInventory(ctx, true)
 	if err != nil {
 		return nil, err
 	}
 
-	return &model.Asset{Inventory: device}, nil
+	device.Vendor = common.FormatVendorName(device.Vendor)
+
+	return &model.Asset{Inventory: device, Vendor: "unknown", Model: "unknown", Serial: "unknown"}, nil
 }
 
 // InventoryRemote implements is present here to satisfy the Collector interface.
