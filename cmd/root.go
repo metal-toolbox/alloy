@@ -22,11 +22,12 @@ var (
 func Run() error {
 	var (
 		cmd, cfg     = newRootCmd()
+		versionCmd   = newVersionCmd(cfg)
 		outOfBandCmd = newOutOfBandCmd(cfg)
 		inbandCmd    = newInbandCmd(cfg)
 	)
 
-	cmd.Subcommands = append(cmd.Subcommands, outOfBandCmd, inbandCmd)
+	cmd.Subcommands = append(cmd.Subcommands, versionCmd, outOfBandCmd, inbandCmd)
 
 	if err := cmd.Parse(os.Args[1:]); err != nil {
 		fmt.Fprintf(os.Stderr, "error in cli parse: %v\n", err)
@@ -90,7 +91,7 @@ func newRootCmd() (*ffcli.Command, *rootCmd) {
 	return &ffcli.Command{
 		Name:       "alloy",
 		ShortHelp:  "alloy collects device inventory attributes",
-		ShortUsage: "alloy [inband|outofband] [flags]",
+		ShortUsage: "alloy [version|inband|outofband] [flags]",
 		FlagSet:    fs,
 		Exec:       c.Exec,
 	}, &c
