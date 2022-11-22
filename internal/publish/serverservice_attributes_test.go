@@ -27,6 +27,7 @@ func testPublisherInstance(t *testing.T, mockURL string) *serverServicePublisher
 	t.Helper()
 
 	cr := retryablehttp.NewClient()
+	cr.RetryMax = 1
 
 	// comment out to enable debug logs
 	cr.Logger = nil
@@ -223,11 +224,11 @@ func Test_filterByAttributeNamespace(t *testing.T) {
 	assert.Equal(t, 1, len(components[1].Attributes))
 	assert.Equal(t, 1, len(components[1].VersionedAttributes))
 
-	// update namespace on component[0] (bios) attributes
-	components[0].Attributes[0].Namespace = model.ServerComponentAttributeNS(app.KindOutOfBand)
+	// change namespace on component[1] (bios) attributes so the component is filtered
+	components[1].Attributes[0].Namespace = "some.ns"
 
-	// update namespace on component[1] (bmc) versioned attributes
-	components[1].VersionedAttributes[0].Namespace = model.ServerComponentVersionedAttributeNS(app.KindOutOfBand)
+	// change namespace on component[1] (bmc) versioned attributes so the component is filtered
+	components[0].VersionedAttributes[0].Namespace = "some.ns"
 
 	// init publisher
 	p := testPublisherInstance(t, "foobar")
@@ -247,19 +248,15 @@ func Test_filterByAttributeNamespace(t *testing.T) {
 func Test_ServerService_CreateUpdateServerComponents_ObjectsEqual(t *testing.T) {
 	serverID, _ := uuid.Parse(fixtures.TestserverID_Dell_fc167440)
 	handler := http.NewServeMux()
+
 	// get components query
 	handler.HandleFunc(
 		fmt.Sprintf("/api/v1/servers/%s/components", serverID.String()),
 		func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodGet:
-				resp, err := os.ReadFile("../fixtures/serverservice_components_fc167440.json")
-				if err != nil {
-					t.Fatal(err)
-				}
-
 				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write(resp)
+				_, _ = w.Write(fixtures.ServerServiceR6515Components_fc167440_JSON())
 			default:
 				t.Fatal("expected GET request, got: " + r.Method)
 			}
@@ -294,14 +291,9 @@ func Test_ServerService_CreateUpdateServerComponents_ObjectsUpdated(t *testing.T
 		func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodGet:
-				resp, err := os.ReadFile("../fixtures/serverservice_components_fc167440.json")
-				if err != nil {
-					t.Fatal(err)
-				}
-
 				w.Header().Set("Content-Type", "application/json")
 
-				_, _ = w.Write(resp)
+				_, _ = w.Write(fixtures.ServerServiceR6515Components_fc167440_JSON())
 			case http.MethodPut:
 				b, err := io.ReadAll(r.Body)
 				if err != nil {
@@ -359,13 +351,8 @@ func Test_ServerService_CreateUpdateServerComponents_ObjectsAdded(t *testing.T) 
 		func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodGet:
-				resp, err := os.ReadFile("../fixtures/serverservice_components_fc167440.json")
-				if err != nil {
-					t.Fatal(err)
-				}
-
 				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write(resp)
+				_, _ = w.Write(fixtures.ServerServiceR6515Components_fc167440_JSON())
 			case http.MethodPost:
 				b, err := io.ReadAll(r.Body)
 				if err != nil {
@@ -444,12 +431,6 @@ func Test_ServerService_CreateUpdateServerAttributes_Create(t *testing.T) {
 		func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodPost:
-				// the response here is
-				resp, err := os.ReadFile("../fixtures/serverservice_server_fc167440.json")
-				if err != nil {
-					t.Fatal(err)
-				}
-
 				b, err := io.ReadAll(r.Body)
 				if err != nil {
 					t.Fatal(err)
@@ -476,7 +457,7 @@ func Test_ServerService_CreateUpdateServerAttributes_Create(t *testing.T) {
 				assert.Equal(t, device.Inventory.Vendor, data[model.ServerVendorAttributeKey])
 
 				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write(resp)
+				_, _ = w.Write(fixtures.ServerServiceR6515Components_fc167440_JSON())
 			default:
 				t.Fatal("expected POST request, got: " + r.Method)
 			}
@@ -519,12 +500,6 @@ func Test_ServerService_CreateUpdateServerAttributes_Update(t *testing.T) {
 		func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodPut:
-				// the response here is
-				resp, err := os.ReadFile("../fixtures/serverservice_server_fc167440.json")
-				if err != nil {
-					t.Fatal(err)
-				}
-
 				b, err := io.ReadAll(r.Body)
 				if err != nil {
 					t.Fatal(err)
@@ -548,7 +523,7 @@ func Test_ServerService_CreateUpdateServerAttributes_Update(t *testing.T) {
 				assert.Equal(t, device.Inventory.Vendor, data[model.ServerVendorAttributeKey])
 
 				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write(resp)
+				_, _ = w.Write(fixtures.ServerServiceR6515Components_fc167440_JSON())
 			default:
 				t.Fatal("expected PUT request, got: " + r.Method)
 			}
@@ -584,12 +559,6 @@ func Test_ServerService_CreateUpdateServerMetadataAttributes_Create(t *testing.T
 		func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodPost:
-				// the response here is
-				resp, err := os.ReadFile("../fixtures/serverservice_server_fc167440.json")
-				if err != nil {
-					t.Fatal(err)
-				}
-
 				b, err := io.ReadAll(r.Body)
 				if err != nil {
 					t.Fatal(err)
@@ -613,7 +582,7 @@ func Test_ServerService_CreateUpdateServerMetadataAttributes_Create(t *testing.T
 				assert.Equal(t, device.Inventory.Metadata, data)
 
 				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write(resp)
+				_, _ = w.Write(fixtures.ServerServiceR6515Components_fc167440_JSON())
 			default:
 				t.Fatal("expected POST request, got: " + r.Method)
 			}
@@ -649,12 +618,6 @@ func Test_ServerService_CreateUpdateServerMetadataAttributes_Update(t *testing.T
 		func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodPut:
-				// the response here is
-				resp, err := os.ReadFile("../fixtures/serverservice_server_fc167440.json")
-				if err != nil {
-					t.Fatal(err)
-				}
-
 				b, err := io.ReadAll(r.Body)
 				if err != nil {
 					t.Fatal(err)
@@ -675,7 +638,7 @@ func Test_ServerService_CreateUpdateServerMetadataAttributes_Update(t *testing.T
 				assert.Equal(t, device.Inventory.Metadata, data)
 
 				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write(resp)
+				_, _ = w.Write(fixtures.ServerServiceR6515Components_fc167440_JSON())
 			default:
 				t.Fatal("expected PUT request, got: " + r.Method)
 			}
@@ -755,12 +718,6 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_RegisteredErrorsPur
 		func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodPut:
-				// the response here is
-				resp, err := os.ReadFile("../fixtures/serverservice_server_fc167440.json")
-				if err != nil {
-					t.Fatal(err)
-				}
-
 				b, err := io.ReadAll(r.Body)
 				if err != nil {
 					t.Fatal(err)
@@ -781,7 +738,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_RegisteredErrorsPur
 				assert.Equal(t, 0, len(data))
 
 				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write(resp)
+				_, _ = w.Write(fixtures.ServerServiceR6515Components_fc167440_JSON())
 			default:
 				t.Fatal("expected PUT request, got: " + r.Method)
 			}
@@ -867,12 +824,6 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_Updated(t *testing.
 		func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodPut:
-				// the response here is
-				resp, err := os.ReadFile("../fixtures/serverservice_server_fc167440.json")
-				if err != nil {
-					t.Fatal(err)
-				}
-
 				b, err := io.ReadAll(r.Body)
 				if err != nil {
 					t.Fatal(err)
@@ -893,7 +844,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_Updated(t *testing.
 				assert.Equal(t, map[string]string{"login_error": "bmc on vacation"}, data)
 
 				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write(resp)
+				_, _ = w.Write(fixtures.ServerServiceR6515Components_fc167440_JSON())
 			default:
 				t.Fatal("expected PUT request, got: " + r.Method)
 			}
