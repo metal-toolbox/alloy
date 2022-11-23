@@ -48,7 +48,7 @@ func ExportBuildInfoMetric() {
 	buildInfo := promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "alloy_build_info",
-			Help: "A metric with a constant '1' value, labeled by branch, commit, summary, builddate, version, goversion from which fup was built.",
+			Help: "A metric with a constant '1' value, labeled by branch, commit, summary, builddate, version, goversion from which Alloy was built.",
 		},
 		[]string{"branch", "commit", "summary", "builddate", "version", "goversion", "ironlibversion"},
 	)
