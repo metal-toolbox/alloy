@@ -14,10 +14,10 @@ serverService:
     # these client scopes are agreed on with the OIDC provider.
     client_scopes:
       - read:server
-		  - read:server-component-types
-		  - read:server:credentials
-		  - create:server:component
-		  - create:server:attributes
-		  - create:server:versioned-attributes
-		  - update:server:component
-		  - update:server:attributes
+      - read:server-component-types
+      - read:server:credentials
+      - create:server:component
+      - create:server:attributes
+      - create:server:versioned-attributes
+      - update:server:component
+      - update:server:attributes
