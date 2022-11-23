@@ -39,7 +39,7 @@ func ServerComponentAttributeNS(appKind string) string {
 	return fmt.Sprintf("%s.%s.metadata", ServerServiceNSPrefix, appKind)
 }
 
-// ServerComponentVersionedAttributeNS returns the namespace server component versioned attributes are stored in,
+// ServerComponentVersionedAttributeNS returns the namespace server component versioned attributes are stored in.
 func ServerComponentVersionedAttributeNS(appKind string) string {
 	return fmt.Sprintf("%s.%s.status", ServerServiceNSPrefix, appKind)
 }
