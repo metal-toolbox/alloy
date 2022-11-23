@@ -67,13 +67,13 @@ type serverServiceGetter struct {
 //
 // the methods are exported to enable mock implementations
 type serverServiceRequestor interface {
-	AssetByID(ctx context.Context, id string) (asset *model.Asset, err error)
+	AssetByID(ctx context.Context, id string, fetchBmcCredentials bool) (asset *model.Asset, err error)
 	AssetsByOffsetLimit(ctx context.Context, offset, limit int) (assets []*model.Asset, totalAssets int, err error)
 }
 
 // NewServerServiceGetter returns an asset getter to retrieve asset information from serverService for inventory collection.
 func NewServerServiceGetter(ctx context.Context, alloy *app.App) (Getter, error) {
-	logger := alloy.Logger.WithField("component", "getter-serverService")
+	logger := app.NewLogrusEntryFromLogger(logrus.Fields{"component": "getter-serverService"}, alloy.Logger)
 
 	client, err := helpers.NewServerServiceClient(ctx, alloy.Config, logger)
 	if err != nil {

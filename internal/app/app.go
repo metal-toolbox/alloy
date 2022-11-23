@@ -120,7 +120,8 @@ func configDefault() *model.Config {
 func NewLogrusEntryFromLogger(fields logrus.Fields, logger *logrus.Logger) *logrus.Entry {
 	l := logrus.New()
 	l.Formatter = logger.Formatter
-	l.Level = logger.Level
+	loggerEntry := logger.WithFields(fields)
+	loggerEntry.Level = logger.Level
 
-	return logger.WithFields(fields)
+	return loggerEntry
 }
