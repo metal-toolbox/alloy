@@ -353,7 +353,7 @@ func (h *serverServicePublisher) createUpdateServerComponents(ctx context.Contex
 					"change_kind": "components-updated",
 				},
 			),
-		).Add(float64(len(add)))
+		).Add(float64(len(update)))
 
 		_, err = h.client.UpdateComponents(ctx, serverID, update)
 		if err != nil {
@@ -367,6 +367,14 @@ func (h *serverServicePublisher) createUpdateServerComponents(ctx context.Contex
 		}
 	}
 
+	// Alloy should not be removing components based on diff data
+	// this is because data collected out of band differs from data collected inband
+	// and so this remove section is not going to be implemented.
+	//
+	// What can be done instead is that Alloy touches a timestamp value
+	// on each component and if that timestamp value has not been updated
+	// for a certain amount of time, compared to the rest of the component timestamps
+	// then the component may be eligible for removal.
 	if len(remove) > 0 {
 		// count components removed
 		metricServerServiceDataChanges.With(
@@ -376,17 +384,15 @@ func (h *serverServicePublisher) createUpdateServerComponents(ctx context.Contex
 					"change_kind": "components-removed",
 				},
 			),
-		).Add(float64(len(add)))
-
-		return errors.Wrap(ErrRegisterChanges, "component deletion not implemented")
+		).Add(float64(len(remove)))
 	}
 
 	h.logger.WithFields(
 		logrus.Fields{
-			"serverID": serverID,
-			"added":    len(add),
-			"updated":  len(update),
-			"removed":  len(remove),
+			"serverID":      serverID,
+			"added":         len(add),
+			"updated":       len(update),
+			"(not) removed": len(remove),
 		}).Debug("registered inventory changes with server service")
 
 	return nil
