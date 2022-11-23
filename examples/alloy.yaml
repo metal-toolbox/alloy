@@ -5,21 +5,19 @@ collector_outofband:
 # stdout OR serverService (https://github.com/metal-toolbox/hollow-serverservice)
 #inventory_publisher: stdout
 inventory_publisher: serverService
-# csv OR emapi
-asset_getter: emapi
+# csv OR serverService
+asset_getter: serverService
 serverService:
   endpoint: http://localhost:8080
-  authToken: ""
+  authToken: 
   concurrency: 10
-emapi:
-  auth_token:
-  consumer_token:
-  endpoint: https://foo.bar
-  facility: dc13
-  # concurrent emapi requests
-  concurrency: 5
-  # hardware items retrieved per emapi request
-  batch_size: 5
-  # custom HTTP headers to be included in the emapi request
-  custom_headers:
-    X-Is-Boss: 1
+    # these client scopes are agreed on with the OIDC provider.
+    client_scopes:
+      - read:server
+		  - read:server-component-types
+		  - read:server:credentials
+		  - create:server:component
+		  - create:server:attributes
+		  - create:server:versioned-attributes
+		  - update:server:component
+		  - update:server:attributes
