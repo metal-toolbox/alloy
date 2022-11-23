@@ -14,11 +14,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-const (
-	KindInband    = "inband"
-	KindOutOfBand = "outofband"
-)
-
 var (
 	ErrAppInit = errors.New("error initializing app")
 )
@@ -45,7 +40,7 @@ type App struct {
 // New returns a new alloy application object with the configuration loaded
 func New(ctx context.Context, kind, cfgFile string, loglevel int) (app *App, err error) {
 	switch kind {
-	case KindInband, KindOutOfBand:
+	case model.AppKindInband, model.AppKindOutOfBand:
 	default:
 		return nil, errors.Wrap(ErrAppInit, "invalid app kind: "+kind)
 	}

@@ -26,7 +26,7 @@ func (i ioReaderFakeCloser) Close() error {
 
 func Test_RunCSVListAll(t *testing.T) {
 	// init alloy app
-	alloy, err := app.New(context.TODO(), app.KindOutOfBand, "", model.LogLevelInfo)
+	alloy, err := app.New(context.TODO(), model.AppKindOutOfBand, "", model.LogLevelInfo)
 	if err != nil {
 		t.Fatal(err)
 	}
