@@ -40,7 +40,7 @@ func Test_ServerServiceListByIDs(t *testing.T) {
 	//		log.Println(http.ListenAndServe("localhost:9091", nil))
 	// }()
 	// init alloy app
-	alloy, err := app.New(context.TODO(), app.KindOutOfBand, "", model.LogLevelTrace)
+	alloy, err := app.New(context.TODO(), model.AppKindOutOfBand, "", model.LogLevelTrace)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,7 +128,7 @@ func Test_ServerServiceListAll(t *testing.T) {
 
 			assetCh := make(chan *model.Asset)
 
-			alloy, err := app.New(context.Background(), app.KindOutOfBand, "", model.LogLevelInfo)
+			alloy, err := app.New(context.Background(), model.AppKindOutOfBand, "", model.LogLevelInfo)
 			if err != nil {
 				t.Fatal(err)
 			}

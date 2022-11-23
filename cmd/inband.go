@@ -82,7 +82,7 @@ func (i *inbandCmd) Exec(ctx context.Context, _ []string) error {
 		}
 	}
 
-	alloy, err := app.New(ctx, app.KindInband, i.rootCmd.cfgFile, i.rootCmd.LogLevel())
+	alloy, err := app.New(ctx, model.AppKindInband, i.rootCmd.cfgFile, i.rootCmd.LogLevel())
 	if err != nil {
 		return err
 	}

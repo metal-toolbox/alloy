@@ -46,8 +46,8 @@ func testPublisherInstance(t *testing.T, mockURL string) *serverServicePublisher
 		logger:               app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher"}, logrus.New()),
 		slugs:                fixtures.ServerServiceSlugMap(),
 		client:               c,
-		attributeNS:          model.ServerComponentAttributeNS(app.KindOutOfBand),
-		versionedAttributeNS: model.ServerComponentVersionedAttributeNS(app.KindOutOfBand),
+		attributeNS:          model.ServerComponentAttributeNS(model.AppKindOutOfBand),
+		versionedAttributeNS: model.ServerComponentVersionedAttributeNS(model.AppKindOutOfBand),
 	}
 }
 

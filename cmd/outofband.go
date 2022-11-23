@@ -90,7 +90,7 @@ func (c *outOfBandCmd) Exec(ctx context.Context, _ []string) error {
 	}
 
 	// init alloy app
-	alloy, err := app.New(ctx, app.KindOutOfBand, c.rootCmd.cfgFile, c.rootCmd.LogLevel())
+	alloy, err := app.New(ctx, model.AppKindOutOfBand, c.rootCmd.cfgFile, c.rootCmd.LogLevel())
 	if err != nil {
 		return err
 	}
@@ -263,7 +263,7 @@ func (c *outOfBandCmd) collectAtIntervals(ctx context.Context, alloy *app.App, i
 
 		// measure total collection tim
 		metrics.CollectTotalTimeSummary.With(
-			prometheus.Labels{"collect_kind": app.KindOutOfBand},
+			prometheus.Labels{"collect_kind": model.AppKindOutOfBand},
 		).Observe(time.Since(startTS).Seconds())
 
 		// update next scheduled alloy run

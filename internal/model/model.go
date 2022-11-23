@@ -7,6 +7,8 @@ import (
 )
 
 const (
+	AppKindInband      = "inband"
+	AppKindOutOfBand   = "outofband"
 	LogLevelInfo       = 0
 	LogLevelDebug      = 1
 	LogLevelTrace      = 2

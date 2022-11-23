@@ -17,7 +17,7 @@ func Test_InbandInventory(t *testing.T) {
 	mockIronlib.SetMockDevice(fixtures.CopyDevice(fixtures.E3C246D4INL))
 
 	// init alloy app
-	alloy, err := app.New(context.TODO(), app.KindInband, "", model.LogLevelTrace)
+	alloy, err := app.New(context.TODO(), model.AppKindInband, "", model.LogLevelTrace)
 	if err != nil {
 		t.Fatal(err)
 	}

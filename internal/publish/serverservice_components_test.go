@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/fixtures"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/sirupsen/logrus"
@@ -16,8 +15,8 @@ func Test_ToComponentSlice(t *testing.T) {
 	h := serverServicePublisher{
 		logger:               logrus.NewEntry(logrus.New()),
 		slugs:                fixtures.ServerServiceSlugMap(),
-		attributeNS:          model.ServerComponentAttributeNS(app.KindOutOfBand),
-		versionedAttributeNS: model.ServerComponentVersionedAttributeNS(app.KindOutOfBand),
+		attributeNS:          model.ServerComponentAttributeNS(model.AppKindOutOfBand),
+		versionedAttributeNS: model.ServerComponentVersionedAttributeNS(model.AppKindOutOfBand),
 	}
 
 	testcases := []struct {
