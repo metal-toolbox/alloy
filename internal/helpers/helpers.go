@@ -102,24 +102,19 @@ func newServerserviceClientWithOAuthOtel(ctx context.Context, cfg *model.Config,
 		return nil, err
 	}
 
-	// OAuth scopes expected
-	scopes := []string{
-		"read:server",
-		"read:server-component-types",
-		"read:server:credentials",
-		"create:server:component",
-		"create:server:attributes",
-		"create:server:versioned-attributes",
-		"update:server:component",
-		"update:server:attributes",
+	// clientID defaults to 'alloy'
+	clientID := "alloy"
+
+	if cfg.ServerService.ClientID != "" {
+		clientID = cfg.ServerService.ClientID
 	}
 
 	// setup oauth configuration
 	oauthConfig := clientcredentials.Config{
-		ClientID:       "alloy",
+		ClientID:       clientID,
 		ClientSecret:   cfg.ServerService.ClientSecret,
 		TokenURL:       provider.Endpoint().TokenURL,
-		Scopes:         scopes,
+		Scopes:         cfg.ServerService.ClientScopes,
 		EndpointParams: url.Values{"audience": []string{cfg.ServerService.AudienceEndpoint}},
 	}
 

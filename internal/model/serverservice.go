@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -74,6 +75,23 @@ func (c *Config) LoadServerServiceEnvVars() {
 	if clientID := os.Getenv("SERVERSERVICE_CLIENT_ID"); clientID != "" {
 		c.ServerService.ClientID = clientID
 	}
+
+	// env var OAuth client scopes
+	if clientScopes := os.Getenv("SERVERSERVICE_CLIENT_SCOPES"); clientScopes != "" {
+		c.ServerService.ClientScopes = c.serverserviceScopesFromEnvVar(clientScopes)
+	}
+}
+
+// parses comma separated scope values and trims any spaces in them.
+func (c *Config) serverserviceScopesFromEnvVar(v string) []string {
+	scopes := []string{}
+	tokens := strings.Split(v, ",")
+
+	for _, t := range tokens {
+		scopes = append(scopes, strings.TrimSpace(t))
+	}
+
+	return scopes
 }
 
 // ValidateServerServiceParams checks required serverservice configuration parameters are present
@@ -110,6 +128,10 @@ func (c *Config) ValidateServerServiceParams() (*url.URL, error) {
 
 	if c.ServerService.ClientID == "" {
 		return nil, errors.Wrap(ErrConfig, "serverService client ID not defined")
+	}
+
+	if len(c.ServerService.ClientScopes) == 0 {
+		return nil, errors.Wrap(ErrConfig, "serverService client scopes not defined")
 	}
 
 	return endpoint, nil
