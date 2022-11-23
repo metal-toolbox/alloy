@@ -19,7 +19,7 @@ func NewMockServerServiceClient() *MockServerServiceClient {
 	return &MockServerServiceClient{}
 }
 
-func (c *MockServerServiceClient) AssetByID(ctx context.Context, id string) (*model.Asset, error) {
+func (c *MockServerServiceClient) AssetByID(ctx context.Context, id string, fetchBmcCredentials bool) (*model.Asset, error) {
 	if id == "borky" {
 		return nil, errors.New("asset is missing an ID attribute")
 	}

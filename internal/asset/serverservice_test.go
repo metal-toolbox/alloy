@@ -180,47 +180,54 @@ func Test_ServerServiceListAll(t *testing.T) {
 }
 
 func Test_validateRequiredAttribtues(t *testing.T) {
+	// nolint:govet // ignore struct alignment in test
 	cases := []struct {
-		name        string
-		server      *serverservice.Server
-		secret      *serverservice.ServerCredential
-		expectedErr string
+		name              string
+		server            *serverservice.Server
+		secret            *serverservice.ServerCredential
+		expectCredentials bool
+		expectedErr       string
 	}{
 		{
 			"server object nil",
 			nil,
 			nil,
+			true,
 			"server object nil",
 		},
 		{
 			"server credential object nil",
 			&serverservice.Server{},
 			nil,
+			true,
 			"server credential object nil",
 		},
 		{
 			"server attributes slice empty",
 			&serverservice.Server{},
 			&serverservice.ServerCredential{},
+			true,
 			"server attributes slice empty",
 		},
 		{
 			"BMC password field empty",
 			&serverservice.Server{Attributes: []serverservice.Attributes{{Namespace: bmcAttributeNamespace}}},
 			&serverservice.ServerCredential{Username: "foo", Password: ""},
+			true,
 			"BMC password field empty",
 		},
 		{
 			"BMC username field empty",
 			&serverservice.Server{Attributes: []serverservice.Attributes{{Namespace: bmcAttributeNamespace}}},
 			&serverservice.ServerCredential{Username: "", Password: "123"},
+			true,
 			"BMC username field empty",
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validateRequiredAttributes(tc.server, tc.secret)
+			err := validateRequiredAttributes(tc.server, tc.secret, tc.expectCredentials)
 			if tc.expectedErr != "" {
 				assert.Contains(t, err.Error(), tc.expectedErr)
 				return
@@ -293,7 +300,7 @@ func Test_toAsset(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			asset, err := toAsset(tc.server, tc.secret)
+			asset, err := toAsset(tc.server, tc.secret, true)
 			if tc.expectedErr != "" {
 				assert.Contains(t, err.Error(), tc.expectedErr)
 				return
