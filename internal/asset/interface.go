@@ -15,7 +15,7 @@ type Getter interface {
 	ListByIDs(ctx context.Context, assetIDs []string) error
 
 	// AssetByID returns one asset from the inventory identified by its identifier.
-	AssetByID(ctx context.Context, assetID string) (*model.Asset, error)
+	AssetByID(ctx context.Context, assetID string, fetchBmcCredentials bool) (*model.Asset, error)
 
 	// SetClient sets the given client as the Getter client to enable mocking for tests.
 	SetClient(interface{})

@@ -93,7 +93,7 @@ func (i *inbandCmd) Exec(ctx context.Context, _ []string) error {
 		return err
 	}
 
-	inventoryAsset, err := getter.AssetByID(ctx, i.assetID)
+	inventoryAsset, err := getter.AssetByID(ctx, i.assetID, false)
 	if err != nil {
 		return errors.Wrap(err, "inventory lookup for asset failed, asset ID: "+i.assetID)
 	}

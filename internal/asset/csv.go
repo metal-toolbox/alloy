@@ -48,7 +48,7 @@ func (c *csvee) SetClient(client interface{}) {
 }
 
 // AssetByID returns one asset from the inventory identified by its identifier.
-func (c *csvee) AssetByID(ctx context.Context, assetID string) (*model.Asset, error) {
+func (c *csvee) AssetByID(ctx context.Context, assetID string, fetchBmcCredentials bool) (*model.Asset, error) {
 	// attach child span
 	ctx, span := tracer.Start(ctx, "AssetByID()")
 	defer span.End()

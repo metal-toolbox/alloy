@@ -104,12 +104,12 @@ func (s *serverServiceGetter) SetClient(c interface{}) {
 }
 
 // AssetByID returns one asset from the inventory identified by its identifier.
-func (s *serverServiceGetter) AssetByID(ctx context.Context, assetID string) (*model.Asset, error) {
+func (s *serverServiceGetter) AssetByID(ctx context.Context, assetID string, fetchBmcCredentials bool) (*model.Asset, error) {
 	// attach child span
 	ctx, span := tracer.Start(ctx, "AssetByID()")
 	defer span.End()
 
-	return s.client.AssetByID(ctx, assetID)
+	return s.client.AssetByID(ctx, assetID, fetchBmcCredentials)
 }
 
 // ListByIDs implements the Getter interface to query the inventory for the assetIDs and return found assets over the asset channel.
@@ -136,7 +136,7 @@ func (s *serverServiceGetter) ListByIDs(ctx context.Context, assetIDs []string) 
 		}
 
 		// lookup asset by its ID from the inventory asset store
-		asset, err := s.client.AssetByID(ctx, assetID)
+		asset, err := s.client.AssetByID(ctx, assetID, true)
 		if err != nil {
 			// count serverService query errors
 			if errors.Is(err, ErrServerServiceQuery) {
@@ -296,7 +296,7 @@ type serverServiceClient struct {
 }
 
 // assetByID queries serverService for the hardware asset by ID and returns an Asset object
-func (r *serverServiceClient) AssetByID(ctx context.Context, id string) (*model.Asset, error) {
+func (r *serverServiceClient) AssetByID(ctx context.Context, id string, fetchBmcCredentials bool) (*model.Asset, error) {
 	// attach child span
 	ctx, span := tracer.Start(ctx, "AssetByID()")
 	defer span.End()
@@ -311,18 +311,24 @@ func (r *serverServiceClient) AssetByID(ctx context.Context, id string) (*model.
 	if err != nil {
 		span.SetStatus(codes.Error, "Get() server failed")
 
-		return nil, errors.Wrap(ErrServerServiceQuery, err.Error())
+		return nil, errors.Wrap(ErrServerServiceQuery, "error querying server attributes: "+err.Error())
 	}
 
-	// get bmc credential
-	credential, _, err := r.client.GetCredential(ctx, sid, serverservice.ServerCredentialTypeBMC)
-	if err != nil {
-		span.SetStatus(codes.Error, "GetCredential() failed")
+	var credential *serverservice.ServerCredential
 
-		return nil, errors.Wrap(ErrServerServiceQuery, err.Error())
+	if fetchBmcCredentials {
+		var err error
+
+		// get bmc credential
+		credential, _, err = r.client.GetCredential(ctx, sid, serverservice.ServerCredentialTypeBMC)
+		if err != nil {
+			span.SetStatus(codes.Error, "GetCredential() failed")
+
+			return nil, errors.Wrap(ErrServerServiceQuery, "error querying BMC credentials: "+err.Error())
+		}
 	}
 
-	return toAsset(server, credential)
+	return toAsset(server, credential, fetchBmcCredentials)
 }
 
 // assetByID queries serverService for the hardware asset by ID and returns an Asset object
@@ -368,7 +374,7 @@ func (r *serverServiceClient) AssetsByOffsetLimit(ctx context.Context, offset, l
 			return nil, 0, errors.Wrap(ErrServerServiceQuery, err.Error())
 		}
 
-		asset, err := toAsset(server, credential)
+		asset, err := toAsset(server, credential, true)
 		if err != nil {
 			r.logger.Warn(err)
 			continue
@@ -380,8 +386,8 @@ func (r *serverServiceClient) AssetsByOffsetLimit(ctx context.Context, offset, l
 	return assets, int(response.TotalRecordCount), nil
 }
 
-func toAsset(server *serverservice.Server, credential *serverservice.ServerCredential) (*model.Asset, error) {
-	if err := validateRequiredAttributes(server, credential); err != nil {
+func toAsset(server *serverservice.Server, credential *serverservice.ServerCredential, expectCredentials bool) (*model.Asset, error) {
+	if err := validateRequiredAttributes(server, credential, expectCredentials); err != nil {
 		return nil, errors.Wrap(ErrServerServiceObject, err.Error())
 	}
 
@@ -395,17 +401,22 @@ func toAsset(server *serverservice.Server, credential *serverservice.ServerCrede
 		return nil, errors.Wrap(ErrServerServiceObject, err.Error())
 	}
 
-	return &model.Asset{
-		ID:          server.UUID.String(),
-		Serial:      serverAttributes[model.ServerSerialAttributeKey],
-		Model:       serverAttributes[model.ServerModelAttributeKey],
-		Vendor:      serverAttributes[model.ServerVendorAttributeKey],
-		Metadata:    serverMetadataAttributes,
-		Facility:    server.FacilityCode,
-		BMCUsername: credential.Username,
-		BMCPassword: credential.Password,
-		BMCAddress:  net.ParseIP(serverAttributes[bmcIPAddressAttributeKey]),
-	}, nil
+	asset := &model.Asset{
+		ID:         server.UUID.String(),
+		Serial:     serverAttributes[model.ServerSerialAttributeKey],
+		Model:      serverAttributes[model.ServerModelAttributeKey],
+		Vendor:     serverAttributes[model.ServerVendorAttributeKey],
+		Metadata:   serverMetadataAttributes,
+		Facility:   server.FacilityCode,
+		BMCAddress: net.ParseIP(serverAttributes[bmcIPAddressAttributeKey]),
+	}
+
+	if credential != nil {
+		asset.BMCUsername = credential.Username
+		asset.BMCPassword = credential.Password
+	}
+
+	return asset, nil
 }
 
 // serverMetadataAttributes parses the server service server metdata attribute data
@@ -480,12 +491,12 @@ func serverAttributes(attributes []serverservice.Attributes) (map[string]string,
 	return sAttributes, nil
 }
 
-func validateRequiredAttributes(server *serverservice.Server, credential *serverservice.ServerCredential) error {
+func validateRequiredAttributes(server *serverservice.Server, credential *serverservice.ServerCredential, expectCredentials bool) error {
 	if server == nil {
 		return errors.New("server object nil")
 	}
 
-	if credential == nil {
+	if expectCredentials && credential == nil {
 		return errors.New("server credential object nil")
 	}
 
@@ -493,11 +504,11 @@ func validateRequiredAttributes(server *serverservice.Server, credential *server
 		return errors.New("server attributes slice empty")
 	}
 
-	if credential.Username == "" {
+	if expectCredentials && credential.Username == "" {
 		return errors.New("BMC username field empty")
 	}
 
-	if credential.Password == "" {
+	if expectCredentials && credential.Password == "" {
 		return errors.New("BMC password field empty")
 	}
 
