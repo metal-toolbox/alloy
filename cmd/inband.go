@@ -87,15 +87,21 @@ func (i *inbandCmd) Exec(ctx context.Context, _ []string) error {
 		return err
 	}
 
-	// init asset getter
-	getter, err := i.initAssetGetter(ctx, alloy)
-	if err != nil {
-		return err
-	}
+	var inventoryAsset *model.Asset
 
-	inventoryAsset, err := getter.AssetByID(ctx, i.assetID, false)
-	if err != nil {
-		return errors.Wrap(err, "inventory lookup for asset failed, asset ID: "+i.assetID)
+	// init asset getter when --asset-source is specified
+	if i.assetSourceKind != "" {
+		var getter asset.Getter
+
+		getter, err = i.initAssetGetter(ctx, alloy)
+		if err != nil {
+			return err
+		}
+
+		inventoryAsset, err = getter.AssetByID(ctx, i.assetID, false)
+		if err != nil {
+			return errors.Wrap(err, "inventory lookup for asset failed, asset ID: "+i.assetID)
+		}
 	}
 
 	// init publisher
@@ -135,8 +141,10 @@ func (i *inbandCmd) Exec(ctx context.Context, _ []string) error {
 		}
 
 		device.ID = i.assetID
-		device.Model = inventoryAsset.Model
-		device.Vendor = inventoryAsset.Vendor
+		if inventoryAsset != nil {
+			device.Model = inventoryAsset.Model
+			device.Vendor = inventoryAsset.Vendor
+		}
 
 		err = publisher.PublishOne(ctx, device)
 		if err != nil {
@@ -170,7 +178,13 @@ func (i *inbandCmd) initAssetPublisher(ctx context.Context, alloy *app.App) (pub
 	case publish.KindStdout:
 		return publish.NewStdoutPublisher(ctx, alloy)
 	case publish.KindServerService:
+		if i.assetSourceKind != asset.SourceKindServerService {
+			// To ensure the asset data in serverService is looked up before publishing data to serverService.
+			return nil, errors.Wrap(model.ErrConfig, "serverService publisher requires --asset-source serverService")
+		}
+
 		return publish.NewServerServicePublisher(ctx, alloy)
+
 	default:
 		return nil, errors.Wrap(model.ErrConfig, "unknown inventory publisher: "+i.rootCmd.publisherKind)
 	}
