@@ -55,6 +55,8 @@ func (i *InbandCollector) InventoryLocal(ctx context.Context) (*model.Asset, err
 
 	device.Vendor = common.FormatVendorName(device.Vendor)
 
+	// The "unknown" valued attributes here are to be filled in by the caller,
+	// with the data from the inventory source when its available.
 	return &model.Asset{Inventory: device, Vendor: "unknown", Model: "unknown", Serial: "unknown"}, nil
 }
 
