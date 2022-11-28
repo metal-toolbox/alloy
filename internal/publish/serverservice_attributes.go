@@ -80,11 +80,7 @@ func (h *serverServicePublisher) createUpdateServerMetadataAttributes(ctx contex
 	// current asset metadata has no attributes set, create
 	if len(asset.Metadata) == 0 {
 		_, err = h.client.CreateAttributes(ctx, serverID, attribute)
-		if err != nil {
-			return err
-		}
-
-		return nil
+		return err
 	}
 
 	// update when metadata differs
@@ -94,11 +90,8 @@ func (h *serverServicePublisher) createUpdateServerMetadataAttributes(ctx contex
 
 	// update vendor, model attributes
 	_, err = h.client.UpdateAttributes(ctx, serverID, model.ServerMetadataAttributeNS, metadata)
-	if err != nil {
-		return err
-	}
 
-	return nil
+	return err
 }
 
 // createUpdateServerMetadataAttributes creates/updates metadata attributes of a server
