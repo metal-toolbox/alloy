@@ -28,9 +28,7 @@ func (h *serverServicePublisher) createUpdateServerAttributes(ctx context.Contex
 	}
 
 	// create, when current asset in the inventory has no serial vendor, model attributes set
-	if asset.Serial == "unknown" &&
-		asset.Vendor == "unknown" &&
-		asset.Model == "unknown" {
+	if vendorModelSerialUnknown(asset) {
 		attribute := serverservice.Attributes{
 			Namespace: model.ServerVendorAttributeNS,
 			Data:      attributesData,
@@ -44,11 +42,10 @@ func (h *serverServicePublisher) createUpdateServerAttributes(ctx context.Contex
 		return nil
 	}
 
-	// update, when attributes are set but don't match
-	if asset.Serial != asset.Inventory.Serial ||
-		asset.Vendor != asset.Inventory.Vendor ||
-		asset.Model != asset.Inventory.Model {
-		// update vendor, model attributes
+	// update when these attributes are empty in serverservice
+	if (asset.Serial != "" && asset.Inventory.Serial == "") ||
+		(asset.Vendor != "" && asset.Inventory.Vendor == "") ||
+		(asset.Model != "" && asset.Inventory.Model == "") {
 		_, err = h.client.UpdateAttributes(ctx, serverID, model.ServerVendorAttributeNS, attributesData)
 		if err != nil {
 			return err
@@ -56,6 +53,10 @@ func (h *serverServicePublisher) createUpdateServerAttributes(ctx context.Contex
 	}
 
 	return nil
+}
+
+func vendorModelSerialUnknown(asset *model.Asset) bool {
+	return asset.Serial == "unknown" && asset.Vendor == "unknown" && asset.Model == "unknown"
 }
 
 // createUpdateServerMetadataAttributes creates/updates metadata attributes of a server
