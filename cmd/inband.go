@@ -135,18 +135,30 @@ func (i *inbandCmd) Exec(ctx context.Context, _ []string) error {
 			}
 		}()
 
-		device, err := collector.InventoryLocal(ctx)
+		collected, err := collector.InventoryLocal(ctx)
 		if err != nil {
 			alloy.Logger.Error(err)
 		}
 
-		device.ID = i.assetID
+		collected.ID = i.assetID
+
+		// set collected inventory attributes based on inventory data
+		// so as to not overwrite any of these existing values when published.
 		if inventoryAsset != nil {
-			device.Model = inventoryAsset.Model
-			device.Vendor = inventoryAsset.Vendor
+			if inventoryAsset.Model != "" {
+				collected.Model = inventoryAsset.Model
+			}
+
+			if inventoryAsset.Vendor != "" {
+				collected.Vendor = inventoryAsset.Vendor
+			}
+
+			if inventoryAsset.Serial != "" {
+				collected.Serial = inventoryAsset.Serial
+			}
 		}
 
-		err = publisher.PublishOne(ctx, device)
+		err = publisher.PublishOne(ctx, collected)
 		if err != nil {
 			alloy.Logger.Error(err)
 		}
