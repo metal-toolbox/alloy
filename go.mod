@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/bmc-toolbox/bmclib/v2 v2.0.1-0.20221111104230-8b19316c39fd
-	github.com/bmc-toolbox/common v0.0.0-20221104171658-00f3ff9e9233
+	github.com/bmc-toolbox/common v0.0.0-20221115135648-0b584f504396
 	github.com/bombsimon/logrusr/v2 v2.0.1
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/equinix-labs/otel-init-go v0.0.5
@@ -14,7 +14,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.1
 	github.com/jacobweinstock/registrar v0.4.6
 	github.com/jinzhu/copier v0.3.5
-	github.com/metal-toolbox/ironlib v0.2.1
+	github.com/metal-toolbox/ironlib v0.2.2
 	github.com/peterbourgon/ff/v3 v3.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.14.0
@@ -97,7 +97,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stmcginnis/gofish v0.13.1-0.20221107140645-5cc43fad050f // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
-	github.com/tidwall/gjson v1.14.3 // indirect
+	github.com/tidwall/gjson v1.14.4 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
@@ -117,7 +117,7 @@ require (
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	gocloud.dev v0.27.0 // indirect
 	golang.org/x/crypto v0.2.0 // indirect
-	golang.org/x/exp v0.0.0-20221111204811-129d8d6c17ab // indirect
+	golang.org/x/exp v0.0.0-20221114191408-850992195362 // indirect
 	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
