@@ -24,9 +24,9 @@ require (
 	github.com/spf13/viper v1.14.0
 	github.com/stretchr/testify v1.8.1
 	go.hollow.sh/serverservice v0.14.6-0.20221110082358-c207851c31f2
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4
-	go.opentelemetry.io/otel v1.11.1
-	go.opentelemetry.io/otel/trace v1.11.1
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.37.0
+	go.opentelemetry.io/otel v1.11.2
+	go.opentelemetry.io/otel/trace v1.11.2
 	golang.org/x/net v0.2.0
 	golang.org/x/oauth2 v0.2.0
 )
@@ -112,7 +112,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.11.1 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.11.1 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.11.1 // indirect
-	go.opentelemetry.io/otel/metric v0.33.0 // indirect
+	go.opentelemetry.io/otel/metric v0.34.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.11.1 // indirect
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	gocloud.dev v0.27.0 // indirect
