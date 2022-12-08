@@ -25,8 +25,8 @@ require (
 	github.com/stretchr/testify v1.8.1
 	go.hollow.sh/serverservice v0.14.6-0.20221110082358-c207851c31f2
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4
-	go.opentelemetry.io/otel v1.11.1
-	go.opentelemetry.io/otel/trace v1.11.1
+	go.opentelemetry.io/otel v1.11.2
+	go.opentelemetry.io/otel/trace v1.11.2
 	golang.org/x/net v0.2.0
 	golang.org/x/oauth2 v0.2.0
 )
