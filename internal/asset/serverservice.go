@@ -391,7 +391,7 @@ func toAsset(server *serverservice.Server, credential *serverservice.ServerCrede
 		return nil, errors.Wrap(ErrServerServiceObject, err.Error())
 	}
 
-	serverAttributes, err := serverAttributes(server.Attributes)
+	serverAttributes, err := serverAttributes(server.Attributes, expectCredentials)
 	if err != nil {
 		return nil, errors.Wrap(ErrServerServiceObject, err.Error())
 	}
@@ -402,18 +402,18 @@ func toAsset(server *serverservice.Server, credential *serverservice.ServerCrede
 	}
 
 	asset := &model.Asset{
-		ID:         server.UUID.String(),
-		Serial:     serverAttributes[model.ServerSerialAttributeKey],
-		Model:      serverAttributes[model.ServerModelAttributeKey],
-		Vendor:     serverAttributes[model.ServerVendorAttributeKey],
-		Metadata:   serverMetadataAttributes,
-		Facility:   server.FacilityCode,
-		BMCAddress: net.ParseIP(serverAttributes[bmcIPAddressAttributeKey]),
+		ID:       server.UUID.String(),
+		Serial:   serverAttributes[model.ServerSerialAttributeKey],
+		Model:    serverAttributes[model.ServerModelAttributeKey],
+		Vendor:   serverAttributes[model.ServerVendorAttributeKey],
+		Metadata: serverMetadataAttributes,
+		Facility: server.FacilityCode,
 	}
 
 	if credential != nil {
 		asset.BMCUsername = credential.Username
 		asset.BMCPassword = credential.Password
+		asset.BMCAddress = net.ParseIP(serverAttributes[bmcIPAddressAttributeKey])
 	}
 
 	return asset, nil
@@ -438,7 +438,7 @@ func serverMetadataAttributes(attributes []serverservice.Attributes) (map[string
 
 // serverAttributes parses the server service attribute data
 // and returns a map containing the bmc address, server serial, vendor, model attributes.
-func serverAttributes(attributes []serverservice.Attributes) (map[string]string, error) {
+func serverAttributes(attributes []serverservice.Attributes, wantBmcCredentials bool) (map[string]string, error) {
 	// returned server attributes map
 	sAttributes := map[string]string{}
 
@@ -450,7 +450,7 @@ func serverAttributes(attributes []serverservice.Attributes) (map[string]string,
 
 	for _, attribute := range attributes {
 		// bmc address attribute
-		if attribute.Namespace == bmcAttributeNamespace {
+		if wantBmcCredentials && (attribute.Namespace == bmcAttributeNamespace) {
 			if err := json.Unmarshal(attribute.Data, &bmcData); err != nil {
 				return nil, errors.Wrap(ErrServerServiceObject, "bmc address attribute: "+err.Error())
 			}
@@ -464,14 +464,16 @@ func serverAttributes(attributes []serverservice.Attributes) (map[string]string,
 		}
 	}
 
-	if len(bmcData) == 0 {
-		return nil, errors.New("expected server attributes with BMC address, got none")
-	}
+	if wantBmcCredentials {
+		if len(bmcData) == 0 {
+			return nil, errors.New("expected server attributes with BMC address, got none")
+		}
 
-	// set bmc address attribute
-	sAttributes[bmcIPAddressAttributeKey] = bmcData[bmcIPAddressAttributeKey]
-	if sAttributes[bmcIPAddressAttributeKey] == "" {
-		return nil, errors.New("expected BMC address attribute empty")
+		// set bmc address attribute
+		sAttributes[bmcIPAddressAttributeKey] = bmcData[bmcIPAddressAttributeKey]
+		if sAttributes[bmcIPAddressAttributeKey] == "" {
+			return nil, errors.New("expected BMC address attribute empty")
+		}
 	}
 
 	// set server vendor, model attributes in the returned map
