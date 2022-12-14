@@ -437,7 +437,8 @@ func serverMetadataAttributes(attributes []serverservice.Attributes) (map[string
 }
 
 // serverAttributes parses the server service attribute data
-// and returns a map containing the bmc address, server serial, vendor, model attributes.
+// and returns a map containing the bmc address, server serial, vendor, model attributes
+// and optionally the BMC address and attributes.
 func serverAttributes(attributes []serverservice.Attributes, wantBmcCredentials bool) (map[string]string, error) {
 	// returned server attributes map
 	sAttributes := map[string]string{}
