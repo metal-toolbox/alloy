@@ -101,7 +101,7 @@ func (h *serverServicePublisher) toComponentSlice(serverID uuid.UUID, device *mo
 	components := []*serverservice.ServerComponent{}
 
 	for _, component := range componentsTmp {
-		if component == nil {
+		if component == nil || h.requiredAttributesEmpty(component) {
 			continue
 		}
 
@@ -110,6 +110,14 @@ func (h *serverServicePublisher) toComponentSlice(serverID uuid.UUID, device *mo
 	}
 
 	return components, nil
+}
+
+func (h *serverServicePublisher) requiredAttributesEmpty(component *serverservice.ServerComponent) bool {
+	return component.Serial == "0" &&
+		component.Model == "" &&
+		component.Vendor == "" &&
+		len(component.Attributes) == 0 &&
+		len(component.VersionedAttributes) == 0
 }
 
 func (h *serverServicePublisher) newComponent(slug, cvendor, cmodel, cserial, cproduct string) (*serverservice.ServerComponent, error) {
