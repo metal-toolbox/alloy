@@ -499,17 +499,6 @@ var (
 			ComponentTypeSlug: "bmc",
 		},
 		serverservice.ServerComponent{
-			Name:                "Mainboard",
-			Vendor:              "",
-			Model:               "",
-			Serial:              "0",
-			Attributes:          nil,
-			VersionedAttributes: nil,
-			ComponentTypeID:     "1e0c3417-d63c-4fd5-88f7-4c525c70da12",
-			ComponentTypeName:   "Mainboard",
-			ComponentTypeSlug:   "mainboard",
-		},
-		serverservice.ServerComponent{
 			Name:   "PhysicalMemory",
 			Vendor: "hynix",
 			Model:  "",
