@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"context"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -63,6 +64,21 @@ func NewServerServiceClient(ctx context.Context, cfg *model.Config, logger *logr
 func newServerserviceClientWithOtel(cfg *model.Config, endpoint string, logger *logrus.Entry) (*serverservice.Client, error) {
 	// init retryable http client
 	retryableClient := retryablehttp.NewClient()
+
+	// log hook fo 500 errors since the the retryablehttp client masks them
+	logHookFunc := func(l retryablehttp.Logger, r *http.Response) {
+		if r.StatusCode == http.StatusInternalServerError {
+			b, err := io.ReadAll(r.Body)
+			if err != nil {
+				logger.Warn("serverservice query returned 500 error, got error reading body: ", err.Error())
+				return
+			}
+
+			logger.Warn("serverservice query returned 500 error, body: ", string(b))
+		}
+	}
+
+	retryableClient.ResponseLogHook = logHookFunc
 
 	// set retryable HTTP client to be the otel http client to collect telemetry
 	retryableClient.HTTPClient = otelhttp.DefaultClient
