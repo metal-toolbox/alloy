@@ -408,6 +408,7 @@ func Test_ServerService_CreateUpdateServerAttributes_Create(t *testing.T) {
 	// test: createUpdateServerAttributes creates server attributes when its undefined in server service
 	serverID, _ := uuid.Parse(fixtures.TestserverID_Dell_fc167440)
 
+	server := &serverservice.Server{UUID: serverID}
 	// the device with model, vendor, serial as unknown in server service
 	// with inventory from the device with the actual model, vendor, serial attributes
 	device := &model.Asset{
@@ -467,7 +468,7 @@ func Test_ServerService_CreateUpdateServerAttributes_Create(t *testing.T) {
 	mock := httptest.NewServer(handler)
 	p := testPublisherInstance(t, mock.URL)
 
-	err := p.createUpdateServerAttributes(context.TODO(), serverID, device)
+	err := p.createUpdateServerAttributes(context.TODO(), server, device)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -476,6 +477,28 @@ func Test_ServerService_CreateUpdateServerAttributes_Create(t *testing.T) {
 func Test_ServerService_CreateUpdateServerAttributes_Update(t *testing.T) {
 	// test: createUpdateServerAttributes updates server attributes when either of them are missing
 	serverID, _ := uuid.Parse(fixtures.TestserverID_Dell_fc167440)
+
+	// vendor attribute data
+	m := map[string]string{
+		model.ServerSerialAttributeKey: "unknown",
+		model.ServerVendorAttributeKey: "unknown",
+		model.ServerModelAttributeKey:  "unknown",
+	}
+
+	d, err := json.Marshal(m)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	server := &serverservice.Server{
+		UUID: serverID,
+		Attributes: []serverservice.Attributes{
+			{
+				Namespace: model.ServerVendorAttributeNS,
+				Data:      d,
+			},
+		},
+	}
 
 	// the device with model, vendor, serial as unknown in server service
 	// with inventory from the device with the actual model, vendor, serial attributes
@@ -500,7 +523,8 @@ func Test_ServerService_CreateUpdateServerAttributes_Update(t *testing.T) {
 		func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodPut:
-				b, err := io.ReadAll(r.Body)
+				var b []byte
+				b, err = io.ReadAll(r.Body)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -533,8 +557,7 @@ func Test_ServerService_CreateUpdateServerAttributes_Update(t *testing.T) {
 	mock := httptest.NewServer(handler)
 	p := testPublisherInstance(t, mock.URL)
 
-	err := p.createUpdateServerAttributes(context.TODO(), serverID, device)
-	if err != nil {
+	if err = p.createUpdateServerAttributes(context.TODO(), server, device); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -862,5 +885,131 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_Updated(t *testing.
 	err := p.createUpdateServerBMCErrorAttributes(context.TODO(), serverID, errAttribs, asset)
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func Test_vendorDataUpdate(t *testing.T) {
+	type args struct {
+		new     map[string]string
+		current map[string]string
+	}
+
+	// nolint:govet // test code is test code - disable struct fieldalignment error
+	tests := []struct {
+		name string
+		args args
+		want map[string]string
+	}{
+		{
+			"current is nil",
+			args{
+				new: map[string]string{
+					model.ServerSerialAttributeKey: "01234",
+					model.ServerVendorAttributeKey: "foo",
+					model.ServerModelAttributeKey:  "bar",
+				},
+				current: nil,
+			},
+			map[string]string{
+				model.ServerSerialAttributeKey: "01234",
+				model.ServerVendorAttributeKey: "foo",
+				model.ServerModelAttributeKey:  "bar",
+			},
+		},
+		{
+			"current and new data is equal",
+			args{
+				new: map[string]string{
+					model.ServerSerialAttributeKey: "01234",
+					model.ServerVendorAttributeKey: "foo",
+					model.ServerModelAttributeKey:  "bar",
+				},
+				current: map[string]string{
+					model.ServerSerialAttributeKey: "01234",
+					model.ServerVendorAttributeKey: "foo",
+					model.ServerModelAttributeKey:  "bar",
+				},
+			},
+			nil,
+		},
+		{
+			"current empty attribute is updated",
+			args{
+				new: map[string]string{
+					model.ServerSerialAttributeKey: "01234",
+					model.ServerVendorAttributeKey: "foo",
+					model.ServerModelAttributeKey:  "bar",
+				},
+				current: map[string]string{
+					model.ServerSerialAttributeKey: "01234",
+					model.ServerVendorAttributeKey: "",
+					model.ServerModelAttributeKey:  "bar",
+				},
+			},
+			map[string]string{
+				model.ServerSerialAttributeKey: "01234",
+				model.ServerVendorAttributeKey: "foo",
+				model.ServerModelAttributeKey:  "bar",
+			},
+		},
+		{
+			"current unknown and empty attributes are updated",
+			args{
+				new: map[string]string{
+					model.ServerSerialAttributeKey: "01234",
+					model.ServerVendorAttributeKey: "foo",
+					model.ServerModelAttributeKey:  "bar",
+				},
+				current: map[string]string{
+					model.ServerSerialAttributeKey: "unknown",
+					model.ServerVendorAttributeKey: "",
+					model.ServerModelAttributeKey:  "bar",
+				},
+			},
+			map[string]string{
+				model.ServerSerialAttributeKey: "01234",
+				model.ServerVendorAttributeKey: "foo",
+				model.ServerModelAttributeKey:  "bar",
+			},
+		},
+		{
+			"current attributes are not updated",
+			args{
+				new: map[string]string{
+					model.ServerSerialAttributeKey: "01234LLL",
+					model.ServerVendorAttributeKey: "foo",
+					model.ServerModelAttributeKey:  "bar",
+				},
+				current: map[string]string{
+					model.ServerSerialAttributeKey: "01234",
+					model.ServerVendorAttributeKey: "foo",
+					model.ServerModelAttributeKey:  "bar",
+				},
+			},
+			nil,
+		},
+		{
+			"current attributes are not updated - with unknown value",
+			args{
+				new: map[string]string{
+					model.ServerSerialAttributeKey: "01234",
+					model.ServerVendorAttributeKey: "unknown",
+					model.ServerModelAttributeKey:  "bar",
+				},
+				current: map[string]string{
+					model.ServerSerialAttributeKey: "01234",
+					model.ServerVendorAttributeKey: "foo",
+					model.ServerModelAttributeKey:  "bar",
+				},
+			},
+			nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := vendorDataUpdate(tt.args.new, tt.args.current)
+			assert.Equal(t, tt.want, got)
+		})
 	}
 }

@@ -32,11 +32,12 @@ var (
 	// concurrent requests
 	concurrency = 5
 
-	ErrSlugs                 = errors.New("slugs error")
-	ErrServerServiceQuery    = errors.New("error in server service query")
-	ErrRegisterChanges       = errors.New("error in server service register changes")
-	ErrAssetObjectConversion = errors.New("error converting asset object")
-	ErrChangeList            = errors.New("error building change list")
+	ErrSlugs                   = errors.New("slugs error")
+	ErrServerServiceQuery      = errors.New("error in server service query")
+	ErrRegisterChanges         = errors.New("error in server service register changes")
+	ErrAssetObjectConversion   = errors.New("error converting asset object")
+	ErrChangeList              = errors.New("error building change list")
+	ErrServerServiceAttrObject = errors.New("error in server service attribute object")
 	// The serverservice publisher tracer
 	tracer trace.Tracer
 )
@@ -214,7 +215,7 @@ func (h *serverServicePublisher) publish(ctx context.Context, device *model.Asse
 	metricInventorized.With(prometheus.Labels{"status": "success"}).Add(1)
 
 	// create/update server serial, vendor, model attributes
-	err = h.createUpdateServerAttributes(ctx, server.UUID, device)
+	err = h.createUpdateServerAttributes(ctx, server, device)
 	if err != nil {
 		h.logger.WithFields(
 			logrus.Fields{

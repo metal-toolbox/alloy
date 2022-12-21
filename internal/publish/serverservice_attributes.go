@@ -15,48 +15,107 @@ import (
 )
 
 // createUpdateServerAttributes creates/updates the server serial, vendor, model attributes
-func (h *serverServicePublisher) createUpdateServerAttributes(ctx context.Context, serverID uuid.UUID, asset *model.Asset) error {
-	attributesMap := map[string]string{
-		model.ServerSerialAttributeKey: asset.Inventory.Serial,
-		model.ServerVendorAttributeKey: asset.Inventory.Vendor,
-		model.ServerModelAttributeKey:  asset.Inventory.Model,
-	}
+func (h *serverServicePublisher) createUpdateServerAttributes(ctx context.Context, server *serverservice.Server, asset *model.Asset) error {
+	// device vendor data
+	deviceVendorData := h.deviceVendorData(asset)
 
-	attributesData, err := json.Marshal(attributesMap)
+	// marshal data from device
+	deviceVendorDataBytes, err := json.Marshal(deviceVendorData)
 	if err != nil {
 		return err
 	}
 
-	// create, when current asset in the inventory has no serial vendor, model attributes set
-	if vendorModelSerialUnknown(asset) {
-		attribute := serverservice.Attributes{
-			Namespace: model.ServerVendorAttributeNS,
-			Data:      attributesData,
-		}
-
-		_, err = h.client.CreateAttributes(ctx, serverID, attribute)
-		if err != nil {
-			return err
-		}
-
-		return nil
+	deviceVendorAttributes := &serverservice.Attributes{
+		Namespace: model.ServerVendorAttributeNS,
+		Data:      deviceVendorDataBytes,
 	}
 
-	// update when these attributes are empty in serverservice
-	if (asset.Serial != "" && asset.Inventory.Serial == "") ||
-		(asset.Vendor != "" && asset.Inventory.Vendor == "") ||
-		(asset.Model != "" && asset.Inventory.Model == "") {
-		_, err = h.client.UpdateAttributes(ctx, serverID, model.ServerVendorAttributeNS, attributesData)
+	// identify current vendor data in the inventory
+	inventoryAttrs := attributeByNamespace(model.ServerVendorAttributeNS, server.Attributes)
+	if inventoryAttrs == nil {
+		// create if none exists
+		_, err = h.client.CreateAttributes(ctx, server.UUID, *deviceVendorAttributes)
+		return err
+	}
+
+	// unpack vendor data from inventory
+	inventoryVendorData := map[string]string{}
+	if err := json.Unmarshal(inventoryAttrs.Data, &inventoryVendorData); err != nil {
+		// update vendor data since it seems to be invalid
+		h.logger.Warn("server vendor attributes data invalid, updating..")
+
+		_, err = h.client.UpdateAttributes(ctx, server.UUID, model.ServerVendorAttributeNS, deviceVendorDataBytes)
+
+		return err
+	}
+
+	update := vendorDataUpdate(deviceVendorData, inventoryVendorData)
+	if len(update) > 0 {
+		updateBytes, err := json.Marshal(update)
 		if err != nil {
 			return err
 		}
+
+		_, err = h.client.UpdateAttributes(ctx, server.UUID, model.ServerVendorAttributeNS, updateBytes)
+
+		return err
 	}
 
 	return nil
 }
 
-func vendorModelSerialUnknown(asset *model.Asset) bool {
-	return asset.Serial == "unknown" && asset.Vendor == "unknown" && asset.Model == "unknown"
+// initializes a map with the device vendor data attributes
+func (h *serverServicePublisher) deviceVendorData(asset *model.Asset) map[string]string {
+	// initialize map
+	m := map[string]string{
+		model.ServerSerialAttributeKey: "unknown",
+		model.ServerVendorAttributeKey: "unknown",
+		model.ServerModelAttributeKey:  "unknown",
+	}
+
+	if asset.Inventory.Serial != "" {
+		m[model.ServerSerialAttributeKey] = asset.Inventory.Serial
+	}
+
+	if asset.Inventory.Model != "" {
+		m[model.ServerModelAttributeKey] = asset.Inventory.Model
+	}
+
+	if asset.Inventory.Vendor != "" {
+		m[model.ServerVendorAttributeKey] = asset.Inventory.Vendor
+	}
+
+	return m
+}
+
+// returns a map with device vendor attributes when an update is required
+func vendorDataUpdate(newData, currentData map[string]string) map[string]string {
+	if currentData == nil {
+		return newData
+	}
+
+	var changes bool
+
+	setValue := func(key string, newData, currentData map[string]string) {
+		const unknown = "unknown"
+
+		if currentData[key] == "" || currentData[key] == unknown {
+			if newData[key] != unknown {
+				changes = true
+				currentData[key] = newData[key]
+			}
+		}
+	}
+
+	for k := range newData {
+		setValue(k, newData, currentData)
+	}
+
+	if !changes {
+		return nil
+	}
+
+	return currentData
 }
 
 // createUpdateServerMetadataAttributes creates/updates metadata attributes of a server
