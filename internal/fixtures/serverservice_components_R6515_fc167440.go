@@ -6349,7 +6349,7 @@ var (
 			Name:   "StorageController",
 			Vendor: "dell",
 			Model:  "FCH SATA Controller [AHCI mode]",
-			Serial: "2",
+			Serial: "PCI:ID",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
@@ -6520,7 +6520,7 @@ var (
 			Name:   "StorageController",
 			Vendor: "dell",
 			Model:  "FCH SATA Controller [AHCI mode]",
-			Serial: "3",
+			Serial: "PCI:ID-alloy-3",
 			Attributes: []serverservice.Attributes{
 				serverservice.Attributes{
 					Namespace: "sh.hollow.alloy.outofband.metadata",

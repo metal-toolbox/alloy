@@ -1732,7 +1732,7 @@ var (
 					Description: "FCH SATA Controller [AHCI mode]",
 					Vendor:      "DELL",
 					Model:       "",
-					Serial:      "",
+					Serial:      "PCI:ID",
 					ProductName: "",
 					Firmware: &common.Firmware{
 						Installed:  "",
@@ -1761,7 +1761,7 @@ var (
 					Description: "FCH SATA Controller [AHCI mode]",
 					Vendor:      "DELL",
 					Model:       "",
-					Serial:      "",
+					Serial:      "PCI:ID",
 					ProductName: "",
 					Firmware: &common.Firmware{
 						Installed:  "",
