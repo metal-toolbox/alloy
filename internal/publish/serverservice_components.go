@@ -18,6 +18,13 @@ import (
 	serverservice "go.hollow.sh/serverservice/pkg/api/v1"
 )
 
+// devel notes
+// -----------
+// - Components are stored in serverservice with a composite unique constraint on the component serial, component_type and server_id.
+// - When making changes to the way the serial is generated here (if one does not exist)
+//   keep in mind that this will affect existing data in serverservice, that is the components with newer serials
+//   will end up being new components added.
+
 // componentBySlugSerial returns a pointer to a component that matches the given slug, serial attributes
 func componentBySlugSerial(slug, serial string, components []*serverservice.ServerComponent) *serverservice.ServerComponent {
 	for _, c := range components {
@@ -322,9 +329,20 @@ func (h *serverServicePublisher) storageControllers(controllers []*common.Storag
 
 	components := make([]*serverservice.ServerComponent, 0, len(controllers))
 
+	serials := map[string]bool{}
+
 	for idx, c := range controllers {
 		if strings.TrimSpace(c.Serial) == "" {
 			c.Serial = strconv.Itoa(idx)
+		}
+
+		// Storage controllers can show up with pci IDs are their serial number
+		// set a unique serial on those components
+		_, exists := serials[c.Serial]
+		if exists {
+			c.Serial = c.Serial + "-alloy-" + strconv.Itoa(idx)
+		} else {
+			serials[c.Serial] = true
 		}
 
 		sc, err := h.newComponent(common.SlugStorageController, c.Vendor, c.Model, c.Serial, c.ProductName)
