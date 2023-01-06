@@ -474,6 +474,7 @@ func (h *serverServicePublisher) drives(drives []*common.Drive) []*serverservice
 				StorageController:   c.StorageController,
 				Protocol:            c.Protocol,
 				SmartErrors:         c.SmartErrors,
+				SmartStatus:         c.SmartStatus,
 				DriveType:           c.Type,
 				WWN:                 c.WWN,
 				CapacityBytes:       c.CapacityBytes,
@@ -796,6 +797,7 @@ type attributes struct {
 	BusInfo                      string               `json:"bus_info,omitempty"`
 	WWN                          string               `json:"wwn,omitempty"`
 	Protocol                     string               `json:"protocol,omitempty"`
+	SmartStatus                  string               `json:"smart_status,omitempty"`
 	SmartErrors                  []string             `json:"smart_errors,omitempty"`
 	PowerCapacityWatts           int64                `json:"power_capacity_watts,omitempty"`
 	SizeBytes                    int64                `json:"size_bytes,omitempty"`
