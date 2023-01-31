@@ -82,21 +82,21 @@ func componentPtrSlice(components serverservice.ServerComponentSlice) []*servers
 func (h *serverServicePublisher) toComponentSlice(serverID uuid.UUID, device *model.Asset) ([]*serverservice.ServerComponent, error) {
 	componentsTmp := []*serverservice.ServerComponent{}
 	componentsTmp = append(componentsTmp,
-		h.bios(device.Inventory.BIOS),
-		h.bmc(device.Inventory.BMC),
-		h.mainboard(device.Inventory.Mainboard),
+		h.bios(device.Vendor, device.Inventory.BIOS),
+		h.bmc(device.Vendor, device.Inventory.BMC),
+		h.mainboard(device.Vendor, device.Inventory.Mainboard),
 	)
 
-	componentsTmp = append(componentsTmp, h.dimms(device.Inventory.Memory)...)
-	componentsTmp = append(componentsTmp, h.nics(device.Inventory.NICs)...)
-	componentsTmp = append(componentsTmp, h.drives(device.Inventory.Drives)...)
-	componentsTmp = append(componentsTmp, h.psus(device.Inventory.PSUs)...)
-	componentsTmp = append(componentsTmp, h.cpus(device.Inventory.CPUs)...)
-	componentsTmp = append(componentsTmp, h.tpms(device.Inventory.TPMs)...)
-	componentsTmp = append(componentsTmp, h.cplds(device.Inventory.CPLDs)...)
-	componentsTmp = append(componentsTmp, h.gpus(device.Inventory.GPUs)...)
-	componentsTmp = append(componentsTmp, h.storageControllers(device.Inventory.StorageControllers)...)
-	componentsTmp = append(componentsTmp, h.enclosures(device.Inventory.Enclosures)...)
+	componentsTmp = append(componentsTmp, h.dimms(device.Vendor, device.Inventory.Memory)...)
+	componentsTmp = append(componentsTmp, h.nics(device.Vendor, device.Inventory.NICs)...)
+	componentsTmp = append(componentsTmp, h.drives(device.Vendor, device.Inventory.Drives)...)
+	componentsTmp = append(componentsTmp, h.psus(device.Vendor, device.Inventory.PSUs)...)
+	componentsTmp = append(componentsTmp, h.cpus(device.Vendor, device.Inventory.CPUs)...)
+	componentsTmp = append(componentsTmp, h.tpms(device.Vendor, device.Inventory.TPMs)...)
+	componentsTmp = append(componentsTmp, h.cplds(device.Vendor, device.Inventory.CPLDs)...)
+	componentsTmp = append(componentsTmp, h.gpus(device.Vendor, device.Inventory.GPUs)...)
+	componentsTmp = append(componentsTmp, h.storageControllers(device.Vendor, device.Inventory.StorageControllers)...)
+	componentsTmp = append(componentsTmp, h.enclosures(device.Vendor, device.Inventory.Enclosures)...)
 
 	components := []*serverservice.ServerComponent{}
 
@@ -151,7 +151,7 @@ func (h *serverServicePublisher) newComponent(slug, cvendor, cmodel, cserial, cp
 	}, nil
 }
 
-func (h *serverServicePublisher) gpus(gpus []*common.GPU) []*serverservice.ServerComponent {
+func (h *serverServicePublisher) gpus(deviceVendor string, gpus []*common.GPU) []*serverservice.ServerComponent {
 	if gpus == nil {
 		return nil
 	}
@@ -181,6 +181,7 @@ func (h *serverServicePublisher) gpus(gpus []*common.GPU) []*serverservice.Serve
 		)
 
 		h.setVersionedAttributes(
+			deviceVendor,
 			sc,
 			&versionedAttributes{
 				Firmware: c.Firmware,
@@ -194,7 +195,7 @@ func (h *serverServicePublisher) gpus(gpus []*common.GPU) []*serverservice.Serve
 	return components
 }
 
-func (h *serverServicePublisher) cplds(cplds []*common.CPLD) []*serverservice.ServerComponent {
+func (h *serverServicePublisher) cplds(deviceVendor string, cplds []*common.CPLD) []*serverservice.ServerComponent {
 	if cplds == nil {
 		return nil
 	}
@@ -224,6 +225,7 @@ func (h *serverServicePublisher) cplds(cplds []*common.CPLD) []*serverservice.Se
 		)
 
 		h.setVersionedAttributes(
+			deviceVendor,
 			sc,
 			&versionedAttributes{
 				Firmware: c.Firmware,
@@ -237,7 +239,7 @@ func (h *serverServicePublisher) cplds(cplds []*common.CPLD) []*serverservice.Se
 	return components
 }
 
-func (h *serverServicePublisher) tpms(tpms []*common.TPM) []*serverservice.ServerComponent {
+func (h *serverServicePublisher) tpms(deviceVendor string, tpms []*common.TPM) []*serverservice.ServerComponent {
 	if tpms == nil {
 		return nil
 	}
@@ -268,6 +270,7 @@ func (h *serverServicePublisher) tpms(tpms []*common.TPM) []*serverservice.Serve
 		)
 
 		h.setVersionedAttributes(
+			deviceVendor,
 			sc,
 			&versionedAttributes{
 				Firmware: c.Firmware,
@@ -281,7 +284,7 @@ func (h *serverServicePublisher) tpms(tpms []*common.TPM) []*serverservice.Serve
 	return components
 }
 
-func (h *serverServicePublisher) cpus(cpus []*common.CPU) []*serverservice.ServerComponent {
+func (h *serverServicePublisher) cpus(deviceVendor string, cpus []*common.CPU) []*serverservice.ServerComponent {
 	if cpus == nil {
 		return nil
 	}
@@ -317,6 +320,7 @@ func (h *serverServicePublisher) cpus(cpus []*common.CPU) []*serverservice.Serve
 		)
 
 		h.setVersionedAttributes(
+			deviceVendor,
 			sc,
 			&versionedAttributes{
 				Firmware: c.Firmware,
@@ -330,7 +334,7 @@ func (h *serverServicePublisher) cpus(cpus []*common.CPU) []*serverservice.Serve
 	return components
 }
 
-func (h *serverServicePublisher) storageControllers(controllers []*common.StorageController) []*serverservice.ServerComponent {
+func (h *serverServicePublisher) storageControllers(deviceVendor string, controllers []*common.StorageController) []*serverservice.ServerComponent {
 	if controllers == nil {
 		return nil
 	}
@@ -379,6 +383,7 @@ func (h *serverServicePublisher) storageControllers(controllers []*common.Storag
 		)
 
 		h.setVersionedAttributes(
+			deviceVendor,
 			sc,
 			&versionedAttributes{
 				Firmware: c.Firmware,
@@ -397,7 +402,7 @@ func (h *serverServicePublisher) storageControllers(controllers []*common.Storag
 	return components
 }
 
-func (h *serverServicePublisher) psus(psus []*common.PSU) []*serverservice.ServerComponent {
+func (h *serverServicePublisher) psus(deviceVendor string, psus []*common.PSU) []*serverservice.ServerComponent {
 	if psus == nil {
 		return nil
 	}
@@ -430,6 +435,7 @@ func (h *serverServicePublisher) psus(psus []*common.PSU) []*serverservice.Serve
 		)
 
 		h.setVersionedAttributes(
+			deviceVendor,
 			sc,
 			&versionedAttributes{
 				Firmware: c.Firmware,
@@ -443,7 +449,7 @@ func (h *serverServicePublisher) psus(psus []*common.PSU) []*serverservice.Serve
 	return components
 }
 
-func (h *serverServicePublisher) drives(drives []*common.Drive) []*serverservice.ServerComponent {
+func (h *serverServicePublisher) drives(deviceVendor string, drives []*common.Drive) []*serverservice.ServerComponent {
 	if drives == nil {
 		return nil
 	}
@@ -486,6 +492,7 @@ func (h *serverServicePublisher) drives(drives []*common.Drive) []*serverservice
 		)
 
 		h.setVersionedAttributes(
+			deviceVendor,
 			sc,
 			&versionedAttributes{
 				Firmware: c.Firmware,
@@ -504,7 +511,7 @@ func (h *serverServicePublisher) drives(drives []*common.Drive) []*serverservice
 	return components
 }
 
-func (h *serverServicePublisher) nics(nics []*common.NIC) []*serverservice.ServerComponent {
+func (h *serverServicePublisher) nics(deviceVendor string, nics []*common.NIC) []*serverservice.ServerComponent {
 	if nics == nil {
 		return nil
 	}
@@ -539,6 +546,7 @@ func (h *serverServicePublisher) nics(nics []*common.NIC) []*serverservice.Serve
 		)
 
 		h.setVersionedAttributes(
+			deviceVendor,
 			sc,
 			&versionedAttributes{
 				Firmware: c.Firmware,
@@ -552,7 +560,7 @@ func (h *serverServicePublisher) nics(nics []*common.NIC) []*serverservice.Serve
 	return components
 }
 
-func (h *serverServicePublisher) dimms(dimms []*common.Memory) []*serverservice.ServerComponent {
+func (h *serverServicePublisher) dimms(deviceVendor string, dimms []*common.Memory) []*serverservice.ServerComponent {
 	if dimms == nil {
 		return nil
 	}
@@ -597,6 +605,7 @@ func (h *serverServicePublisher) dimms(dimms []*common.Memory) []*serverservice.
 		)
 
 		h.setVersionedAttributes(
+			deviceVendor,
 			sc,
 			&versionedAttributes{
 				Firmware: c.Firmware,
@@ -610,7 +619,7 @@ func (h *serverServicePublisher) dimms(dimms []*common.Memory) []*serverservice.
 	return components
 }
 
-func (h *serverServicePublisher) mainboard(c *common.Mainboard) *serverservice.ServerComponent {
+func (h *serverServicePublisher) mainboard(deviceVendor string, c *common.Mainboard) *serverservice.ServerComponent {
 	if c == nil {
 		return nil
 	}
@@ -639,6 +648,7 @@ func (h *serverServicePublisher) mainboard(c *common.Mainboard) *serverservice.S
 	)
 
 	h.setVersionedAttributes(
+		deviceVendor,
 		sc,
 		&versionedAttributes{
 			Firmware: c.Firmware,
@@ -649,7 +659,7 @@ func (h *serverServicePublisher) mainboard(c *common.Mainboard) *serverservice.S
 	return sc
 }
 
-func (h *serverServicePublisher) enclosures(enclosures []*common.Enclosure) []*serverservice.ServerComponent {
+func (h *serverServicePublisher) enclosures(deviceVendor string, enclosures []*common.Enclosure) []*serverservice.ServerComponent {
 	if enclosures == nil {
 		return nil
 	}
@@ -682,6 +692,7 @@ func (h *serverServicePublisher) enclosures(enclosures []*common.Enclosure) []*s
 		)
 
 		h.setVersionedAttributes(
+			deviceVendor,
 			sc,
 			&versionedAttributes{
 				Firmware: c.Firmware,
@@ -695,7 +706,7 @@ func (h *serverServicePublisher) enclosures(enclosures []*common.Enclosure) []*s
 	return components
 }
 
-func (h *serverServicePublisher) bmc(c *common.BMC) *serverservice.ServerComponent {
+func (h *serverServicePublisher) bmc(deviceVendor string, c *common.BMC) *serverservice.ServerComponent {
 	if c == nil {
 		return nil
 	}
@@ -723,6 +734,7 @@ func (h *serverServicePublisher) bmc(c *common.BMC) *serverservice.ServerCompone
 	)
 
 	h.setVersionedAttributes(
+		deviceVendor,
 		sc,
 		&versionedAttributes{
 			Firmware: c.Firmware,
@@ -733,7 +745,7 @@ func (h *serverServicePublisher) bmc(c *common.BMC) *serverservice.ServerCompone
 	return sc
 }
 
-func (h *serverServicePublisher) bios(c *common.BIOS) *serverservice.ServerComponent {
+func (h *serverServicePublisher) bios(deviceVendor string, c *common.BIOS) *serverservice.ServerComponent {
 	if c == nil {
 		return nil
 	}
@@ -763,6 +775,7 @@ func (h *serverServicePublisher) bios(c *common.BIOS) *serverservice.ServerCompo
 	)
 
 	h.setVersionedAttributes(
+		deviceVendor,
 		sc,
 		&versionedAttributes{
 			Firmware: c.Firmware,
@@ -817,7 +830,9 @@ type attributes struct {
 type versionedAttributes struct {
 	Firmware    *common.Firmware `json:"firmware,omitempty"`
 	Status      *common.Status   `json:"status,omitempty"`
+	UUID        *uuid.UUID       `json:"uuid,omitempty"`
 	SmartStatus string           `json:"smart_status,omitempty"`
+	Vendor      string           `json:"vendor,omitempty"`
 }
 
 func (h *serverServicePublisher) setAttributes(component *serverservice.ServerComponent, attr *attributes) {
@@ -851,7 +866,22 @@ func (h *serverServicePublisher) setAttributes(component *serverservice.ServerCo
 	)
 }
 
-func (h *serverServicePublisher) setVersionedAttributes(component *serverservice.ServerComponent, vattr *versionedAttributes) {
+func (h *serverServicePublisher) setVersionedAttributes(deviceVendor string, component *serverservice.ServerComponent, vattr *versionedAttributes) {
+	ctx := context.TODO()
+
+	// add FirmwareData
+	if vattr.Firmware != nil {
+		var err error
+
+		vattr, err = h.addFirmwareData(ctx, deviceVendor, component, vattr)
+		if err != nil {
+			h.logger.WithFields(
+				logrus.Fields{
+					"err": err,
+				}).Warn("error adding firmware data to versioned attribute")
+		}
+	}
+
 	// convert versioned attributes to raw json
 	data, err := json.Marshal(vattr)
 	if err != nil {
@@ -880,4 +910,43 @@ func (h *serverServicePublisher) setVersionedAttributes(component *serverservice
 			Data:      data,
 		},
 	)
+}
+
+// addFirmwareData queries ServerService for the firmware version and try to find a match.
+func (h *serverServicePublisher) addFirmwareData(ctx context.Context, deviceVendor string, component *serverservice.ServerComponent, vattr *versionedAttributes) (vatrr *versionedAttributes, err error) {
+	// Filter by firmware vendor + version
+	// TODO: fix serverservice to accept component in filter
+	params := serverservice.ComponentFirmwareVersionListParams{
+		Vendor:  component.Vendor,
+		Version: vattr.Firmware.Installed,
+	}
+
+	// Query ServerService for the firmware
+	firmwares, _, err := h.client.ListServerComponentFirmware(ctx, &params)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(firmwares) == 1 {
+		vattr.Vendor = firmwares[0].Vendor
+		vattr.UUID = &firmwares[0].UUID
+	}
+
+	if len(firmwares) == 0 {
+		// try with the device vendor
+		params.Vendor = deviceVendor
+
+		// Query ServerService for the firmware
+		firmwares, _, err = h.client.ListServerComponentFirmware(ctx, &params)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(firmwares) == 1 {
+			vattr.Vendor = firmwares[0].Vendor
+			vattr.UUID = &firmwares[0].UUID
+		}
+	}
+
+	return vattr, nil
 }
