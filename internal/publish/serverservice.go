@@ -56,6 +56,7 @@ type serverServicePublisher struct {
 	workers              *workerpool.WorkerPool
 	client               *serverservice.Client
 	slugs                map[string]*serverservice.ServerComponentType
+	firmwares            map[string][]*serverservice.ComponentFirmwareVersion
 	attributeNS          string
 	versionedAttributeNS string
 }
@@ -78,6 +79,7 @@ func NewServerServicePublisher(ctx context.Context, alloy *app.App) (Publisher, 
 		workers:              workerpool.New(concurrency),
 		client:               client,
 		slugs:                make(map[string]*serverservice.ServerComponentType),
+		firmwares:            make(map[string][]*serverservice.ComponentFirmwareVersion),
 		attributeNS:          model.ServerComponentAttributeNS(alloy.Config.AppKind),
 		versionedAttributeNS: model.ServerComponentVersionedAttributeNS(alloy.Config.AppKind),
 	}
@@ -103,6 +105,12 @@ func (h *serverServicePublisher) PublishOne(ctx context.Context, device *model.A
 		return err
 	}
 
+	// cache server component firmwares for lookups
+	err = h.cacheServerComponentFirmwares(ctx)
+	if err != nil {
+		return err
+	}
+
 	h.publish(ctx, device)
 
 	return nil
@@ -123,6 +131,12 @@ func (h *serverServicePublisher) RunInventoryPublisher(ctx context.Context) erro
 		return err
 	}
 
+	// cache server component firmwares for lookups
+	err = h.cacheServerComponentFirmwares(ctx)
+	if err != nil {
+		return err
+	}
+
 	for asset := range h.collectorCh {
 		if asset == nil || asset.Inventory == nil {
 			continue
@@ -135,6 +149,31 @@ func (h *serverServicePublisher) RunInventoryPublisher(ctx context.Context) erro
 		metrics.TasksDispatched.With(stageLabel).Inc()
 
 		h.publish(ctx, asset)
+	}
+
+	return nil
+}
+
+func (h *serverServicePublisher) cacheServerComponentFirmwares(ctx context.Context) error {
+	// attach child span
+	ctx, span := tracer.Start(ctx, "cacheServerComponentFirmwares()")
+	defer span.End()
+
+	// Query ServerService for all firmware
+	firmwares, _, err := h.client.ListServerComponentFirmware(ctx, nil)
+	if err != nil {
+		// count error
+		metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
+
+		// set span status
+		span.SetStatus(codes.Error, "ListServerComponentFirmware() failed")
+
+		return err
+	}
+
+	for idx := range firmwares {
+		vendor := firmwares[idx].Vendor
+		h.firmwares[vendor] = append(h.firmwares[vendor], &firmwares[idx])
 	}
 
 	return nil

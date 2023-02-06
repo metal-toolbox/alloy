@@ -914,37 +914,22 @@ func (h *serverServicePublisher) setVersionedAttributes(deviceVendor string, com
 
 // addFirmwareData queries ServerService for the firmware version and try to find a match.
 func (h *serverServicePublisher) addFirmwareData(ctx context.Context, deviceVendor string, component *serverservice.ServerComponent, vattr *versionedAttributes) (vatrr *versionedAttributes, err error) {
-	// Filter by firmware vendor + version
-	// TODO: fix serverservice to accept component in filter
-	params := serverservice.ComponentFirmwareVersionListParams{
-		Vendor:  component.Vendor,
-		Version: vattr.Firmware.Installed,
-	}
+	// Check in the cache if we have a match by vendor + version
+	for _, fw := range h.firmwares[component.Vendor] {
+		if strings.EqualFold(fw.Version, vattr.Firmware.Installed) {
+			vattr.Vendor = fw.Vendor
+			vattr.UUID = &fw.UUID
 
-	// Query ServerService for the firmware
-	firmwares, _, err := h.client.ListServerComponentFirmware(ctx, &params)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(firmwares) == 1 {
-		vattr.Vendor = firmwares[0].Vendor
-		vattr.UUID = &firmwares[0].UUID
-	}
-
-	if len(firmwares) == 0 {
-		// try with the device vendor
-		params.Vendor = deviceVendor
-
-		// Query ServerService for the firmware
-		firmwares, _, err = h.client.ListServerComponentFirmware(ctx, &params)
-		if err != nil {
-			return nil, err
+			return vattr, nil
 		}
+	}
 
-		if len(firmwares) == 1 {
-			vattr.Vendor = firmwares[0].Vendor
-			vattr.UUID = &firmwares[0].UUID
+	for _, fw := range h.firmwares[deviceVendor] {
+		if strings.EqualFold(fw.Version, vattr.Firmware.Installed) {
+			vattr.Vendor = fw.Vendor
+			vattr.UUID = &fw.UUID
+
+			return vattr, nil
 		}
 	}
 
