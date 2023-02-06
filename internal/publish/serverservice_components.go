@@ -830,7 +830,7 @@ type attributes struct {
 type versionedAttributes struct {
 	Firmware    *common.Firmware `json:"firmware,omitempty"`
 	Status      *common.Status   `json:"status,omitempty"`
-	UUID        *uuid.UUID       `json:"uuid,omitempty"`
+	UUID        *uuid.UUID       `json:"uuid,omitempty"` // UUID references firmware UUID identified in serverservice based on component/device attributes.
 	SmartStatus string           `json:"smart_status,omitempty"`
 	Vendor      string           `json:"vendor,omitempty"`
 }
