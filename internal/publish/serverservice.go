@@ -243,6 +243,15 @@ func (h *serverServicePublisher) publish(ctx context.Context, device *model.Asse
 				"err": err,
 			}).Warn("error converting device object")
 	}
+
+	err = h.createUpdateServerBIOSConfiguration(ctx, server.UUID, device.BiosConfig)
+	if err != nil {
+		h.logger.WithFields(
+			logrus.Fields{
+				"id":  server.UUID.String(),
+				"err": err,
+			}).Warn("error in server bios configuration versioned attribute update")
+	}
 }
 
 // createUpdateServerComponents compares the current object in serverService with the device data and creates/updates server component data.

@@ -138,6 +138,9 @@ func (i *inbandCmd) Exec(ctx context.Context, _ []string) error {
 		collected, err := collector.InventoryLocal(ctx)
 		if err != nil {
 			alloy.Logger.Error(err)
+			// returning early here because collected is nil, otherwise I get a nil pointer exception.
+			// not sure if this is correct to do inside this closure
+			return
 		}
 
 		collected.ID = i.assetID

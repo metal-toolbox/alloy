@@ -25,6 +25,9 @@ const (
 	// errors that occurred when connecting/collecting inventory from the bmc are stored here.
 	ServerBMCErrorsAttributeNS = ServerServiceNSPrefix + ".server_bmc_errors"
 
+	// BIOS configuration is stored in this namespace.
+	ServerBIOSConfigNS = "net.platformequinix.bios"
+
 	// server service server serial attribute key
 	ServerSerialAttributeKey = "serial"
 
