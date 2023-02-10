@@ -153,6 +153,26 @@ func (h *serverServicePublisher) createUpdateServerMetadataAttributes(ctx contex
 	return err
 }
 
+func (h *serverServicePublisher) createUpdateServerBIOSConfiguration(ctx context.Context, serverID uuid.UUID, biosConfig map[string]string) error {
+	// marshal metadata from device
+	bc, err := json.Marshal(biosConfig)
+	if err != nil {
+		return err
+	}
+
+	va := serverservice.VersionedAttributes{
+		Namespace: model.ServerBIOSConfigNS(h.config.AppKind),
+		Data:      bc,
+	}
+
+	_, err = h.client.CreateVersionedAttributes(ctx, serverID, va)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // createUpdateServerMetadataAttributes creates/updates metadata attributes of a server
 // nolint:gocyclo // (joel) theres a bunch of validation going on here, I'll split the method out if theres more to come.
 func (h *serverServicePublisher) createUpdateServerBMCErrorAttributes(ctx context.Context, serverID uuid.UUID, current *serverservice.Attributes, asset *model.Asset) error {

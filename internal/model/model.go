@@ -33,6 +33,8 @@ type Asset struct {
 	Inventory *common.Device
 	// The device metadata attribute
 	Metadata map[string]string
+	// BIOS configuration
+	BiosConfig map[string]string
 	// The device ID from the inventory store
 	ID string
 	// The device vendor attribute

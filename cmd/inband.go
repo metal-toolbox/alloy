@@ -138,6 +138,7 @@ func (i *inbandCmd) Exec(ctx context.Context, _ []string) error {
 		collected, err := collector.InventoryLocal(ctx)
 		if err != nil {
 			alloy.Logger.Error(err)
+			return
 		}
 
 		collected.ID = i.assetID

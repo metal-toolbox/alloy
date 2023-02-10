@@ -28,3 +28,7 @@ func (m *MockIronlib) SetMockDevice(d *common.Device) {
 func (m *MockIronlib) GetInventory(ctx context.Context, dynamic bool) (*common.Device, error) {
 	return m.device, nil
 }
+
+func (m *MockIronlib) GetBIOSConfiguration(ctx context.Context) (biosConfig map[string]string, err error) {
+	return biosConfig, nil
+}

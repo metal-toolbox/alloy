@@ -35,6 +35,15 @@ const (
 	ServerVendorAttributeKey = "vendor"
 )
 
+// ServerBIOSConfigNS returns the namespace server bios configuration are stored in.
+func ServerBIOSConfigNS(appKind string) string {
+	if biosConfigNS := os.Getenv("SERVERSERVICE_BIOS_CONFIG_NS"); biosConfigNS != "" {
+		return biosConfigNS
+	}
+
+	return fmt.Sprintf("%s.%s.bios_configuration", ServerServiceNSPrefix, appKind)
+}
+
 // ServerServiceAttributeNS returns the namespace server component attributes are stored in.
 func ServerComponentAttributeNS(appKind string) string {
 	return fmt.Sprintf("%s.%s.metadata", ServerServiceNSPrefix, appKind)
