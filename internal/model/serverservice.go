@@ -25,9 +25,6 @@ const (
 	// errors that occurred when connecting/collecting inventory from the bmc are stored here.
 	ServerBMCErrorsAttributeNS = ServerServiceNSPrefix + ".server_bmc_errors"
 
-	// BIOS configuration is stored in this namespace.
-	ServerBIOSConfigNS = "net.platformequinix.bios"
-
 	// server service server serial attribute key
 	ServerSerialAttributeKey = "serial"
 
@@ -37,6 +34,15 @@ const (
 	// server service server vendor attribute key
 	ServerVendorAttributeKey = "vendor"
 )
+
+// ServerBIOSConfigNS returns the namespace server bios configuration are stored in.
+func ServerBIOSConfigNS(appKind string) string {
+	if biosConfigNS := os.Getenv("SERVERSERVICE_BIOS_CONFIG_NS"); biosConfigNS != "" {
+		return biosConfigNS
+	}
+
+	return fmt.Sprintf("%s.%s.bios_configuration", ServerServiceNSPrefix, appKind)
+}
 
 // ServerServiceAttributeNS returns the namespace server component attributes are stored in.
 func ServerComponentAttributeNS(appKind string) string {

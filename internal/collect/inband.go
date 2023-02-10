@@ -37,7 +37,7 @@ func (i *InbandCollector) SetMockGetter(getter interface{}) {
 	i.mock = true
 }
 
-// InventoryLocal implements the Collector interface to collect inventory locally (inband).
+// InventoryLocal implements the Collector interface to collect inventory and bios configuration locally (inband).
 func (i *InbandCollector) InventoryLocal(ctx context.Context) (*model.Asset, error) {
 	if !i.mock {
 		var err error

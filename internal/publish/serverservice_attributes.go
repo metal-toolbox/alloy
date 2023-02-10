@@ -161,7 +161,7 @@ func (h *serverServicePublisher) createUpdateServerBIOSConfiguration(ctx context
 	}
 
 	va := serverservice.VersionedAttributes{
-		Namespace: model.ServerBIOSConfigNS,
+		Namespace: model.ServerBIOSConfigNS(h.config.AppKind),
 		Data:      bc,
 	}
 
