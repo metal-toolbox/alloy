@@ -6,7 +6,6 @@ require (
 	github.com/bmc-toolbox/bmclib/v2 v2.0.1-0.20221219143242-1dbc47057ba3
 	github.com/bmc-toolbox/common v0.0.0-20221115135648-0b584f504396
 	github.com/bombsimon/logrusr/v2 v2.0.1
-	github.com/bombsimon/logrusr/v4 v4.0.0
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/equinix-labs/otel-init-go v0.0.5
 	github.com/gammazero/workerpool v1.1.3
@@ -29,7 +28,7 @@ require (
 	go.opentelemetry.io/otel v1.11.2
 	go.opentelemetry.io/otel/trace v1.11.2
 	golang.org/x/net v0.6.0
-	golang.org/x/oauth2 v0.3.0
+	golang.org/x/oauth2 v0.5.0
 )
 
 require (
