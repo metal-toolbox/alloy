@@ -38,7 +38,7 @@ jobs:
 
       - name: Build Alloy Docker image - no push
         id: dockerbuild-alloy
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
            context: .
            push: false
@@ -47,7 +47,7 @@ jobs:
 
       - name: Build Alloy inband Docker image - no push
         id: dockerbuild-alloy-inband
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
            context: .
            push: false
