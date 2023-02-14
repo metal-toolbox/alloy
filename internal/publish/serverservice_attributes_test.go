@@ -263,10 +263,25 @@ func Test_ServerService_CreateUpdateServerComponents_ObjectsEqual(t *testing.T) 
 		},
 	)
 
+	// get firmwares query
+	handler.HandleFunc(
+		"/api/v1/server-component-firmwares",
+		func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodGet:
+				w.Header().Set("Content-Type", "application/json")
+
+				_, _ = w.Write([]byte(`{}`))
+			default:
+				t.Fatal("expected GET request, got: " + r.Method)
+			}
+		},
+	)
+
 	mock := httptest.NewServer(handler)
 	p := testPublisherInstance(t, mock.URL)
 
-	device := &model.Asset{ID: serverID.String(), Inventory: fixtures.CopyDevice(fixtures.R6515_fc167440)}
+	device := &model.Asset{ID: serverID.String(), Vendor: "dell", Inventory: fixtures.CopyDevice(fixtures.R6515_fc167440)}
 
 	err := p.createUpdateServerComponents(context.TODO(), serverID, device)
 	if err != nil {
@@ -320,12 +335,28 @@ func Test_ServerService_CreateUpdateServerComponents_ObjectsUpdated(t *testing.T
 		},
 	)
 
+	// get firmwares query
+	handler.HandleFunc(
+		"/api/v1/server-component-firmwares",
+		func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodGet:
+				w.Header().Set("Content-Type", "application/json")
+
+				_, _ = w.Write([]byte(`{}`))
+			default:
+				t.Fatal("expected GET request, got: " + r.Method)
+			}
+		},
+	)
+
 	mock := httptest.NewServer(handler)
 	p := testPublisherInstance(t, mock.URL)
 
 	// asset device fixture returned by the inventory collector
 	device := &model.Asset{
 		ID:        serverID.String(),
+		Vendor:    "dell",
 		Inventory: fixtures.CopyDevice(fixtures.R6515_fc167440),
 	}
 
@@ -376,9 +407,25 @@ func Test_ServerService_CreateUpdateServerComponents_ObjectsAdded(t *testing.T) 
 		},
 	)
 
+	// get firmwares query
+	handler.HandleFunc(
+		"/api/v1/server-component-firmwares",
+		func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodGet:
+				w.Header().Set("Content-Type", "application/json")
+
+				_, _ = w.Write([]byte(`{}`))
+			default:
+				t.Fatal("expected GET request, got: " + r.Method)
+			}
+		},
+	)
+
 	// asset device fixture returned by the inventory collector
 	device := &model.Asset{
 		ID:        serverID.String(),
+		Vendor:    "dell",
 		Inventory: fixtures.CopyDevice(fixtures.R6515_fc167440),
 	}
 
@@ -568,6 +615,7 @@ func Test_ServerService_CreateUpdateServerMetadataAttributes_Create(t *testing.T
 
 	device := &model.Asset{
 		Metadata: map[string]string{},
+		Vendor:   "foobar",
 		Inventory: &common.Device{
 			Common: common.Common{
 				Metadata: map[string]string{"foo": "bar"},
@@ -627,6 +675,7 @@ func Test_ServerService_CreateUpdateServerMetadataAttributes_Update(t *testing.T
 
 	device := &model.Asset{
 		Metadata: map[string]string{"foo": "bar"},
+		Vendor:   "foobar",
 		Inventory: &common.Device{
 			Common: common.Common{
 				Metadata: map[string]string{"foo": "bar", "test": "lala"},
