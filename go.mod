@@ -6,9 +6,8 @@ require (
 	github.com/bmc-toolbox/bmclib/v2 v2.0.1-0.20221219143242-1dbc47057ba3
 	github.com/bmc-toolbox/common v0.0.0-20221115135648-0b584f504396
 	github.com/bombsimon/logrusr/v2 v2.0.1
-	github.com/bombsimon/logrusr/v4 v4.0.0
 	github.com/coreos/go-oidc v2.2.1+incompatible
-	github.com/equinix-labs/otel-init-go v0.0.5
+	github.com/equinix-labs/otel-init-go v0.0.7
 	github.com/gammazero/workerpool v1.1.3
 	github.com/google/go-cmp v0.5.9
 	github.com/google/uuid v1.3.0
@@ -135,7 +134,7 @@ require (
 	google.golang.org/api v0.105.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20221227171554-f9683d7f8bef // indirect
-	google.golang.org/grpc v1.51.0 // indirect
+	google.golang.org/grpc v1.52.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
