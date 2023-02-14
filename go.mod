@@ -6,7 +6,6 @@ require (
 	github.com/bmc-toolbox/bmclib/v2 v2.0.1-0.20221219143242-1dbc47057ba3
 	github.com/bmc-toolbox/common v0.0.0-20221115135648-0b584f504396
 	github.com/bombsimon/logrusr/v2 v2.0.1
-	github.com/bombsimon/logrusr/v4 v4.0.0
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/equinix-labs/otel-init-go v0.0.5
 	github.com/gammazero/workerpool v1.1.3
@@ -25,9 +24,9 @@ require (
 	github.com/spf13/viper v1.14.0
 	github.com/stretchr/testify v1.8.1
 	go.hollow.sh/serverservice v0.15.0
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.37.0
-	go.opentelemetry.io/otel v1.11.2
-	go.opentelemetry.io/otel/trace v1.11.2
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.39.0
+	go.opentelemetry.io/otel v1.13.0
+	go.opentelemetry.io/otel/trace v1.13.0
 	golang.org/x/net v0.6.0
 	golang.org/x/oauth2 v0.3.0
 )
@@ -120,7 +119,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.11.2 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.11.2 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.11.2 // indirect
-	go.opentelemetry.io/otel/metric v0.34.0 // indirect
+	go.opentelemetry.io/otel/metric v0.36.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.11.2 // indirect
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	gocloud.dev v0.27.0 // indirect
