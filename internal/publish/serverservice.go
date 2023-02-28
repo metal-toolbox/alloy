@@ -180,6 +180,7 @@ func (h *serverServicePublisher) cacheServerComponentFirmwares(ctx context.Conte
 }
 
 // publish device information with hollow server service
+// nolint:gocyclo // accept cyclomatic complexity here since most of the branches are error checks.
 func (h *serverServicePublisher) publish(ctx context.Context, device *model.Asset) {
 	// attach child span
 	ctx, span := tracer.Start(ctx, "publish()")
@@ -283,13 +284,16 @@ func (h *serverServicePublisher) publish(ctx context.Context, device *model.Asse
 			}).Warn("error converting device object")
 	}
 
-	err = h.createUpdateServerBIOSConfiguration(ctx, server.UUID, device.BiosConfig)
-	if err != nil {
-		h.logger.WithFields(
-			logrus.Fields{
-				"id":  server.UUID.String(),
-				"err": err,
-			}).Warn("error in server bios configuration versioned attribute update")
+	// Don't publish bios config if there's no data
+	if len(device.BiosConfig) != 0 {
+		err = h.createUpdateServerBIOSConfiguration(ctx, server.UUID, device.BiosConfig)
+		if err != nil {
+			h.logger.WithFields(
+				logrus.Fields{
+					"id":  server.UUID.String(),
+					"err": err,
+				}).Warn("error in server bios configuration versioned attribute update")
+		}
 	}
 }
 

@@ -55,7 +55,10 @@ func (i *InbandCollector) InventoryLocal(ctx context.Context) (*model.Asset, err
 
 	biosConfig, err := i.deviceManager.GetBIOSConfiguration(ctx)
 	if err != nil {
-		return nil, err
+		i.logger.WithFields(
+			logrus.Fields{
+				"err": err,
+			}).Warn("error collecting server bios configuration")
 	}
 
 	device.Vendor = common.FormatVendorName(device.Vendor)
