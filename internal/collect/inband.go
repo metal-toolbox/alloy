@@ -8,13 +8,13 @@ import (
 	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/metal-toolbox/ironlib"
-	ironlibm "github.com/metal-toolbox/ironlib/model"
+	"github.com/metal-toolbox/ironlib/actions"
 	"github.com/sirupsen/logrus"
 )
 
 // Inband collector collects hardware, firmware inventory inband
 type InbandCollector struct {
-	deviceManager ironlibm.DeviceManager
+	deviceManager actions.DeviceManager
 	logger        *logrus.Entry
 	collectorCh   chan<- *model.Asset
 	termCh        <-chan os.Signal
@@ -33,7 +33,7 @@ func NewInbandCollector(alloy *app.App) Collector {
 }
 
 func (i *InbandCollector) SetMockGetter(getter interface{}) {
-	i.deviceManager = getter.(ironlibm.DeviceManager)
+	i.deviceManager = getter.(actions.DeviceManager)
 	i.mock = true
 }
 
@@ -48,7 +48,7 @@ func (i *InbandCollector) InventoryLocal(ctx context.Context) (*model.Asset, err
 		}
 	}
 
-	device, err := i.deviceManager.GetInventory(ctx, true)
+	device, err := i.deviceManager.GetInventory(ctx)
 	if err != nil {
 		return nil, err
 	}

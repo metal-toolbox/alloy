@@ -5,13 +5,13 @@ import (
 
 	"github.com/bmc-toolbox/common"
 
-	ironlibm "github.com/metal-toolbox/ironlib/model"
+	"github.com/metal-toolbox/ironlib/actions"
 )
 
 // MockIronlib mocks ironlib methods, responses
 type MockIronlib struct {
 	// embed DeviceManager interface so we don't have to implement all interface methods
-	ironlibm.DeviceManager
+	actions.DeviceManager
 
 	// device is the device object returned by this mock instance
 	device *common.Device
@@ -25,7 +25,7 @@ func (m *MockIronlib) SetMockDevice(d *common.Device) {
 	m.device = d
 }
 
-func (m *MockIronlib) GetInventory(ctx context.Context, dynamic bool) (*common.Device, error) {
+func (m *MockIronlib) GetInventory(ctx context.Context, options ...actions.Option) (*common.Device, error) {
 	return m.device, nil
 }
 
