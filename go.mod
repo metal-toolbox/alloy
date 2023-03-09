@@ -3,8 +3,8 @@ module github.com/metal-toolbox/alloy
 go 1.19
 
 require (
-	github.com/bmc-toolbox/bmclib/v2 v2.0.1-0.20221219143242-1dbc47057ba3
-	github.com/bmc-toolbox/common v0.0.0-20221115135648-0b584f504396
+	github.com/bmc-toolbox/bmclib/v2 v2.0.1-0.20230308211403-bb58254ca1a7
+	github.com/bmc-toolbox/common v0.0.0-20230220061748-93ff001f4a1d
 	github.com/bombsimon/logrusr/v2 v2.0.1
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/equinix-labs/otel-init-go v0.0.7
@@ -125,7 +125,7 @@ require (
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	gocloud.dev v0.27.0 // indirect
 	golang.org/x/crypto v0.4.0 // indirect
-	golang.org/x/exp v0.0.0-20230116083435-1de6713980de // indirect
+	golang.org/x/exp v0.0.0-20230127130021-4ca2cb1a16b7 // indirect
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/mod v0.8.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
