@@ -530,20 +530,22 @@ func (h *serverServicePublisher) nics(deviceVendor string, nics []*common.NIC) [
 			return nil
 		}
 
-		h.setAttributes(
-			sc,
-			&attributes{
-				Description:  c.Description,
-				ProductName:  c.ProductName,
-				Oem:          c.Oem,
-				Metadata:     c.Metadata,
-				PhysicalID:   c.PhysicalID,
-				BusInfo:      c.BusInfo,
-				MacAddress:   c.MacAddress,
-				SpeedBits:    c.SpeedBits,
-				Capabilities: c.Capabilities,
-			},
-		)
+		for _, p := range c.NICPorts {
+			h.setAttributes(
+				sc,
+				&attributes{
+					Description:  c.Description,
+					ProductName:  c.ProductName,
+					Oem:          c.Oem,
+					Metadata:     c.Metadata,
+					PhysicalID:   p.PhysicalID,
+					BusInfo:      p.BusInfo,
+					MacAddress:   p.MacAddress,
+					SpeedBits:    p.SpeedBits,
+					Capabilities: c.Capabilities,
+				},
+			)
+		}
 
 		h.setVersionedAttributes(
 			deviceVendor,

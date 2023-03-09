@@ -62,12 +62,15 @@ var (
 					Firmware:    nil,
 					Status:      nil,
 				},
-				ID:          "",
-				Description: "",
-				SpeedBits:   0,
-				PhysicalID:  "",
-				BusInfo:     "",
-				MacAddress:  "",
+				ID: "",
+				NICPorts: []*common.NICPort{
+					&common.NICPort{
+						SpeedBits:  0,
+						PhysicalID: "",
+						BusInfo:    "",
+						MacAddress: "",
+					},
+				},
 			},
 		},
 		Mainboard: &common.Mainboard{
@@ -170,12 +173,15 @@ var (
 						"speed":    "10Gbit/s",
 					},
 				},
-				ID:          "",
-				Description: "Ethernet interface",
-				SpeedBits:   10000000000,
-				PhysicalID:  "0",
-				BusInfo:     "pci@0000:01:00.0",
-				MacAddress:  "",
+				ID: "",
+				NICPorts: []*common.NICPort{
+					{
+						SpeedBits:  10000000000,
+						PhysicalID: "0",
+						BusInfo:    "pci@0000:01:00.0",
+						MacAddress: "",
+					},
+				},
 			},
 		},
 		Drives: []*common.Drive{
@@ -624,7 +630,7 @@ var (
 			&common.NIC{
 				Common: common.Common{
 					Oem:         false,
-					Description: "",
+					Description: "Embedded NIC 1 Port 1 Partition 1",
 					Vendor:      "",
 					Model:       "",
 					Serial:      "",
@@ -642,17 +648,20 @@ var (
 						PostCodeStatus: "",
 					},
 				},
-				ID:          "NIC.Embedded.1",
-				Description: "Embedded NIC 1 Port 1 Partition 1",
-				SpeedBits:   6,
-				PhysicalID:  "",
-				BusInfo:     "",
-				MacAddress:  "",
+				ID: "NIC.Embedded.1",
+				NICPorts: []*common.NICPort{
+					{
+						SpeedBits:  6,
+						PhysicalID: "",
+						BusInfo:    "",
+						MacAddress: "",
+					},
+				},
 			},
 			&common.NIC{
 				Common: common.Common{
 					Oem:         false,
-					Description: "",
+					Description: "NIC in Slot 3 Port 1 Partition 1",
 					Vendor:      "Intel Corporation",
 					Model:       "Intel(R) 10GbE 2P X710 Adapter",
 					Serial:      "MYFLMIT04P00HQ",
@@ -673,12 +682,15 @@ var (
 						PostCodeStatus: "",
 					},
 				},
-				ID:          "NIC.Slot.3",
-				Description: "NIC in Slot 3 Port 1 Partition 1",
-				SpeedBits:   100006,
-				PhysicalID:  "",
-				BusInfo:     "",
-				MacAddress:  "F8:F2:1E:A0:0D:E0",
+				ID: "NIC.Slot.3",
+				NICPorts: []*common.NICPort{
+					{
+						SpeedBits:  100006,
+						PhysicalID: "",
+						BusInfo:    "",
+						MacAddress: "F8:F2:1E:A0:0D:E0",
+					},
+				},
 			},
 		},
 		Drives: []*common.Drive{
@@ -1456,7 +1468,7 @@ var (
 			&common.NIC{
 				Common: common.Common{
 					Oem:         false,
-					Description: "",
+					Description: "Embedded NIC 1 Port 1 Partition 1",
 					Vendor:      "",
 					Model:       "",
 					Serial:      "",
@@ -1474,17 +1486,20 @@ var (
 						PostCodeStatus: "",
 					},
 				},
-				ID:          "NIC.Embedded.1",
-				Description: "Embedded NIC 1 Port 1 Partition 1",
-				SpeedBits:   6,
-				PhysicalID:  "",
-				BusInfo:     "",
-				MacAddress:  "",
+				ID: "NIC.Embedded.1",
+				NICPorts: []*common.NICPort{
+					{
+						SpeedBits:  6,
+						PhysicalID: "",
+						BusInfo:    "",
+						MacAddress: "",
+					},
+				},
 			},
 			&common.NIC{
 				Common: common.Common{
 					Oem:         false,
-					Description: "",
+					Description: "NIC in Slot 3 Port 1 Partition 1",
 					Vendor:      "Intel Corporation",
 					Model:       "Intel(R) 10GbE 2P X710 Adapter",
 					Serial:      "MYFLMIT04P00HQ",
@@ -1505,12 +1520,15 @@ var (
 						PostCodeStatus: "",
 					},
 				},
-				ID:          "NIC.Slot.3",
-				Description: "NIC in Slot 3 Port 1 Partition 1",
-				SpeedBits:   100006,
-				PhysicalID:  "",
-				BusInfo:     "",
-				MacAddress:  "F8:F2:1E:A0:0D:E0",
+				ID: "NIC.Slot.3",
+				NICPorts: []*common.NICPort{
+					{
+						SpeedBits:  100006,
+						PhysicalID: "",
+						BusInfo:    "",
+						MacAddress: "F8:F2:1E:A0:0D:E0",
+					},
+				},
 			},
 		},
 		Drives: []*common.Drive{
