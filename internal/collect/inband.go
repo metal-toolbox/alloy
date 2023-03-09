@@ -37,6 +37,16 @@ func (i *InbandCollector) SetMockGetter(getter interface{}) {
 	i.mock = true
 }
 
+// SetAssetChannel sets/overrides the asset channel on the collector
+func (i *InbandCollector) SetAssetChannel(assetCh chan *model.Asset) {
+	i.collectorCh = assetCh
+}
+
+// ForAsset runs the asset inventory collection for the given asset and updates the asset object with collected inventory or an error if any.
+func (i *InbandCollector) ForAsset(ctx context.Context, asset *model.Asset) error {
+	return nil
+}
+
 // InventoryLocal implements the Collector interface to collect inventory and bios configuration locally (inband).
 func (i *InbandCollector) InventoryLocal(ctx context.Context) (*model.Asset, error) {
 	if !i.mock {

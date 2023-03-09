@@ -14,4 +14,7 @@ type Publisher interface {
 
 	// PublishOne publishes the given device information to the configured publish target
 	PublishOne(ctx context.Context, device *model.Asset) error
+
+	// SetAssetChannel sets/overrides the asset channel on the collector
+	SetAssetChannel(assetCh chan *model.Asset)
 }

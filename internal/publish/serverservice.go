@@ -9,9 +9,9 @@ import (
 	"github.com/gammazero/workerpool"
 	"github.com/google/uuid"
 	"github.com/metal-toolbox/alloy/internal/app"
-	"github.com/metal-toolbox/alloy/internal/helpers"
 	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/metal-toolbox/alloy/internal/model"
+	"github.com/metal-toolbox/alloy/internal/store"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sanity-io/litter"
@@ -49,7 +49,7 @@ func init() {
 // serverServicePublisher publishes asset inventory to serverService
 type serverServicePublisher struct {
 	logger               *logrus.Entry
-	config               *model.Config
+	config               *app.Configuration
 	syncWg               *sync.WaitGroup
 	collectorCh          <-chan *model.Asset
 	termCh               <-chan os.Signal
@@ -65,7 +65,7 @@ type serverServicePublisher struct {
 func NewServerServicePublisher(ctx context.Context, alloy *app.App) (Publisher, error) {
 	logger := app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher-serverService"}, alloy.Logger)
 
-	client, err := helpers.NewServerServiceClient(ctx, alloy.Config, logger)
+	client, err := store.NewServerServiceClient(ctx, &alloy.Config.ServerserviceOptions, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -85,6 +85,11 @@ func NewServerServicePublisher(ctx context.Context, alloy *app.App) (Publisher, 
 	}
 
 	return p, nil
+}
+
+// SetAssetChannel sets/overrides the asset channel on the publisher
+func (h *serverServicePublisher) SetAssetChannel(assetCh chan *model.Asset) {
+	h.collectorCh = assetCh
 }
 
 // PublishOne publishes the given asset to the server service asset store.

@@ -133,7 +133,7 @@ func Test_ServerServiceListAll(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			alloy.Config.ServerService.Concurrency = model.ConcurrencyDefault
+			// alloy.Config.ServerserviceOptions.Concurrency = model.ConcurrencyDefault
 
 			getter := newMockServerServiceGetter(t, alloy)
 			getter.assetCh = assetCh

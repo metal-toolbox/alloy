@@ -20,11 +20,13 @@ var (
 
 // App holds attributes for running alloy.
 type App struct {
+	// Viper loads configuration parameters.
+	v *viper.Viper
 	// AssetGetterPause when set will cause the asset getter to pause sending assets
 	// on the asset channel until the flag has been cleared.
 	AssetGetterPause *helpers.Pauser
 	// App configuration.
-	Config *model.Config
+	Config *Configuration
 	// AssetCh is where the asset getter retrieves assets from the asset store for the inventory collector to consume.
 	AssetCh chan *model.Asset
 	// CollectorCh is where the asset inventory information is written, for the publisher to consume.
@@ -45,22 +47,23 @@ func New(ctx context.Context, kind, cfgFile string, loglevel int) (app *App, err
 		return nil, errors.Wrap(ErrAppInit, "invalid app kind: "+kind)
 	}
 
-	cfg, err := configLoad(kind, cfgFile)
-	if err != nil {
-		return nil, errors.Wrap(ErrAppInit, "config load error: "+err.Error())
-	}
-
-	cfg.AppKind = kind
-
 	app = &App{
+		v:                viper.New(),
+
 		AssetGetterPause: helpers.NewPauser(),
-		Config:           cfg,
 		AssetCh:          make(chan *model.Asset),
 		CollectorCh:      make(chan *model.Asset),
 		TermCh:           make(chan os.Signal),
 		SyncWg:           &sync.WaitGroup{},
 		Logger:           logrus.New(),
 	}
+
+	if err := app.LoadConfiguration(cfgFile); err != nil {
+		return nil, err
+	}
+
+	// set here again since LoadConfiguration could overwrite it.
+	app.Config.AppKind = kind
 
 	switch loglevel {
 	case model.LogLevelDebug:
@@ -83,37 +86,6 @@ func New(ctx context.Context, kind, cfgFile string, loglevel int) (app *App, err
 func (a *App) InitAssetCollectorChannels() {
 	a.AssetCh = make(chan *model.Asset)
 	a.CollectorCh = make(chan *model.Asset)
-}
-
-func configLoad(kind, cfgFile string) (config *model.Config, err error) {
-	cfg := configDefault()
-	cfg.AppKind = kind
-
-	if cfgFile == "" {
-		return cfg, nil
-	}
-
-	cfg.File = cfgFile
-	viper.SetConfigFile(cfgFile)
-
-	err = viper.ReadInConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	err = viper.Unmarshal(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	return cfg, nil
-}
-
-// configDefault returns a default app configuration
-func configDefault() *model.Config {
-	return &model.Config{
-		LogLevel: 0,
-	}
 }
 
 // NewLogrusEntryFromLogger returns a logger contextualized with the given logrus fields.

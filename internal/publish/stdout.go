@@ -38,6 +38,11 @@ func NewStdoutPublisher(ctx context.Context, alloy *app.App) (Publisher, error) 
 	return p, nil
 }
 
+// SetAssetChannel sets/overrides the asset channel on the publisher
+func (p *stdoutPublisher) SetAssetChannel(assetCh chan *model.Asset) {
+	p.collectorCh = assetCh
+}
+
 // RunInventoryPublisher iterates over device objects received on the collector channel and prints them to stdout,
 // the method stops once the collector channel is closed.
 //

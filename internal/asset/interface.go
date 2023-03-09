@@ -19,4 +19,7 @@ type Getter interface {
 
 	// SetClient sets the given client as the Getter client to enable mocking for tests.
 	SetClient(interface{})
+
+	// SetAssetChannel sets/overrides the asset channel on the asset getter
+	SetAssetChannel(assetCh chan *model.Asset)
 }

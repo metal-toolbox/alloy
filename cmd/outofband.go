@@ -9,14 +9,17 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/asset"
-	"github.com/metal-toolbox/alloy/internal/collect"
+	"github.com/metal-toolbox/alloy/internal/collect/outofband"
+	"github.com/metal-toolbox/alloy/internal/controller"
 	"github.com/metal-toolbox/alloy/internal/helpers"
 	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/metal-toolbox/alloy/internal/publish"
 	"github.com/prometheus/client_golang/prometheus"
+	"go.hollow.sh/toolbox/events"
 	"go.opentelemetry.io/otel"
 
 	"github.com/peterbourgon/ff/v3/ffcli"
@@ -39,6 +42,9 @@ type outOfBandCmd struct {
 
 	// collectInterval when defined runs alloy in a forever loop collecting inventory at the given interval value.
 	collectInterval string
+
+	// controllerMode when set to true, will listen for events from the conditionorc controller
+	controllerMode bool
 
 	// collectSplay when set adds additional time to the collectInterval
 	// the additional time added is between zero and the collectSplay time.Duration value
@@ -67,6 +73,7 @@ func newOutOfBandCmd(rootCmd *rootCmd) *ffcli.Command {
 	fs.StringVar(&c.assetSourceCSVFile, "csv-file", "", "Source assets from csv file (required when -asset-source=csv)")
 	fs.StringVar(&c.collectInterval, "collect-interval", "", "run as a process, collecting inventory at the given interval in the time.Duration string format - 12h, 5d...")
 	fs.StringVar(&c.collectSplay, "collect-splay", "0s", "")
+	fs.BoolVar(&c.controllerMode, "controller-mode", false, "Listen for events from conditionorc, requires stream event parameters.")
 
 	rootCmd.RegisterFlags(fs)
 
@@ -111,6 +118,45 @@ func (c *outOfBandCmd) Exec(ctx context.Context, _ []string) error {
 		<-alloy.TermCh
 		cancelFunc()
 	}()
+
+	// TODO: replace ffcli with viper
+	if c.controllerMode {
+		// init collector channels
+		alloy.InitAssetCollectorChannels()
+
+		// init asset getter
+		getter, err := c.initAssetGetter(ctx, alloy)
+		if err != nil {
+			return err
+		}
+
+		// init collector
+		collector := outofband.NewCollector(alloy)
+
+		// init asset publisher
+		publisher, err := c.initAssetPublisher(ctx, alloy)
+		if err != nil {
+			return err
+		}
+
+		spew.Dump(alloy.Config)
+
+		streamBroker := events.NewStreamBroker()
+		if err := streamBroker.Open(alloy.Config.NatsOptions); err != nil {
+			alloy.Logger.Fatal(err)
+		}
+
+		c := controller.New(
+			alloy.Logger,
+			getter,
+			collector,
+			publisher,
+			streamBroker,
+			alloy.SyncWg,
+		)
+
+		return c.Run(ctx)
+	}
 
 	// collect interval parameter was specified
 	if c.collectInterval != "" {
@@ -341,6 +387,9 @@ func (c *outOfBandCmd) collect(ctx context.Context, alloy *app.App) error {
 	alloy.SyncWg.Add(1)
 
 	go func() {
+		// close assetCh, causes collector to return
+		defer close(alloy.AssetCh)
+
 		defer alloy.SyncWg.Done()
 
 		if c.assetIDList != "" {
@@ -373,10 +422,13 @@ func (c *outOfBandCmd) collect(ctx context.Context, alloy *app.App) error {
 	}()
 
 	// spawn out of band collector as a routine
-	collector := collect.NewOutOfBandCollector(alloy)
+	collector := outofband.NewCollector(alloy)
 	if err := collector.InventoryRemote(ctx); err != nil {
 		alloy.Logger.WithField("err", err).Error("error running outofband collector")
 	}
+
+	// close assetCh, causes publisher to return
+	close(alloy.CollectorCh)
 
 	alloy.Logger.Trace("collector done")
 

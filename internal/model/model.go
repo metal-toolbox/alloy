@@ -2,11 +2,13 @@ package model
 
 import (
 	"net"
+	"time"
 
 	"github.com/bmc-toolbox/common"
 )
 
 const (
+	AppName            = "alloy"
 	AppKindInband      = "inband"
 	AppKindOutOfBand   = "outofband"
 	LogLevelInfo       = 0
@@ -113,4 +115,29 @@ type Config struct {
 		// supported parameters: stdout, serverService
 		Kind string `mapstructure:"kind"`
 	} `mapstructure:"inventory_publisher"`
+
+	// EventsBrokerKind indicates the kind of event broker configuration to enable,
+	//
+	// Supported parameter value - nats
+	EventsBorkerKind string `mapstructure:"events_broker_kind"`
+
+	// NatsOptions defines the NATs events broker configuration parameters.
+	//
+	// This parameter is required when EventsBrokerKind is set to nats.
+	NatsOptions NatsOptions `mapstructure:"nats_options"`
+}
+
+type NatsOptions struct {
+	StreamURL          string `mapstructure:"stream_url"`
+	StreamUser         string `mapstructure:"stream_user"`
+	StreamPass         string `mapstructure:"stream_pass"`
+	CredsFile          string `mapstructure:"creds_file"`
+	StreamName         string `mapstructure:"stream_name"`
+	StreamPrefix       string `mapstructure:"stream_prefix"`
+	StreamURNNamespace string `mapstructure:"stream_urn_ns"`
+	// PublisherSubjects sets the subjects that can be published on the added stream.
+	PublisherSubjects []string `mapstructure:"publisher_subjects"`
+	// SubscriberSubjects when defined will result in the event broker subscribing to given streams.
+	SubscriberSubjects []string      `mapstructure:"subscriber_subjects"`
+	ConnectTimeout     time.Duration `mapstructure:"connect_timeout"`
 }

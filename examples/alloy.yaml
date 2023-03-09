@@ -1,23 +1,21 @@
+log_level: debug
 app_kind: outofband
 collector_outofband:
-  # routines to spawn to collect oob inventory
   concurrency: 5
-# stdout OR serverService (https://github.com/metal-toolbox/hollow-serverservice)
-#inventory_publisher: stdout
-inventory_publisher: serverService
-# csv OR serverService
-asset_getter: serverService
-serverService:
-  endpoint: http://localhost:8080
-  authToken: 
-  concurrency: 10
-    # these client scopes are agreed on with the OIDC provider.
-    client_scopes:
-      - read:server
-      - read:server-component-types
-      - read:server:credentials
-      - create:server:component
-      - create:server:attributes
-      - create:server:versioned-attributes
-      - update:server:component
-      - update:server:attributes
+store_kind: serverservice
+serverservice_options:
+  endpoint: http://serverservice:8000
+  disable_oauth: true
+  facility_code: dc13
+events_broker_kind: nats
+nats_options:
+  url: nats://nats:4222
+  app_name: conditionorc
+  publisher_subject_prefix: com.hollow.sh.controllers.responses
+  stream_urn_ns: hollow-controllers
+  subscribe_subjects:
+    - com.hollow.sh.controllers.commands.>
+  connect_timeout: 500ms
+  stream_user: alloy
+  stream_pass: password
+  #creds_file:

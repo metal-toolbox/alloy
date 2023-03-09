@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -55,53 +54,53 @@ func ServerComponentVersionedAttributeNS(appKind string) string {
 }
 
 // LoadServerServiceEnvVars sets any env SERVERSERVICE_* configuration parameters
-func (c *Config) LoadServerServiceEnvVars() {
-	if facility := os.Getenv("SERVERSERVICE_FACILITY_CODE"); facility != "" {
-		c.ServerService.FacilityCode = facility
-	}
-
-	// env var serverService endpoint
-	if endpoint := os.Getenv("SERVERSERVICE_ENDPOINT"); endpoint != "" {
-		c.ServerService.Endpoint = endpoint
-	}
-
-	// OIDC provider endpoint
-	if oidcProviderEndpoint := os.Getenv("SERVERSERVICE_OIDC_PROVIDER_ENDPOINT"); oidcProviderEndpoint != "" {
-		c.ServerService.OidcProviderEndpoint = oidcProviderEndpoint
-	}
-
-	// Audience endpoint
-	if audienceEndpoint := os.Getenv("SERVERSERVICE_AUDIENCE_ENDPOINT"); audienceEndpoint != "" {
-		c.ServerService.AudienceEndpoint = audienceEndpoint
-	}
-
-	// env var OAuth client secret
-	if clientSecret := os.Getenv("SERVERSERVICE_CLIENT_SECRET"); clientSecret != "" {
-		c.ServerService.ClientSecret = clientSecret
-	}
-
-	// env var OAuth client ID
-	if clientID := os.Getenv("SERVERSERVICE_CLIENT_ID"); clientID != "" {
-		c.ServerService.ClientID = clientID
-	}
-
-	// env var OAuth client scopes
-	if clientScopes := os.Getenv("SERVERSERVICE_CLIENT_SCOPES"); clientScopes != "" {
-		c.ServerService.ClientScopes = c.serverserviceScopesFromEnvVar(clientScopes)
-	}
-}
-
-// parses comma separated scope values and trims any spaces in them.
-func (c *Config) serverserviceScopesFromEnvVar(v string) []string {
-	scopes := []string{}
-	tokens := strings.Split(v, ",")
-
-	for _, t := range tokens {
-		scopes = append(scopes, strings.TrimSpace(t))
-	}
-
-	return scopes
-}
+//func (c *Config) LoadServerServiceEnvVars() {
+//	if facility := os.Getenv("SERVERSERVICE_FACILITY_CODE"); facility != "" {
+//		c.ServerService.FacilityCode = facility
+//	}
+//
+//	// env var serverService endpoint
+//	if endpoint := os.Getenv("SERVERSERVICE_ENDPOINT"); endpoint != "" {
+//		c.ServerService.Endpoint = endpoint
+//	}
+//
+//	// OIDC provider endpoint
+//	if oidcProviderEndpoint := os.Getenv("SERVERSERVICE_OIDC_PROVIDER_ENDPOINT"); oidcProviderEndpoint != "" {
+//		c.ServerService.OidcProviderEndpoint = oidcProviderEndpoint
+//	}
+//
+//	// Audience endpoint
+//	if audienceEndpoint := os.Getenv("SERVERSERVICE_AUDIENCE_ENDPOINT"); audienceEndpoint != "" {
+//		c.ServerService.AudienceEndpoint = audienceEndpoint
+//	}
+//
+//	// env var OAuth client secret
+//	if clientSecret := os.Getenv("SERVERSERVICE_CLIENT_SECRET"); clientSecret != "" {
+//		c.ServerService.ClientSecret = clientSecret
+//	}
+//
+//	// env var OAuth client ID
+//	if clientID := os.Getenv("SERVERSERVICE_CLIENT_ID"); clientID != "" {
+//		c.ServerService.ClientID = clientID
+//	}
+//
+//	// env var OAuth client scopes
+//	if clientScopes := os.Getenv("SERVERSERVICE_CLIENT_SCOPES"); clientScopes != "" {
+//		c.ServerService.ClientScopes = c.serverserviceScopesFromEnvVar(clientScopes)
+//	}
+//}
+//
+//// parses comma separated scope values and trims any spaces in them.
+//func (c *Config) serverserviceScopesFromEnvVar(v string) []string {
+//	scopes := []string{}
+//	tokens := strings.Split(v, ",")
+//
+//	for _, t := range tokens {
+//		scopes = append(scopes, strings.TrimSpace(t))
+//	}
+//
+//	return scopes
+//}
 
 // ValidateServerServiceParams checks required serverservice configuration parameters are present
 // and returns the serverservice URL endpoint

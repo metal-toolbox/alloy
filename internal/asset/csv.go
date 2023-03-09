@@ -27,7 +27,7 @@ var (
 type csvee struct {
 	csvReader io.ReadCloser
 	logger    *logrus.Entry
-	config    *model.Config
+	config    *app.Configuration
 	syncWg    *sync.WaitGroup
 	assetCh   chan<- *model.Asset
 }
@@ -41,6 +41,11 @@ func NewCSVGetter(ctx context.Context, alloy *app.App, csvReader io.ReadCloser) 
 		assetCh:   alloy.AssetCh,
 		csvReader: csvReader,
 	}, nil
+}
+
+// SetAssetChannel sets/overrides the asset channel on the asset getter
+func (c *csvee) SetAssetChannel(assetCh chan *model.Asset) {
+	c.assetCh = assetCh
 }
 
 // SetClient satisfies the Getter interface

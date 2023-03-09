@@ -14,6 +14,7 @@ import (
 	"github.com/metal-toolbox/alloy/internal/helpers"
 	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/metal-toolbox/alloy/internal/model"
+	"github.com/metal-toolbox/alloy/internal/store"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -57,7 +58,7 @@ type serverServiceGetter struct {
 	pauser  *helpers.Pauser
 	client  serverServiceRequestor
 	logger  *logrus.Entry
-	config  *model.Config
+	config  *app.Configuration
 	syncWg  *sync.WaitGroup
 	assetCh chan<- *model.Asset
 	workers *workerpool.WorkerPool
@@ -75,7 +76,7 @@ type serverServiceRequestor interface {
 func NewServerServiceGetter(ctx context.Context, alloy *app.App) (Getter, error) {
 	logger := app.NewLogrusEntryFromLogger(logrus.Fields{"component": "getter-serverService"}, alloy.Logger)
 
-	client, err := helpers.NewServerServiceClient(ctx, alloy.Config, logger)
+	client, err := store.NewServerServiceClient(ctx, &alloy.Config.ServerserviceOptions, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -86,16 +87,15 @@ func NewServerServiceGetter(ctx context.Context, alloy *app.App) (Getter, error)
 		syncWg:  alloy.SyncWg,
 		config:  alloy.Config,
 		assetCh: alloy.AssetCh,
-		client:  &serverServiceClient{client, logger, alloy.Config.ServerService.FacilityCode},
+		client:  &serverServiceClient{client, logger, alloy.Config.ServerserviceOptions.FacilityCode},
 	}
-
-	if alloy.Config.ServerService.Concurrency == 0 {
-		alloy.Config.ServerService.Concurrency = model.ConcurrencyDefault
-	}
-
-	s.workers = workerpool.New(alloy.Config.ServerService.Concurrency)
 
 	return s, nil
+}
+
+// SetAssetChannel sets/overrides the asset channel on the asset getter
+func (s *serverServiceGetter) SetAssetChannel(assetCh chan *model.Asset) {
+	s.assetCh = assetCh
 }
 
 // SetClient implements the Getter interface to set the serverServiceRequestor
@@ -119,7 +119,7 @@ func (s *serverServiceGetter) ListByIDs(ctx context.Context, assetIDs []string) 
 	defer span.End()
 
 	// close assetCh to notify consumers
-	defer close(s.assetCh)
+	//defer close(s.assetCh)
 
 	// submit inventory collection to worker pool
 	for _, assetID := range assetIDs {
