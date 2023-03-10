@@ -14,7 +14,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/jacobweinstock/registrar v0.4.6
 	github.com/jinzhu/copier v0.3.5
-	github.com/metal-toolbox/ironlib v0.2.5
+	github.com/metal-toolbox/ironlib v0.2.6-0.20230313083928-82c470aff5e5
 	github.com/peterbourgon/ff/v3 v3.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.14.0
