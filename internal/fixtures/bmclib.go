@@ -37,6 +37,13 @@ func (m *MockBmclib) Inventory(ctx context.Context) (*common.Device, error) {
 	return CopyDevice(E3C246D4INL), nil
 }
 
+func (m *MockBmclib) GetBiosConfiguration(ctx context.Context) (biosConfig map[string]string, err error) {
+	biosConfig = make(map[string]string)
+	biosConfig["foo"] = "bar"
+
+	return biosConfig, nil
+}
+
 func NewMockBmclib() *MockBmclib {
 	return &MockBmclib{}
 }
