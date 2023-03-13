@@ -9,7 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/asset"
 	"github.com/metal-toolbox/alloy/internal/collect/outofband"
@@ -139,10 +138,12 @@ func (c *outOfBandCmd) Exec(ctx context.Context, _ []string) error {
 			return err
 		}
 
-		spew.Dump(alloy.Config)
+		streamBroker, err := events.NewStreamBroker(alloy.Config.NatsOptions)
+		if err != nil {
+			alloy.Logger.Fatal(err)
+		}
 
-		streamBroker := events.NewStreamBroker()
-		if err := streamBroker.Open(alloy.Config.NatsOptions); err != nil {
+		if err := streamBroker.Open(); err != nil {
 			alloy.Logger.Fatal(err)
 		}
 

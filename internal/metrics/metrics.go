@@ -14,11 +14,11 @@ import (
 // s shared across packages are defined and initialized here.
 
 var (
-	// TasksDispatched measures the count of tasks dispatched to retrieve assets.
-	TasksDispatched *prometheus.CounterVec
+	// TasksLockerDispatched measures the count of tasks dispatched to retrieve assets.
+	TasksLockerDispatched *prometheus.CounterVec
 
-	// TasksCompleted measures the count of workers that returned after being spawned.
-	TasksCompleted *prometheus.CounterVec
+	// TasksLockerCompleted measures the count of workers that returned after being spawned.
+	TasksLockerCompleted *prometheus.CounterVec
 
 	// ServerServiceAssetsRetrieved measures the count of assets retrieved from server service to collect inventory for.
 	ServerServiceAssetsRetrieved *prometheus.CounterVec
@@ -46,7 +46,7 @@ var (
 )
 
 func init() {
-	TasksDispatched = promauto.NewCounterVec(
+	TasksLockerDispatched = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "alloy_task_dispatched_total",
 			Help: "A counter metric to measure the total count of tasks dispatched to retrieve assets from serverService",
@@ -54,7 +54,7 @@ func init() {
 		[]string{"stage"},
 	)
 
-	TasksCompleted = promauto.NewCounterVec(
+	TasksLockerCompleted = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "alloy_task_completed_total",
 			Help: "A counter metric to measure the total count of tasks that completed retrieving assets from serverService",

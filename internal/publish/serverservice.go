@@ -151,7 +151,7 @@ func (h *serverServicePublisher) RunInventoryPublisher(ctx context.Context) erro
 		metrics.AssetsReceived.With(stageLabel).Inc()
 
 		// count dispatched worker task
-		metrics.TasksDispatched.With(stageLabel).Inc()
+		metrics.TasksLockerDispatched.With(stageLabel).Inc()
 
 		h.publish(ctx, asset)
 	}

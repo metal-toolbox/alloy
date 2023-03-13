@@ -157,7 +157,7 @@ Loop:
 
 		case <-doneCh:
 			// count tasks completed
-			metrics.TasksCompleted.With(metrics.StageLabelCollector).Add(1)
+			metrics.TasksLockerCompleted.With(metrics.StageLabelCollector).Add(1)
 
 			atomic.AddInt32(&dispatched, ^int32(0))
 
@@ -193,7 +193,7 @@ Loop:
 						}()
 
 						// count dispatched worker task
-						metrics.TasksDispatched.With(metrics.StageLabelCollector).Add(1)
+						metrics.TasksLockerDispatched.With(metrics.StageLabelCollector).Add(1)
 
 						o.collect(ctx, target)
 					},

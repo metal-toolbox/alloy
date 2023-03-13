@@ -3,11 +3,19 @@ package controller
 import (
 	"context"
 
+	cptypes "github.com/metal-toolbox/conditionorc/pkg/types"
 	"github.com/sirupsen/logrus"
 )
 
 func (c *Controller) inventoryOutofband(ctx context.Context, task *Task) {
-	c.SetTaskProgress(ctx, task, Active, "querying inventory for BMC credentials")
+	if err := c.checkpointHelper.Set(ctx, task, cptypes.Active, "querying inventory for BMC credentials"); err != nil {
+		c.logger.WithFields(
+			logrus.Fields{
+				"err":      err.Error(),
+				"serverID": task.Urn.ResourceID.String(),
+			},
+		).Error("asset setting task checkpoint")
+	}
 
 	// fetch asset
 	assetFetched, err := c.assetGetter.AssetByID(ctx, task.Urn.ResourceID.String(), true)
@@ -20,13 +28,22 @@ func (c *Controller) inventoryOutofband(ctx context.Context, task *Task) {
 		).Error("asset lookup error")
 
 		cause := "asset lookup error: " + err.Error()
-		c.SetTaskProgress(ctx, task, Failed, cause)
+
+		if err := c.checkpointHelper.Set(ctx, task, cptypes.Failed, cause); err != nil {
+			c.logger.WithFields(
+				logrus.Fields{
+					"err":      err.Error(),
+					"serverID": task.Urn.ResourceID.String(),
+				},
+			).Error("asset setting task checkpoint")
+		}
 
 		return
 	}
 
 	task.Asset = *assetFetched
-	c.SetTaskProgress(ctx, task, Active, "querying device BMC for inventory")
+
+	c.checkpointHelper.Set(ctx, task, cptypes.Active, "querying device BMC for inventory")
 
 	// collect inventory from asset hardware
 	if err := c.collector.ForAsset(ctx, &task.Asset); err != nil {
@@ -38,12 +55,20 @@ func (c *Controller) inventoryOutofband(ctx context.Context, task *Task) {
 			}).Warn("inventory collect error")
 
 		cause := "inventory collect error: " + err.Error()
-		c.SetTaskProgress(ctx, task, Failed, cause)
+
+		if err := c.checkpointHelper.Set(ctx, task, cptypes.Failed, cause); err != nil {
+			c.logger.WithFields(
+				logrus.Fields{
+					"err":      err.Error(),
+					"serverID": task.Urn.ResourceID.String(),
+				},
+			).Error("asset setting task checkpoint")
+		}
 
 		return
 	}
 
-	c.SetTaskProgress(ctx, task, Active, "publishing collected data")
+	c.checkpointHelper.Set(ctx, task, cptypes.Active, "publishing collected data")
 
 	// publish collected inventory
 	if err := c.publisher.PublishOne(ctx, &task.Asset); err != nil {
@@ -55,7 +80,14 @@ func (c *Controller) inventoryOutofband(ctx context.Context, task *Task) {
 			}).Warn("inventory publish error")
 
 		cause := "inventory publish error: " + err.Error()
-		c.SetTaskProgress(ctx, task, Failed, cause)
+		if err := c.checkpointHelper.Set(ctx, task, cptypes.Failed, cause); err != nil {
+			c.logger.WithFields(
+				logrus.Fields{
+					"err":      err.Error(),
+					"serverID": task.Urn.ResourceID.String(),
+				},
+			).Error("asset setting task checkpoint")
+		}
 
 		return
 	}
@@ -65,7 +97,7 @@ func (c *Controller) inventoryOutofband(ctx context.Context, task *Task) {
 			"serverID": &task.Asset.ID,
 			"IP":       task.Asset.BMCAddress.String(),
 		},
-	).Trace("collection complete")
+	).Info("collection complete")
 
-	c.SetTaskProgress(ctx, task, Failed, "all done _o/")
+	c.checkpointHelper.Set(ctx, task, cptypes.Failed, "all done _o/")
 }

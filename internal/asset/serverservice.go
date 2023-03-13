@@ -171,7 +171,7 @@ func (s *serverServiceGetter) ListAll(ctx context.Context) error {
 	defer close(s.assetCh)
 
 	// count tasks dispatched
-	metrics.TasksDispatched.With(stageLabel).Inc()
+	metrics.TasksLockerDispatched.With(stageLabel).Inc()
 
 	err := s.dispatchQueries(ctx)
 	if err != nil {
