@@ -333,10 +333,15 @@ func (o *OutOfBandCollector) bmcGetBiosConfiguration(ctx context.Context, bmc oo
 		span.SetStatus(codes.Error, " BMC GetBiosConfiguration(): "+err.Error())
 
 		// increment get bios configuration query error count metric
-		if strings.Contains(err.Error(), "no compatible System Odata IDs identified") {
+		switch {
+		case strings.Contains(err.Error(), "no compatible System Odata IDs identified"):
 			asset.IncludeError("GetBiosConfigurationError", "redfish_incompatible: no compatible System Odata IDs identified")
 			metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "redfish_incompatible")
-		} else {
+		case strings.Contains(err.Error(), "no BiosConfigurationGetter implementations found"):
+			// If the asset doesn't implement a BiosConfigurationGetter, skip asset.IncludeError() which allows
+			// inventory to be published later on
+			metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "NoBiosConfigurationGetter")
+		default:
 			asset.IncludeError("GetBiosConfigurationError", err.Error())
 			metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "GetBiosConfigurationError")
 		}
