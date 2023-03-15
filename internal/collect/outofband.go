@@ -64,6 +64,7 @@ type oobGetter interface {
 	Open(ctx context.Context) error
 	Close(ctx context.Context) error
 	Inventory(ctx context.Context) (*common.Device, error)
+	GetBiosConfiguration(ctx context.Context) (map[string]string, error)
 }
 
 // NewOutOfBandCollector returns a instance of the OutOfBandCollector inventory collector
@@ -236,7 +237,7 @@ func (o *OutOfBandCollector) taskQueueWait(span trace.Span) {
 	}
 }
 
-// spawn runs the asset inventory collection and writes the collected inventory to the collectorCh
+// collect runs the asset inventory collection and writes the collected inventory to the collectorCh
 func (o *OutOfBandCollector) collect(ctx context.Context, asset *model.Asset) {
 	// attach child span
 	ctx, span := tracer.Start(ctx, "collect()")
@@ -289,6 +290,17 @@ func (o *OutOfBandCollector) collect(ctx context.Context, asset *model.Asset) {
 			}).Warn("BMC inventory error")
 	}
 
+	// collect bios configuration
+	err = o.bmcGetBiosConfiguration(ctx, bmc, asset)
+	if err != nil {
+		o.logger.WithFields(
+			logrus.Fields{
+				"serverID": asset.ID,
+				"IP":       asset.BMCAddress.String(),
+				"err":      err,
+			}).Warn("BMC bios configuration collection error")
+	}
+
 	// return if the context has been canceled.
 	if ctx.Err() != nil {
 		return
@@ -297,7 +309,55 @@ func (o *OutOfBandCollector) collect(ctx context.Context, asset *model.Asset) {
 	o.collectorCh <- asset
 }
 
-// bmcInventory collects inventory data from he BMC
+// bmcGetBiosConfiguration collects bios configuration data from the BMC
+// it updates the asset.BiosConfig attribute with the data collected.
+//
+// If any errors occurred in the collection, those are included in the asset.Errors attribute.
+func (o *OutOfBandCollector) bmcGetBiosConfiguration(ctx context.Context, bmc oobGetter, asset *model.Asset) error {
+	// measure BMC GetBiosConfiguration query
+	startTS := time.Now()
+
+	// attach child span
+	ctx, span := tracer.Start(ctx, "GetBiosConfiguration()")
+	defer span.End()
+
+	biosConfig, err := bmc.GetBiosConfiguration(ctx)
+	if err != nil {
+		o.logger.WithFields(
+			logrus.Fields{
+				"serverID": asset.ID,
+				"IP":       asset.BMCAddress.String(),
+				"err":      err,
+			}).Warn("error in bmc bios configuration collection")
+
+		span.SetStatus(codes.Error, " BMC GetBiosConfiguration(): "+err.Error())
+
+		// increment get bios configuration query error count metric
+		switch {
+		case strings.Contains(err.Error(), "no compatible System Odata IDs identified"):
+			asset.IncludeError("GetBiosConfigurationError", "redfish_incompatible: no compatible System Odata IDs identified")
+			metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "redfish_incompatible")
+		case strings.Contains(err.Error(), "no BiosConfigurationGetter implementations found"):
+			// If the asset doesn't implement a BiosConfigurationGetter, skip asset.IncludeError() which allows
+			// inventory to be published later on
+			metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "NoBiosConfigurationGetter")
+		default:
+			asset.IncludeError("GetBiosConfigurationError", err.Error())
+			metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "GetBiosConfigurationError")
+		}
+
+		return err
+	}
+
+	// measure BMC GetBiosConfiguration query time
+	metricObserveBMCQueryTimeSummary(asset.Vendor, asset.Model, "GetBiosConfiguration", startTS)
+
+	asset.BiosConfig = biosConfig
+
+	return nil
+}
+
+// bmcInventory collects inventory data from the BMC
 // it updates the asset.Inventory attribute with the data collected.
 //
 // If any errors occurred in the collection, those are included in the asset.Errors attribute.

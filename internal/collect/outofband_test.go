@@ -85,6 +85,11 @@ func Test_OutOfBandInventoryRemote(t *testing.T) {
 	// test inventory items match expected
 	assert.Equal(t, len(mockAssets), len(got))
 
+	// test asset.BiosConfig is populated
+	for _, a := range got {
+		assert.Equal(t, "bar", a.BiosConfig["foo"])
+	}
+
 	// test bmc connection was opened
 	assert.Equal(t, os.Getenv(fixtures.EnvMockBMCOpen), "true")
 

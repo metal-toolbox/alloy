@@ -432,12 +432,12 @@ func Test_ServerService_CreateUpdateServerComponents_ObjectsAdded(t *testing.T) 
 	device.Inventory.NICs = append(
 		device.Inventory.NICs,
 		&common.NIC{
-			ID:          "NEW NIC!",
-			Description: "Just added!, totally incompatible",
+			ID: "NEW NIC!",
 			Common: common.Common{
-				Vendor: "noname",
-				Model:  "noname",
-				Serial: fixtureNICSerial,
+				Vendor:      "noname",
+				Model:       "noname",
+				Serial:      fixtureNICSerial,
+				Description: "Just added!, totally incompatible",
 			},
 		},
 	)

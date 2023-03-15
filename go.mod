@@ -3,8 +3,8 @@ module github.com/metal-toolbox/alloy
 go 1.19
 
 require (
-	github.com/bmc-toolbox/bmclib/v2 v2.0.1-0.20221219143242-1dbc47057ba3
-	github.com/bmc-toolbox/common v0.0.0-20221115135648-0b584f504396
+	github.com/bmc-toolbox/bmclib/v2 v2.0.1-0.20230308154037-6f5089bc74fe
+	github.com/bmc-toolbox/common v0.0.0-20230220061748-93ff001f4a1d
 	github.com/bombsimon/logrusr/v2 v2.0.1
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/equinix-labs/otel-init-go v0.0.7
@@ -14,7 +14,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/jacobweinstock/registrar v0.4.6
 	github.com/jinzhu/copier v0.3.5
-	github.com/metal-toolbox/ironlib v0.2.5
+	github.com/metal-toolbox/ironlib v0.2.6-0.20230313083928-82c470aff5e5
 	github.com/peterbourgon/ff/v3 v3.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.14.0
@@ -125,7 +125,7 @@ require (
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	gocloud.dev v0.27.0 // indirect
 	golang.org/x/crypto v0.4.0 // indirect
-	golang.org/x/exp v0.0.0-20230116083435-1de6713980de // indirect
+	golang.org/x/exp v0.0.0-20230127130021-4ca2cb1a16b7 // indirect
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/mod v0.8.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
