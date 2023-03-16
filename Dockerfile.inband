@@ -1,5 +1,5 @@
 # https://github.com/metal-toolbox/ironlib/blob/main/Dockerfile
-FROM ghcr.io/metal-toolbox/ironlib:latest
+FROM ghcr.io/metal-toolbox/ironlib:v0.2.5
 
 COPY alloy /usr/sbin/alloy
 RUN chmod +x /usr/sbin/alloy
