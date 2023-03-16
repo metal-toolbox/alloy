@@ -1,4 +1,4 @@
-package asset
+package serverservice
 
 import (
 	"context"
@@ -11,26 +11,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gammazero/workerpool"
 	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/fixtures"
-	"github.com/metal-toolbox/alloy/internal/helpers"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/stretchr/testify/assert"
-	serverservice "go.hollow.sh/serverservice/pkg/api/v1"
+	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
 )
 
-func newMockServerServiceGetter(t *testing.T, alloy *app.App) *serverServiceGetter {
+func newMockServerServiceGetter(t *testing.T, alloy *app.App) *serverServiceStore {
 	t.Helper()
 
-	return &serverServiceGetter{
-		logger:  alloy.Logger.WithField("component", "test"),
-		syncWg:  alloy.SyncWg,
-		config:  alloy.Config,
-		assetCh: alloy.AssetCh,
-		workers: workerpool.New(1),
-		pauser:  helpers.NewPauser(),
-		client:  fixtures.NewMockServerServiceClient(),
+	return &serverServiceStore{
+		logger: alloy.Logger.WithField("component", "test"),
+		config: alloy.Config,
+		client: fixtures.NewMockServerServiceClient(),
 	}
 }
 
@@ -183,8 +177,8 @@ func Test_validateRequiredAttribtues(t *testing.T) {
 	// nolint:govet // ignore struct alignment in test
 	cases := []struct {
 		name              string
-		server            *serverservice.Server
-		secret            *serverservice.ServerCredential
+		server            *serverserviceapi.Server
+		secret            *serverserviceapi.ServerCredential
 		expectCredentials bool
 		expectedErr       string
 	}{
@@ -197,29 +191,29 @@ func Test_validateRequiredAttribtues(t *testing.T) {
 		},
 		{
 			"server credential object nil",
-			&serverservice.Server{},
+			&serverserviceapi.Server{},
 			nil,
 			true,
 			"server credential object nil",
 		},
 		{
 			"server attributes slice empty",
-			&serverservice.Server{},
-			&serverservice.ServerCredential{},
+			&serverserviceapi.Server{},
+			&serverserviceapi.ServerCredential{},
 			true,
 			"server attributes slice empty",
 		},
 		{
 			"BMC password field empty",
-			&serverservice.Server{Attributes: []serverservice.Attributes{{Namespace: bmcAttributeNamespace}}},
-			&serverservice.ServerCredential{Username: "foo", Password: ""},
+			&serverserviceapi.Server{Attributes: []serverserviceapi.Attributes{{Namespace: bmcAttributeNamespace}}},
+			&serverserviceapi.ServerCredential{Username: "foo", Password: ""},
 			true,
 			"BMC password field empty",
 		},
 		{
 			"BMC username field empty",
-			&serverservice.Server{Attributes: []serverservice.Attributes{{Namespace: bmcAttributeNamespace}}},
-			&serverservice.ServerCredential{Username: "", Password: "123"},
+			&serverserviceapi.Server{Attributes: []serverserviceapi.Attributes{{Namespace: bmcAttributeNamespace}}},
+			&serverserviceapi.ServerCredential{Username: "", Password: "123"},
 			true,
 			"BMC username field empty",
 		},
@@ -241,49 +235,49 @@ func Test_validateRequiredAttribtues(t *testing.T) {
 func Test_toAsset(t *testing.T) {
 	cases := []struct {
 		name          string
-		server        *serverservice.Server
-		secret        *serverservice.ServerCredential
+		server        *serverserviceapi.Server
+		secret        *serverserviceapi.ServerCredential
 		expectedAsset *model.Asset
 		expectedErr   string
 	}{
 		{
 			"Expected attributes empty raises error",
-			&serverservice.Server{
-				Attributes: []serverservice.Attributes{
+			&serverserviceapi.Server{
+				Attributes: []serverserviceapi.Attributes{
 					{
 						Namespace: "invalid",
 					},
 				},
 			},
-			&serverservice.ServerCredential{Username: "foo", Password: "bar"},
+			&serverserviceapi.ServerCredential{Username: "foo", Password: "bar"},
 			nil,
 			"expected server attributes with BMC address, got none",
 		},
 		{
 			"Attributes missing BMC IP Address raises error",
-			&serverservice.Server{
-				Attributes: []serverservice.Attributes{
+			&serverserviceapi.Server{
+				Attributes: []serverserviceapi.Attributes{
 					{
 						Namespace: bmcAttributeNamespace,
 						Data:      []byte(`{"namespace":"foo"}`),
 					},
 				},
 			},
-			&serverservice.ServerCredential{Username: "user", Password: "hunter2"},
+			&serverserviceapi.ServerCredential{Username: "user", Password: "hunter2"},
 			nil,
 			"expected BMC address attribute empty",
 		},
 		{
 			"Valid server, secret objects returns *model.Asset object",
-			&serverservice.Server{
-				Attributes: []serverservice.Attributes{
+			&serverserviceapi.Server{
+				Attributes: []serverserviceapi.Attributes{
 					{
 						Namespace: bmcAttributeNamespace,
 						Data:      []byte(`{"address":"127.0.0.1"}`),
 					},
 				},
 			},
-			&serverservice.ServerCredential{Username: "user", Password: "hunter2"},
+			&serverserviceapi.ServerCredential{Username: "user", Password: "hunter2"},
 			&model.Asset{
 				ID:          "00000000-0000-0000-0000-000000000000",
 				Vendor:      "unknown",

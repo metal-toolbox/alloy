@@ -1,4 +1,4 @@
-package collect
+package inband
 
 import (
 	"context"
@@ -23,7 +23,7 @@ func Test_InbandInventory(t *testing.T) {
 	}
 
 	// init mock inband inventory collector
-	collector := NewInbandCollector(alloy)
+	collector := NewCollector(alloy)
 	collector.SetMockGetter(mockIronlib)
 
 	var got *model.Asset

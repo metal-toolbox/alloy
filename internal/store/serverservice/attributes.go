@@ -1,4 +1,4 @@
-package publish
+package serverservice
 
 import (
 	"context"
@@ -11,13 +11,13 @@ import (
 	"github.com/metal-toolbox/alloy/internal/helpers"
 	"github.com/metal-toolbox/alloy/internal/model"
 	r3diff "github.com/r3labs/diff/v3"
-	serverservice "go.hollow.sh/serverservice/pkg/api/v1"
+	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
 )
 
 // createUpdateServerAttributes creates/updates the server serial, vendor, model attributes
-func (h *serverServicePublisher) createUpdateServerAttributes(ctx context.Context, server *serverservice.Server, asset *model.Asset) error {
+func (r *serverServiceClient) createUpdateServerAttributes(ctx context.Context, server *serverserviceapi.Server, asset *model.Asset) error {
 	// device vendor data
-	deviceVendorData := h.deviceVendorData(asset)
+	deviceVendorData := r.deviceVendorData(asset)
 
 	// marshal data from device
 	deviceVendorDataBytes, err := json.Marshal(deviceVendorData)
@@ -25,7 +25,7 @@ func (h *serverServicePublisher) createUpdateServerAttributes(ctx context.Contex
 		return err
 	}
 
-	deviceVendorAttributes := &serverservice.Attributes{
+	deviceVendorAttributes := &serverserviceapi.Attributes{
 		Namespace: model.ServerVendorAttributeNS,
 		Data:      deviceVendorDataBytes,
 	}
@@ -34,7 +34,7 @@ func (h *serverServicePublisher) createUpdateServerAttributes(ctx context.Contex
 	inventoryAttrs := attributeByNamespace(model.ServerVendorAttributeNS, server.Attributes)
 	if inventoryAttrs == nil {
 		// create if none exists
-		_, err = h.client.CreateAttributes(ctx, server.UUID, *deviceVendorAttributes)
+		_, err = r.client.CreateAttributes(ctx, server.UUID, *deviceVendorAttributes)
 		return err
 	}
 
@@ -42,9 +42,9 @@ func (h *serverServicePublisher) createUpdateServerAttributes(ctx context.Contex
 	inventoryVendorData := map[string]string{}
 	if err := json.Unmarshal(inventoryAttrs.Data, &inventoryVendorData); err != nil {
 		// update vendor data since it seems to be invalid
-		h.logger.Warn("server vendor attributes data invalid, updating..")
+		r.logger.Warn("server vendor attributes data invalid, updating..")
 
-		_, err = h.client.UpdateAttributes(ctx, server.UUID, model.ServerVendorAttributeNS, deviceVendorDataBytes)
+		_, err = r.client.UpdateAttributes(ctx, server.UUID, model.ServerVendorAttributeNS, deviceVendorDataBytes)
 
 		return err
 	}
@@ -56,7 +56,7 @@ func (h *serverServicePublisher) createUpdateServerAttributes(ctx context.Contex
 			return err
 		}
 
-		_, err = h.client.UpdateAttributes(ctx, server.UUID, model.ServerVendorAttributeNS, updateBytes)
+		_, err = r.client.UpdateAttributes(ctx, server.UUID, model.ServerVendorAttributeNS, updateBytes)
 
 		return err
 	}
@@ -65,7 +65,7 @@ func (h *serverServicePublisher) createUpdateServerAttributes(ctx context.Contex
 }
 
 // initializes a map with the device vendor data attributes
-func (h *serverServicePublisher) deviceVendorData(asset *model.Asset) map[string]string {
+func (r *serverServiceClient) deviceVendorData(asset *model.Asset) map[string]string {
 	// initialize map
 	m := map[string]string{
 		model.ServerSerialAttributeKey: "unknown",
@@ -119,7 +119,7 @@ func vendorDataUpdate(newData, currentData map[string]string) map[string]string 
 }
 
 // createUpdateServerMetadataAttributes creates/updates metadata attributes of a server
-func (h *serverServicePublisher) createUpdateServerMetadataAttributes(ctx context.Context, serverID uuid.UUID, asset *model.Asset) error {
+func (r *serverServiceClient) createUpdateServerMetadataAttributes(ctx context.Context, serverID uuid.UUID, asset *model.Asset) error {
 	// no metadata reported in inventory from device
 	if len(asset.Inventory.Metadata) == 0 {
 		return nil
@@ -131,14 +131,14 @@ func (h *serverServicePublisher) createUpdateServerMetadataAttributes(ctx contex
 		return err
 	}
 
-	attribute := serverservice.Attributes{
+	attribute := serverserviceapi.Attributes{
 		Namespace: model.ServerMetadataAttributeNS,
 		Data:      metadata,
 	}
 
 	// current asset metadata has no attributes set, create
 	if len(asset.Metadata) == 0 {
-		_, err = h.client.CreateAttributes(ctx, serverID, attribute)
+		_, err = r.client.CreateAttributes(ctx, serverID, attribute)
 		return err
 	}
 
@@ -148,24 +148,24 @@ func (h *serverServicePublisher) createUpdateServerMetadataAttributes(ctx contex
 	}
 
 	// update vendor, model attributes
-	_, err = h.client.UpdateAttributes(ctx, serverID, model.ServerMetadataAttributeNS, metadata)
+	_, err = r.client.UpdateAttributes(ctx, serverID, model.ServerMetadataAttributeNS, metadata)
 
 	return err
 }
 
-func (h *serverServicePublisher) createUpdateServerBIOSConfiguration(ctx context.Context, serverID uuid.UUID, biosConfig map[string]string) error {
+func (r *serverServiceClient) createUpdateServerBIOSConfiguration(ctx context.Context, serverID uuid.UUID, biosConfig map[string]string) error {
 	// marshal metadata from device
 	bc, err := json.Marshal(biosConfig)
 	if err != nil {
 		return err
 	}
 
-	va := serverservice.VersionedAttributes{
-		Namespace: model.ServerBIOSConfigNS(h.config.AppKind),
+	va := serverserviceapi.VersionedAttributes{
+		Namespace: model.ServerBIOSConfigNS(r.config.AppKind),
 		Data:      bc,
 	}
 
-	_, err = h.client.CreateVersionedAttributes(ctx, serverID, va)
+	_, err = r.client.CreateVersionedAttributes(ctx, serverID, va)
 	if err != nil {
 		return err
 	}
@@ -175,7 +175,7 @@ func (h *serverServicePublisher) createUpdateServerBIOSConfiguration(ctx context
 
 // createUpdateServerMetadataAttributes creates/updates metadata attributes of a server
 // nolint:gocyclo // (joel) theres a bunch of validation going on here, I'll split the method out if theres more to come.
-func (h *serverServicePublisher) createUpdateServerBMCErrorAttributes(ctx context.Context, serverID uuid.UUID, current *serverservice.Attributes, asset *model.Asset) error {
+func (r *serverServiceClient) createUpdateServerBMCErrorAttributes(ctx context.Context, serverID uuid.UUID, current *serverserviceapi.Attributes, asset *model.Asset) error {
 	// 1. no errors reported, none currently present
 	if len(asset.Errors) == 0 {
 		// server has no bmc errors registered
@@ -184,13 +184,8 @@ func (h *serverServicePublisher) createUpdateServerBMCErrorAttributes(ctx contex
 		}
 
 		// server has bmc errors registered, update the attributes to purge existing errors
-		_, err := h.client.UpdateAttributes(ctx, serverID, model.ServerBMCErrorsAttributeNS, []byte(`{}`))
-		if err != nil {
-			return err
-		}
-
-		// no errors, nothing to update
-		return nil
+		_, err := r.client.UpdateAttributes(ctx, serverID, model.ServerBMCErrorsAttributeNS, []byte(`{}`))
+		return err
 	}
 
 	// marshal new data
@@ -199,19 +194,15 @@ func (h *serverServicePublisher) createUpdateServerBMCErrorAttributes(ctx contex
 		return err
 	}
 
-	attribute := serverservice.Attributes{
+	attribute := serverserviceapi.Attributes{
 		Namespace: model.ServerBMCErrorsAttributeNS,
 		Data:      newData,
 	}
 
 	// 2. current data has no BMC error attributes object, create
 	if current == nil || len(current.Data) == 0 {
-		_, err = h.client.CreateAttributes(ctx, serverID, attribute)
-		if err != nil {
-			return err
-		}
-
-		return nil
+		_, err = r.client.CreateAttributes(ctx, serverID, attribute)
+		return err
 	}
 
 	// 3. current asset has some error attributes set, compare and update
@@ -228,7 +219,7 @@ func (h *serverServicePublisher) createUpdateServerBMCErrorAttributes(ctx contex
 	}
 
 	// update vendor, model attributes
-	_, err = h.client.UpdateAttributes(ctx, serverID, model.ServerBMCErrorsAttributeNS, newData)
+	_, err = r.client.UpdateAttributes(ctx, serverID, model.ServerBMCErrorsAttributeNS, newData)
 	if err != nil {
 		return err
 	}
@@ -236,10 +227,10 @@ func (h *serverServicePublisher) createUpdateServerBMCErrorAttributes(ctx contex
 	return nil
 }
 
-func diffComponentObjectsAttributes(currentObj, changeObj *serverservice.ServerComponent) ([]serverservice.Attributes, []serverservice.VersionedAttributes, error) {
-	var attributes []serverservice.Attributes
+func diffComponentObjectsAttributes(currentObj, changeObj *serverserviceapi.ServerComponent) ([]serverserviceapi.Attributes, []serverserviceapi.VersionedAttributes, error) {
+	var attributes []serverserviceapi.Attributes
 
-	var versionedAttributes []serverservice.VersionedAttributes
+	var versionedAttributes []serverserviceapi.VersionedAttributes
 
 	differ, err := r3diff.NewDiffer(r3diff.Filter(diffFilter))
 	if err != nil {
@@ -284,7 +275,7 @@ func diffComponentObjectsAttributes(currentObj, changeObj *serverservice.ServerC
 // returning the versioned attribute to be registered with serverService.
 //
 // In the case that no changes are to be registered, a nil object is returned.
-func diffVersionedAttributes(currentObjs, newObjs []serverservice.VersionedAttributes) (*serverservice.VersionedAttributes, error) {
+func diffVersionedAttributes(currentObjs, newObjs []serverserviceapi.VersionedAttributes) (*serverserviceapi.VersionedAttributes, error) {
 	// no newObjects
 	if len(newObjs) == 0 {
 		return nil, nil
@@ -296,7 +287,7 @@ func diffVersionedAttributes(currentObjs, newObjs []serverservice.VersionedAttri
 	}
 
 	// identify current latest versioned attribute (sorted by created_at)
-	var currentObj serverservice.VersionedAttributes
+	var currentObj serverserviceapi.VersionedAttributes
 
 	sort.Slice(currentObjs, func(i, j int) bool {
 		return currentObjs[i].CreatedAt.After(
@@ -337,13 +328,13 @@ func diffVersionedAttributes(currentObjs, newObjs []serverservice.VersionedAttri
 //
 // This is to ensure that this instance of Alloy is only working with the data that
 // is part of the defined attributes, versioned attributes namespaces
-func (h *serverServicePublisher) filterByAttributeNamespace(components []*serverservice.ServerComponent) {
+func (r *serverServiceClient) filterByAttributeNamespace(components []*serverserviceapi.ServerComponent) {
 	for cIdx, component := range components {
-		attributes := []serverservice.Attributes{}
-		versionedAttributes := []serverservice.VersionedAttributes{}
+		attributes := []serverserviceapi.Attributes{}
+		versionedAttributes := []serverserviceapi.VersionedAttributes{}
 
 		for idx, attribute := range component.Attributes {
-			if attribute.Namespace == h.attributeNS {
+			if attribute.Namespace == r.attributeNS {
 				attributes = append(attributes, component.Attributes[idx])
 			}
 		}
@@ -351,7 +342,7 @@ func (h *serverServicePublisher) filterByAttributeNamespace(components []*server
 		components[cIdx].Attributes = attributes
 
 		for idx, versionedAttribute := range component.VersionedAttributes {
-			if versionedAttribute.Namespace == h.versionedAttributeNS {
+			if versionedAttribute.Namespace == r.versionedAttributeNS {
 				versionedAttributes = append(versionedAttributes, component.VersionedAttributes[idx])
 			}
 		}
@@ -361,7 +352,7 @@ func (h *serverServicePublisher) filterByAttributeNamespace(components []*server
 }
 
 // attributeByNamespace returns the attribute in the slice that matches the namespace
-func attributeByNamespace(ns string, attributes []serverservice.Attributes) *serverservice.Attributes {
+func attributeByNamespace(ns string, attributes []serverserviceapi.Attributes) *serverserviceapi.Attributes {
 	for _, attribute := range attributes {
 		if attribute.Namespace == ns {
 			return &attribute

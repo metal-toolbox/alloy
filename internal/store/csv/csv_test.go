@@ -1,4 +1,4 @@
-package asset
+package store
 
 import (
 	"bytes"

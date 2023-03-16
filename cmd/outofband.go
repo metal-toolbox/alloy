@@ -10,13 +10,13 @@ import (
 	"time"
 
 	"github.com/metal-toolbox/alloy/internal/app"
-	"github.com/metal-toolbox/alloy/internal/asset"
 	"github.com/metal-toolbox/alloy/internal/collect/outofband"
 	"github.com/metal-toolbox/alloy/internal/controller"
 	"github.com/metal-toolbox/alloy/internal/helpers"
 	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/metal-toolbox/alloy/internal/publish"
+	"github.com/metal-toolbox/alloy/internal/store"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.hollow.sh/toolbox/events"
 	"go.opentelemetry.io/otel"
@@ -124,7 +124,7 @@ func (c *outOfBandCmd) Exec(ctx context.Context, _ []string) error {
 		alloy.InitAssetCollectorChannels()
 
 		// init asset getter
-		getter, err := c.initAssetGetter(ctx, alloy)
+		getter, err := c.initAssetStore(ctx, alloy)
 		if err != nil {
 			return err
 		}
@@ -194,10 +194,10 @@ func (c *outOfBandCmd) Exec(ctx context.Context, _ []string) error {
 	return c.collect(ctx, alloy)
 }
 
-// initAssetGetter initializes the Asset Getter which retrieves asset information to collect inventory data.
-func (c *outOfBandCmd) initAssetGetter(ctx context.Context, alloy *app.App) (asset.Getter, error) {
+// initAssetStore initializes the Asset Getter which retrieves asset information to collect inventory data.
+func (c *outOfBandCmd) initAssetStore(ctx context.Context, alloy *app.App) (store.Repository, error) {
 	switch c.assetSourceKind {
-	case asset.SourceKindCSV:
+	case store.SourceKindCSV:
 		if c.assetSourceCSVFile != "" {
 			alloy.Config.AssetGetter.Csv.File = c.assetSourceCSVFile
 		}
@@ -212,10 +212,10 @@ func (c *outOfBandCmd) initAssetGetter(ctx context.Context, alloy *app.App) (ass
 		}
 
 		// init csv asset source
-		return asset.NewCSVGetter(ctx, alloy, fh)
+		return store.NewCSVGetter(ctx, alloy, fh)
 
-	case asset.SourceKindServerService:
-		return asset.NewServerServiceGetter(ctx, alloy)
+	case store.SourceKindServerService:
+		return store.NewServerServiceGetter(ctx, alloy)
 	default:
 		return nil, errors.Wrap(model.ErrConfig, "unknown asset getter: "+c.assetSourceKind)
 	}
@@ -249,9 +249,9 @@ func (c *outOfBandCmd) validateFlags() error {
 // validateFlagSource checks the -asset-source flag parameter values are as expected.
 func (c *outOfBandCmd) validateFlagSource() error {
 	switch c.assetSourceKind {
-	case asset.SourceKindServerService:
+	case store.SourceKindServerService:
 
-	case asset.SourceKindCSV:
+	case store.SourceKindCSV:
 		if c.assetSourceCSVFile == "" {
 			return errors.Wrap(
 				errParseCLIParam,
@@ -373,7 +373,7 @@ func (c *outOfBandCmd) collect(ctx context.Context, alloy *app.App) error {
 	alloy.InitAssetCollectorChannels()
 
 	// init asset getter
-	getter, err := c.initAssetGetter(ctx, alloy)
+	getter, err := c.initAssetStore(ctx, alloy)
 	if err != nil {
 		return err
 	}

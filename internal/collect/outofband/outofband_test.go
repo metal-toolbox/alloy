@@ -1,4 +1,4 @@
-package collect
+package outofband
 
 import (
 	"context"
@@ -28,7 +28,7 @@ func Test_OutOfBandInventoryRemote(t *testing.T) {
 	}()
 
 	// init mock collector which mocks OOB inventory
-	collector := NewOutOfBandCollector(alloy)
+	collector := NewCollector(alloy)
 	collector.SetMockGetter(fixtures.NewMockBmclib())
 
 	// mock assets the collector will collect OOB inventory for

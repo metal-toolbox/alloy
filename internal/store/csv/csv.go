@@ -1,4 +1,4 @@
-package asset
+package store
 
 import (
 	"context"
@@ -33,19 +33,13 @@ type csvee struct {
 }
 
 // NewCSVGetter returns a new csv asset getter to retrieve asset information from a CSV file for inventory collection.
-func NewCSVGetter(ctx context.Context, alloy *app.App, csvReader io.ReadCloser) (Getter, error) {
+func NewCSVGetter(ctx context.Context, alloy *app.App, csvReader io.ReadCloser) (*csvee, error) {
 	return &csvee{
 		logger:    alloy.Logger.WithField("component", "getter-csv"),
 		syncWg:    alloy.SyncWg,
 		config:    alloy.Config,
-		assetCh:   alloy.AssetCh,
 		csvReader: csvReader,
 	}, nil
-}
-
-// SetAssetChannel sets/overrides the asset channel on the asset getter
-func (c *csvee) SetAssetChannel(assetCh chan *model.Asset) {
-	c.assetCh = assetCh
 }
 
 // SetClient satisfies the Getter interface
@@ -110,6 +104,10 @@ func (c *csvee) ListByIDs(ctx context.Context, assetIDs []string) error {
 	}
 
 	return nil
+}
+
+func (c *csvee) AssetsByOffsetLimit(ctx context.Context, offset, limit int) (assets []*model.Asset, totalAssets int, err error) {
+	return nil, 0, nil
 }
 
 func sliceContains(sl []string, str string) bool {

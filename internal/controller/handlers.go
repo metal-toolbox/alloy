@@ -46,7 +46,7 @@ func (c *Controller) inventoryOutofband(ctx context.Context, task *Task) {
 	c.checkpointHelper.Set(ctx, task, cptypes.Active, "querying device BMC for inventory")
 
 	// collect inventory from asset hardware
-	if err := c.collector.ForAsset(ctx, &task.Asset); err != nil {
+	if err := c.collector.CollectForAsset(ctx, &task.Asset); err != nil {
 		c.logger.WithFields(
 			logrus.Fields{
 				"serverID": &task.Asset.ID,

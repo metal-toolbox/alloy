@@ -14,11 +14,11 @@ import (
 // s shared across packages are defined and initialized here.
 
 var (
-	// TasksLockerDispatched measures the count of tasks dispatched to retrieve assets.
-	TasksLockerDispatched *prometheus.CounterVec
+	// TasksDispatched measures the count of tasks dispatched to retrieve assets.
+	TasksDispatched *prometheus.CounterVec
 
-	// TasksLockerCompleted measures the count of workers that returned after being spawned.
-	TasksLockerCompleted *prometheus.CounterVec
+	// TasksCompleted measures the count of workers that returned after being spawned.
+	TasksCompleted *prometheus.CounterVec
 
 	// ServerServiceAssetsRetrieved measures the count of assets retrieved from server service to collect inventory for.
 	ServerServiceAssetsRetrieved *prometheus.CounterVec
@@ -32,8 +32,8 @@ var (
 	// TaskQueueSize measures the number of tasks waiting for a getter worker .
 	TaskQueueSize *prometheus.GaugeVec
 
-	// ServerServiceQueryErrorCount counts the number of query errors - when querying the asset store.
-	ServerServiceQueryErrorCount *prometheus.CounterVec
+	// FetcherQueryErrorCount counts the number of query errors - when querying the asset store.
+	FetcherQueryErrorCount *prometheus.CounterVec
 
 	// OOBCollectScheduleTimestamp includes the timestamp of the next OOB collection scheduled run.
 	OOBCollectScheduleTimestamp *prometheus.GaugeVec
@@ -46,7 +46,7 @@ var (
 )
 
 func init() {
-	TasksLockerDispatched = promauto.NewCounterVec(
+	TasksDispatched = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "alloy_task_dispatched_total",
 			Help: "A counter metric to measure the total count of tasks dispatched to retrieve assets from serverService",
@@ -54,7 +54,7 @@ func init() {
 		[]string{"stage"},
 	)
 
-	TasksLockerCompleted = promauto.NewCounterVec(
+	TasksCompleted = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "alloy_task_completed_total",
 			Help: "A counter metric to measure the total count of tasks that completed retrieving assets from serverService",
@@ -95,7 +95,7 @@ func init() {
 		[]string{"stage"},
 	)
 
-	ServerServiceQueryErrorCount = promauto.NewCounterVec(
+	FetcherQueryErrorCount = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "alloy_serverservice_query_errors_total",
 			Help: "A counter metric to measure the total count of errors when the asset store.",

@@ -7,7 +7,6 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/metal-toolbox/alloy/internal/helpers"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -22,15 +21,8 @@ var (
 type App struct {
 	// Viper loads configuration parameters.
 	v *viper.Viper
-	// AssetGetterPause when set will cause the asset getter to pause sending assets
-	// on the asset channel until the flag has been cleared.
-	AssetGetterPause *helpers.Pauser
 	// App configuration.
 	Config *Configuration
-	// AssetCh is where the asset getter retrieves assets from the asset store for the inventory collector to consume.
-	AssetCh chan *model.Asset
-	// CollectorCh is where the asset inventory information is written, for the publisher to consume.
-	CollectorCh chan *model.Asset
 	// TermCh is the channel to terminate the app based on a signal
 	TermCh chan os.Signal
 	// Sync waitgroup to wait for running go routines on termination.
@@ -48,14 +40,10 @@ func New(ctx context.Context, kind, cfgFile string, loglevel int) (app *App, err
 	}
 
 	app = &App{
-		v:                viper.New(),
-
-		AssetGetterPause: helpers.NewPauser(),
-		AssetCh:          make(chan *model.Asset),
-		CollectorCh:      make(chan *model.Asset),
-		TermCh:           make(chan os.Signal),
-		SyncWg:           &sync.WaitGroup{},
-		Logger:           logrus.New(),
+		v:      viper.New(),
+		TermCh: make(chan os.Signal),
+		SyncWg: &sync.WaitGroup{},
+		Logger: logrus.New(),
 	}
 
 	if err := app.LoadConfiguration(cfgFile); err != nil {
@@ -80,12 +68,6 @@ func New(ctx context.Context, kind, cfgFile string, loglevel int) (app *App, err
 	signal.Notify(app.TermCh, syscall.SIGINT, syscall.SIGTERM)
 
 	return app, nil
-}
-
-// InitAssetCollectorChannels is a helper method to initialize the asset and collector channels.
-func (a *App) InitAssetCollectorChannels() {
-	a.AssetCh = make(chan *model.Asset)
-	a.CollectorCh = make(chan *model.Asset)
 }
 
 // NewLogrusEntryFromLogger returns a logger contextualized with the given logrus fields.

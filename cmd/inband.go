@@ -7,11 +7,11 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/metal-toolbox/alloy/internal/app"
-	"github.com/metal-toolbox/alloy/internal/asset"
-	"github.com/metal-toolbox/alloy/internal/collect"
+	"github.com/metal-toolbox/alloy/internal/collect/inband"
 	"github.com/metal-toolbox/alloy/internal/helpers"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/metal-toolbox/alloy/internal/publish"
+	"github.com/metal-toolbox/alloy/internal/store"
 	"github.com/peterbourgon/ff/v3/ffcli"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
@@ -91,14 +91,13 @@ func (i *inbandCmd) Exec(ctx context.Context, _ []string) error {
 
 	// init asset getter when --asset-source is specified
 	if i.assetSourceKind != "" {
-		var getter asset.Getter
 
-		getter, err = i.initAssetGetter(ctx, alloy)
+		store, err := i.initAssetStore(ctx, alloy)
 		if err != nil {
 			return err
 		}
 
-		inventoryAsset, err = getter.AssetByID(ctx, i.assetID, false)
+		inventoryAsset, err = store.AssetByID(ctx, i.assetID, false)
 		if err != nil {
 			return errors.Wrap(err, "inventory lookup for asset failed, asset ID: "+i.assetID)
 		}
@@ -111,7 +110,7 @@ func (i *inbandCmd) Exec(ctx context.Context, _ []string) error {
 	}
 
 	// init collector
-	collector := collect.NewInbandCollector(alloy)
+	collector := inband.NewCollector(alloy)
 
 	timeoutDuration, err := time.ParseDuration(i.timeout)
 	if err != nil {
@@ -191,7 +190,7 @@ func (i *inbandCmd) initAssetPublisher(ctx context.Context, alloy *app.App) (pub
 	case publish.KindStdout:
 		return publish.NewStdoutPublisher(ctx, alloy)
 	case publish.KindServerService:
-		if i.assetSourceKind != asset.SourceKindServerService {
+		if i.assetSourceKind != store.SourceKindServerService {
 			// To ensure the asset data in serverService is looked up before publishing data to serverService.
 			return nil, errors.Wrap(model.ErrConfig, "serverService publisher requires --asset-source serverService")
 		}
@@ -203,10 +202,10 @@ func (i *inbandCmd) initAssetPublisher(ctx context.Context, alloy *app.App) (pub
 	}
 }
 
-// initAssetGetter initializes the Asset Getter which retrieves asset information to collect inventory data.
-func (i *inbandCmd) initAssetGetter(ctx context.Context, alloy *app.App) (asset.Getter, error) {
+// initAssetStore initializes the Asset Getter which retrieves asset information to collect inventory data.
+func (i *inbandCmd) initAssetStore(ctx context.Context, alloy *app.App) (store.Repository, error) {
 	switch i.assetSourceKind {
-	case asset.SourceKindCSV:
+	case store.SourceKindCSV:
 		if i.assetSourceCSVFile != "" {
 			alloy.Config.AssetGetter.Csv.File = i.assetSourceCSVFile
 		}
@@ -221,10 +220,10 @@ func (i *inbandCmd) initAssetGetter(ctx context.Context, alloy *app.App) (asset.
 		}
 
 		// init csv asset source
-		return asset.NewCSVGetter(ctx, alloy, fh)
+		return store.NewCSVGetter(ctx, alloy, fh)
 
-	case asset.SourceKindServerService:
-		return asset.NewServerServiceGetter(ctx, alloy)
+	case store.SourceKindServerService:
+		return store.NewServerServiceGetter(ctx, alloy)
 	default:
 		return nil, errors.Wrap(model.ErrConfig, "unknown asset getter: "+i.assetSourceKind)
 	}

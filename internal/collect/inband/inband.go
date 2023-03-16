@@ -1,4 +1,4 @@
-package collect
+package inband
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 )
 
 // Inband collector collects hardware, firmware inventory inband
-type InbandCollector struct {
+type Collector struct {
 	deviceManager actions.DeviceManager
 	logger        *logrus.Entry
 	collectorCh   chan<- *model.Asset
@@ -22,33 +22,33 @@ type InbandCollector struct {
 }
 
 // New returns an inband inventory collector
-func NewInbandCollector(alloy *app.App) Collector {
+func NewCollector(alloy *app.App) *Collector {
 	logger := app.NewLogrusEntryFromLogger(logrus.Fields{"component": "collector.inband"}, alloy.Logger)
 
-	return &InbandCollector{
+	return &Collector{
 		logger:      logger,
 		collectorCh: alloy.CollectorCh,
 		termCh:      alloy.TermCh,
 	}
 }
 
-func (i *InbandCollector) SetMockGetter(getter interface{}) {
+func (i *Collector) SetMockGetter(getter interface{}) {
 	i.deviceManager = getter.(actions.DeviceManager)
 	i.mock = true
 }
 
 // SetAssetChannel sets/overrides the asset channel on the collector
-func (i *InbandCollector) SetAssetChannel(assetCh chan *model.Asset) {
+func (i *Collector) SetAssetChannel(assetCh chan *model.Asset) {
 	i.collectorCh = assetCh
 }
 
-// ForAsset runs the asset inventory collection for the given asset and updates the asset object with collected inventory or an error if any.
-func (i *InbandCollector) ForAsset(ctx context.Context, asset *model.Asset) error {
+// CollectForAsset runs the asset inventory collection for the given asset and updates the asset object with collected inventory or an error if any.
+func (i *Collector) CollectForAsset(ctx context.Context, asset *model.Asset) error {
 	return nil
 }
 
 // InventoryLocal implements the Collector interface to collect inventory and bios configuration locally (inband).
-func (i *InbandCollector) InventoryLocal(ctx context.Context) (*model.Asset, error) {
+func (i *Collector) InventoryLocal(ctx context.Context) (*model.Asset, error) {
 	if !i.mock {
 		var err error
 
@@ -79,6 +79,6 @@ func (i *InbandCollector) InventoryLocal(ctx context.Context) (*model.Asset, err
 }
 
 // InventoryRemote implements is present here to satisfy the Collector interface.
-func (i *InbandCollector) InventoryRemote(ctx context.Context) error {
+func (i *Collector) InventoryRemote(ctx context.Context) error {
 	return nil
 }

@@ -1,4 +1,4 @@
-package publish
+package serverservice
 
 import (
 	"net/http"
@@ -10,7 +10,7 @@ import (
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	serverservice "go.hollow.sh/serverservice/pkg/api/v1"
+	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
 )
 
 func Test_ToComponentSlice(t *testing.T) {
@@ -41,7 +41,7 @@ func Test_ToComponentSlice(t *testing.T) {
 	testcases := []struct {
 		name     string
 		device   *model.Asset
-		expected []*serverservice.ServerComponent
+		expected []*serverserviceapi.ServerComponent
 	}{
 		{
 			"E3C246D4INL",

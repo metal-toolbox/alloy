@@ -11,10 +11,10 @@ import (
 	"github.com/metal-toolbox/alloy/internal/model"
 )
 
-// MockServerServiceClient implements the serverServiceRequestor interface
+// MockServerServiceClient implements the serverServiceQueryor interface
 type MockServerServiceClient struct{}
 
-// NewMockServerServiceClient returns a MockEMAPIClient that implements the serverServiceRequestor interface
+// NewMockServerServiceClient returns a MockEMAPIClient that implements the serverServiceQueryor interface
 func NewMockServerServiceClient() *MockServerServiceClient {
 	return &MockServerServiceClient{}
 }

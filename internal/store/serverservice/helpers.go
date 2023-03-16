@@ -1,4 +1,4 @@
-package store
+package serverservice
 
 import (
 	"context"
@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/sirupsen/logrus"
-	serverservice "go.hollow.sh/serverservice/pkg/api/v1"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/oauth2/clientcredentials"
 )
@@ -18,7 +17,7 @@ import (
 // TODO move this under an interface
 
 // NewServerServiceClient instantiates and returns a serverService client
-func NewServerServiceClient(ctx context.Context, cfg *app.ServerserviceOptions, logger *logrus.Entry) (*serverservice.Client, error) {
+func NewServerServiceClient(ctx context.Context, cfg *app.ServerserviceOptions, logger *logrus.Entry) (*serverserviceapi.Client, error) {
 	if cfg.DisableOAuth {
 		return newServerserviceClientWithOtel(cfg, cfg.Endpoint, logger)
 	}
@@ -27,7 +26,7 @@ func NewServerServiceClient(ctx context.Context, cfg *app.ServerserviceOptions, 
 }
 
 // returns a serverservice retryable client with Otel
-func newServerserviceClientWithOtel(cfg *app.ServerserviceOptions, endpoint string, logger *logrus.Entry) (*serverservice.Client, error) {
+func newServerserviceClientWithOtel(cfg *app.ServerserviceOptions, endpoint string, logger *logrus.Entry) (*serverserviceapi.Client, error) {
 	// init retryable http client
 	retryableClient := retryablehttp.NewClient()
 
@@ -56,7 +55,7 @@ func newServerserviceClientWithOtel(cfg *app.ServerserviceOptions, endpoint stri
 		retryableClient.Logger = logger
 	}
 
-	return serverservice.NewClientWithToken(
+	return serverserviceapi.NewClientWithToken(
 		"dummy",
 		endpoint,
 		retryableClient.StandardClient(),
@@ -64,7 +63,7 @@ func newServerserviceClientWithOtel(cfg *app.ServerserviceOptions, endpoint stri
 }
 
 // returns a serverservice retryable http client with Otel and Oauth wrapped in
-func newServerserviceClientWithOAuthOtel(ctx context.Context, cfg *app.ServerserviceOptions, endpoint string, logger *logrus.Entry) (*serverservice.Client, error) {
+func newServerserviceClientWithOAuthOtel(ctx context.Context, cfg *app.ServerserviceOptions, endpoint string, logger *logrus.Entry) (*serverserviceapi.Client, error) {
 	// init retryable http client
 	retryableClient := retryablehttp.NewClient()
 
@@ -106,7 +105,7 @@ func newServerserviceClientWithOAuthOtel(ctx context.Context, cfg *app.Serverser
 	retryableClient.HTTPClient.Transport = oAuthclient.Transport
 	retryableClient.HTTPClient.Jar = oAuthclient.Jar
 
-	return serverservice.NewClientWithToken(
+	return serverserviceapi.NewClientWithToken(
 		cfg.OidcClientSecret,
 		endpoint,
 		retryableClient.StandardClient(),
