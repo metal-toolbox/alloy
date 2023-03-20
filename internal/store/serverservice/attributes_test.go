@@ -23,7 +23,7 @@ import (
 	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
 )
 
-func testPublisherInstance(t *testing.T, mockURL string) *serverServicePublisher {
+func testStoreInstance(t *testing.T, mockURL string) *serverServiceStore {
 	t.Helper()
 
 	cr := retryablehttp.NewClient()
@@ -32,7 +32,7 @@ func testPublisherInstance(t *testing.T, mockURL string) *serverServicePublisher
 	// comment out to enable debug logs
 	cr.Logger = nil
 
-	c, err := serverserviceapi.NewClientWithToken(
+	mockClient, err := serverserviceapi.NewClientWithToken(
 		"hunter2",
 		mockURL,
 		cr.StandardClient(),
@@ -42,10 +42,12 @@ func testPublisherInstance(t *testing.T, mockURL string) *serverServicePublisher
 		t.Fatal(err)
 	}
 
-	return &serverServicePublisher{
-		logger:               app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher"}, logrus.New()),
+	loggerEntry := app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher"}, logrus.New())
+
+	return &serverServiceStore{
+		logger:               loggerEntry,
+		Client:               mockClient,
 		slugs:                fixtures.ServerServiceSlugMap(),
-		client:               c,
 		attributeNS:          model.ServerComponentAttributeNS(model.AppKindOutOfBand),
 		versionedAttributeNS: model.ServerComponentVersionedAttributeNS(model.AppKindOutOfBand),
 	}
@@ -231,7 +233,7 @@ func Test_filterByAttributeNamespace(t *testing.T) {
 	components[0].VersionedAttributes[0].Namespace = "some.ns"
 
 	// init publisher
-	p := testPublisherInstance(t, "foobar")
+	p := testStoreInstance(t, "foobar")
 
 	// run method under test
 	p.filterByAttributeNamespace(components)
@@ -279,7 +281,7 @@ func Test_ServerService_CreateUpdateServerComponents_ObjectsEqual(t *testing.T) 
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 
 	device := &model.Asset{ID: serverID.String(), Vendor: "dell", Inventory: fixtures.CopyDevice(fixtures.R6515_fc167440)}
 
@@ -351,7 +353,7 @@ func Test_ServerService_CreateUpdateServerComponents_ObjectsUpdated(t *testing.T
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 
 	// asset device fixture returned by the inventory collector
 	device := &model.Asset{
@@ -443,7 +445,7 @@ func Test_ServerService_CreateUpdateServerComponents_ObjectsAdded(t *testing.T) 
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 
 	err := p.createUpdateServerComponents(context.TODO(), serverID, device)
 	if err != nil {
@@ -513,7 +515,7 @@ func Test_ServerService_CreateUpdateServerAttributes_Create(t *testing.T) {
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 
 	err := p.createUpdateServerAttributes(context.TODO(), server, device)
 	if err != nil {
@@ -602,7 +604,7 @@ func Test_ServerService_CreateUpdateServerAttributes_Update(t *testing.T) {
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 
 	if err = p.createUpdateServerAttributes(context.TODO(), server, device); err != nil {
 		t.Fatal(err)
@@ -661,7 +663,7 @@ func Test_ServerService_CreateUpdateServerMetadataAttributes_Create(t *testing.T
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 
 	err := p.createUpdateServerMetadataAttributes(context.TODO(), serverID, device)
 	if err != nil {
@@ -718,7 +720,7 @@ func Test_ServerService_CreateUpdateServerMetadataAttributes_Update(t *testing.T
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 
 	err := p.createUpdateServerMetadataAttributes(context.TODO(), serverID, device)
 	if err != nil {
@@ -741,7 +743,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_NoErrorsNoChanges(t
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 
 	err := p.createUpdateServerBMCErrorAttributes(context.TODO(), serverID, nil, &model.Asset{})
 	if err != nil {
@@ -764,7 +766,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_HasErrorsNoChanges(
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 
 	errs := []byte(`{"login_error": "bmc gave up"}`)
 	errAttribs := &serverserviceapi.Attributes{Data: errs}
@@ -818,7 +820,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_RegisteredErrorsPur
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 
 	errAttribs := &serverserviceapi.Attributes{Data: []byte(`{"login_error": "bmc gave up"}`)}
 
@@ -843,7 +845,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_Create(t *testing.T
 			switch r.Method {
 			case http.MethodPost:
 				// the response here is
-				resp, err := os.ReadFile("../fixtures/serverservice_server_fc167440.json")
+				resp, err := os.ReadFile("../../fixtures/serverservice_server_fc167440.json")
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -876,7 +878,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_Create(t *testing.T
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 
 	err := p.createUpdateServerBMCErrorAttributes(context.TODO(), serverID, nil, device)
 	if err != nil {
@@ -924,7 +926,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_Updated(t *testing.
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 
 	errs := []byte(`{"login_error": "bmc gave up"}`)
 	errAttribs := &serverserviceapi.Attributes{Data: errs}

@@ -32,7 +32,7 @@ func Test_ToComponentSlice(t *testing.T) {
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 	p.logger = logrus.NewEntry(logrus.New())
 	p.slugs = fixtures.ServerServiceSlugMap()
 	p.attributeNS = model.ServerComponentAttributeNS(model.AppKindOutOfBand)

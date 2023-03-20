@@ -1,98 +1,57 @@
+/*
+Copyright © 2022 Metal toolbox authors <>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 package cmd
 
 import (
-	"flag"
 	"fmt"
 	"os"
 
-	"github.com/metal-toolbox/alloy/internal/model"
-	"github.com/pkg/errors"
-
-	"github.com/peterbourgon/ff/v3/ffcli"
-	"golang.org/x/net/context"
-
-	"github.com/equinix-labs/otel-init-go/otelinit"
+	"github.com/spf13/cobra"
 )
 
 var (
-	errParseCLIParam = errors.New("parameter parse failed")
+	logLevel string
+	cfgFile  string
+
+	// storeKind is inventory store name - serverservice
+	storeKind string
+
+	// outputStdout when set causes alloy to write the collected data to stdout
+	outputStdout bool
 )
 
-// Run is the main command entry point, all sub commands are registered here
-func Run() error {
-	var (
-		cmd, cfg     = newRootCmd()
-		versionCmd   = newVersionCmd(cfg)
-		outOfBandCmd = newOutOfBandCmd(cfg)
-		inbandCmd    = newInbandCmd(cfg)
-	)
+// rootCmd represents the base command when called without any subcommands
+var rootCmd = &cobra.Command{
+	Use:   "alloy",
+	Short: "server inventory and bios configuration collector",
+}
 
-	cmd.Subcommands = append(cmd.Subcommands, versionCmd, outOfBandCmd, inbandCmd)
-
-	if err := cmd.Parse(os.Args[1:]); err != nil {
-		fmt.Fprintf(os.Stderr, "error in cli parse: %v\n", err)
+// Execute adds all child commands to the root command and sets flags appropriately.
+// This is called by main.main(). It only needs to happen once to the rootCmd.
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
-
-	// setup otel telemetry
-	ctx := context.Background()
-	ctx, otelShutdown := otelinit.InitOpenTelemetry(ctx, "alloy")
-
-	defer otelShutdown(ctx)
-
-	return cmd.Run(ctx)
 }
 
-// rootCmd is the cli root command instance, it holds attributes available to subcommands
-type rootCmd struct {
-	// cfgFile is the configuration file
-	cfgFile string
-	// publisherKind is where collected inventory is published
-	// stdout OR csv
-	publisherKind string
-
-	// flag sets trace log level
-	trace bool
-	// flag sets debug log level
-	debug bool
-	// flag enables pprof endpoint on localhost:9091
-	pprof bool
-}
-
-func (c *rootCmd) RegisterFlags(fs *flag.FlagSet) {
-	fs.BoolVar(&c.debug, "debug", false, "Set logging to debug level.")
-	fs.BoolVar(&c.trace, "trace", false, "Set logging to trace level.")
-	fs.BoolVar(&c.pprof, "profile", false, "Enable performance profile endpoint.")
-	fs.StringVar(&c.cfgFile, "config-file", "", "Alloy config file")
-	fs.StringVar(&c.publisherKind, "publish-target", "stdout", "Publish collected inventory to [serverService|stdout]")
-}
-
-func (c *rootCmd) Exec(context.Context, []string) error {
-	return flag.ErrHelp
-}
-
-func (c *rootCmd) LogLevel() int {
-	switch {
-	case c.debug:
-		return model.LogLevelDebug
-	case c.trace:
-		return model.LogLevelTrace
-	default:
-		return model.LogLevelInfo
-	}
-}
-
-func newRootCmd() (*ffcli.Command, *rootCmd) {
-	var c rootCmd
-
-	fs := flag.NewFlagSet("alloy", flag.ExitOnError)
-	c.RegisterFlags(fs)
-
-	return &ffcli.Command{
-		Name:       "alloy",
-		ShortHelp:  "alloy collects device inventory attributes",
-		ShortUsage: "alloy [version|inband|outofband] [flags]",
-		FlagSet:    fs,
-		Exec:       c.Exec,
-	}, &c
+func init() {
+	// Read in env vars with appName as prefix
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "configuration file")
+	rootCmd.PersistentFlags().StringVar(&storeKind, "store", "mock", "The inventory asset identifier")
+	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "set logging level - debug, trace")
+	rootCmd.PersistentFlags().BoolVarP(&outputStdout, "output-stdout", "", false, "Output collected data to STDOUT instead of the store")
 }

@@ -32,11 +32,11 @@ type App struct {
 }
 
 // New returns a new alloy application object with the configuration loaded
-func New(ctx context.Context, kind, cfgFile string, loglevel int) (app *App, err error) {
+func New(ctx context.Context, kind model.AppKind, cfgFile string, loglevel string) (app *App, err error) {
 	switch kind {
 	case model.AppKindInband, model.AppKindOutOfBand:
 	default:
-		return nil, errors.Wrap(ErrAppInit, "invalid app kind: "+kind)
+		return nil, errors.Wrap(ErrAppInit, "invalid app kind: "+string(kind))
 	}
 
 	app = &App{
@@ -53,7 +53,7 @@ func New(ctx context.Context, kind, cfgFile string, loglevel int) (app *App, err
 	// set here again since LoadConfiguration could overwrite it.
 	app.Config.AppKind = kind
 
-	switch loglevel {
+	switch model.LogLevel(loglevel) {
 	case model.LogLevelDebug:
 		app.Logger.Level = logrus.DebugLevel
 	case model.LogLevelTrace:

@@ -32,8 +32,8 @@ var (
 	// TaskQueueSize measures the number of tasks waiting for a getter worker .
 	TaskQueueSize *prometheus.GaugeVec
 
-	// FetcherQueryErrorCount counts the number of query errors - when querying the asset store.
-	FetcherQueryErrorCount *prometheus.CounterVec
+	// ServerServiceQueryErrorCount counts the number of query errors - when querying the asset store.
+	ServerServiceQueryErrorCount *prometheus.CounterVec
 
 	// OOBCollectScheduleTimestamp includes the timestamp of the next OOB collection scheduled run.
 	OOBCollectScheduleTimestamp *prometheus.GaugeVec
@@ -95,7 +95,7 @@ func init() {
 		[]string{"stage"},
 	)
 
-	FetcherQueryErrorCount = promauto.NewCounterVec(
+	ServerServiceQueryErrorCount = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "alloy_serverservice_query_errors_total",
 			Help: "A counter metric to measure the total count of errors when the asset store.",

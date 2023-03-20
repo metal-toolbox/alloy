@@ -24,8 +24,9 @@ import (
 
 var (
 	// The outofband collector tracer
-	tracer     trace.Tracer
-	ErrConnect = errors.New("error connecting to BMC")
+	tracer        trace.Tracer
+	ErrConnect    = errors.New("error connecting to BMC")
+	ErrBMCSession = errors.New("error in BMC session")
 )
 
 func init() {
@@ -41,23 +42,24 @@ const (
 )
 
 // OutOfBand collector collects hardware, firmware inventory out of band
-type Collector struct {
-	mockClient    oobGetter
+type Queryor struct {
+	mockClient    oobQueryor
 	logger        *logrus.Entry
 	logoutTimeout time.Duration
 }
 
-// oobGetter interface defines methods that the bmclib client exposes
+// oobQueryor interface defines methods that the bmclib client exposes
 // this is mainly to swap the bmclib instance for tests
-type oobGetter interface {
+type oobQueryor interface {
 	Open(ctx context.Context) error
 	Close(ctx context.Context) error
 	Inventory(ctx context.Context) (*common.Device, error)
 	GetBiosConfiguration(ctx context.Context) (map[string]string, error)
+	GetPowerState(ctx context.Context) (state string, err error)
 }
 
-// NewCollector returns a instance of the Collector inventory collector
-func NewCollector(logger *logrus.Logger) *Collector {
+// NewQueryor returns a instance of the Queryor inventory collector
+func NewQueryor(logger *logrus.Logger) *Queryor {
 	loggerEntry := app.NewLogrusEntryFromLogger(
 		logrus.Fields{"component": "collector.outofband"},
 		logger,
@@ -68,7 +70,7 @@ func NewCollector(logger *logrus.Logger) *Collector {
 		panic(err)
 	}
 
-	c := &Collector{
+	c := &Queryor{
 		logger:        loggerEntry,
 		logoutTimeout: lt,
 	}
@@ -76,16 +78,9 @@ func NewCollector(logger *logrus.Logger) *Collector {
 	return c
 }
 
-// CollectForAsset runs the asset inventory, bios data collection and updates the given asset with
-// the collected data.
-func (o *Collector) CollectForAsset(ctx context.Context, asset *model.Asset) {
-	// attach child span
-	ctx, span := tracer.Start(ctx, "collect()")
-	defer span.End()
-
-	// include asset attributes in trace span
-	setTraceSpanAssetAttributes(span, asset)
-
+// Inventory retrieves device component and firmware information
+// and updates the given asset object with the inventory
+func (o *Queryor) Inventory(ctx context.Context, asset *model.Asset) error {
 	o.logger.WithFields(
 		logrus.Fields{
 			"serverID": asset.ID,
@@ -95,14 +90,7 @@ func (o *Collector) CollectForAsset(ctx context.Context, asset *model.Asset) {
 	// login
 	bmc, err := o.bmcLogin(ctx, asset)
 	if err != nil {
-		o.logger.WithFields(
-			logrus.Fields{
-				"serverID": asset.ID,
-				"IP":       asset.BMCAddress.String(),
-				"err":      err,
-			}).Warn("BMC login error")
-
-		return
+		return err
 	}
 
 	// defer logout
@@ -118,40 +106,44 @@ func (o *Collector) CollectForAsset(ctx context.Context, asset *model.Asset) {
 		}).Trace("collecting inventory from asset BMC..")
 
 	// collect inventory
-	err = o.bmcInventory(ctx, bmc, asset)
-	if err != nil {
-		o.logger.WithFields(
-			logrus.Fields{
-				"serverID": asset.ID,
-				"IP":       asset.BMCAddress.String(),
-				"err":      err,
-			}).Warn("BMC inventory error")
-	}
-
-	// collect bios configuration
-	err = o.bmcGetBiosConfiguration(ctx, bmc, asset)
-	if err != nil {
-		o.logger.WithFields(
-			logrus.Fields{
-				"serverID": asset.ID,
-				"IP":       asset.BMCAddress.String(),
-				"err":      err,
-			}).Warn("BMC bios configuration collection error")
-	}
-
-	return
+	return o.bmcInventory(ctx, bmc, asset)
 }
 
-// bmcGetBiosConfiguration collects bios configuration data from the BMC
+func (o *Queryor) BiosConfiguration(ctx context.Context, asset *model.Asset) error {
+
+	// login
+	bmc, err := o.bmcLogin(ctx, asset)
+	if err != nil {
+		o.logger.WithFields(
+			logrus.Fields{
+				"serverID": asset.ID,
+				"IP":       asset.BMCAddress.String(),
+				"err":      err,
+			}).Warn("BMC login error")
+
+		return err
+	}
+
+	// defer logout
+	//
+	// ctx is not passed to bmcLogout to ensure that
+	// the bmc logout is carried out even if the context is canceled.
+	defer o.bmcLogout(bmc, asset)
+
+	// collect bios configuration
+	return o.biosConfiguration(ctx, bmc, asset)
+}
+
+// biosConfiguration collects bios configuration data from the BMC
 // it updates the asset.BiosConfig attribute with the data collected.
 //
 // If any errors occurred in the collection, those are included in the asset.Errors attribute.
-func (o *Collector) bmcGetBiosConfiguration(ctx context.Context, bmc oobGetter, asset *model.Asset) error {
-	// measure BMC GetBiosConfiguration query
+func (o *Queryor) biosConfiguration(ctx context.Context, bmc oobQueryor, asset *model.Asset) error {
+	// measure BMC biosConfiguration query
 	startTS := time.Now()
 
 	// attach child span
-	ctx, span := tracer.Start(ctx, "GetBiosConfiguration()")
+	ctx, span := tracer.Start(ctx, "biosConfiguration()")
 	defer span.End()
 
 	biosConfig, err := bmc.GetBiosConfiguration(ctx)
@@ -171,8 +163,7 @@ func (o *Collector) bmcGetBiosConfiguration(ctx context.Context, bmc oobGetter, 
 			asset.IncludeError("GetBiosConfigurationError", "redfish_incompatible: no compatible System Odata IDs identified")
 			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "redfish_incompatible")
 		case strings.Contains(err.Error(), "no BiosConfigurationGetter implementations found"):
-			// If the asset doesn't implement a BiosConfigurationGetter, skip asset.IncludeError() which allows
-			// inventory to be published later on
+			asset.IncludeError("NoBiosConfigurationGetter", "BIOS configuration collection not supported for device")
 			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "NoBiosConfigurationGetter")
 		default:
 			asset.IncludeError("GetBiosConfigurationError", err.Error())
@@ -194,12 +185,12 @@ func (o *Collector) bmcGetBiosConfiguration(ctx context.Context, bmc oobGetter, 
 // it updates the asset.Inventory attribute with the data collected.
 //
 // If any errors occurred in the collection, those are included in the asset.Errors attribute.
-func (o *Collector) bmcInventory(ctx context.Context, bmc oobGetter, asset *model.Asset) error {
+func (o *Queryor) bmcInventory(ctx context.Context, bmc oobQueryor, asset *model.Asset) error {
 	// measure BMC inventory query
 	startTS := time.Now()
 
 	// attach child span
-	ctx, span := tracer.Start(ctx, "inventory()")
+	ctx, span := tracer.Start(ctx, "bmcInventory()")
 	defer span.End()
 
 	inventory, err := bmc.Inventory(ctx)
@@ -247,9 +238,9 @@ func (o *Collector) bmcInventory(ctx context.Context, bmc oobGetter, asset *mode
 // bmcLogin initiates the BMC session
 //
 // when theres an error in the login process, asset.Errors is updated to include that information.
-func (o *Collector) bmcLogin(ctx context.Context, asset *model.Asset) (oobGetter, error) {
+func (o *Queryor) bmcLogin(ctx context.Context, asset *model.Asset) (oobQueryor, error) {
 	// bmc is the bmc client instance
-	var bmc oobGetter
+	var bmc oobQueryor
 
 	// attach child span
 	ctx, span := tracer.Start(ctx, "bmcLogin()")
@@ -292,7 +283,7 @@ func (o *Collector) bmcLogin(ctx context.Context, asset *model.Asset) (oobGetter
 	return bmc, nil
 }
 
-func (o *Collector) bmcLogout(bmc oobGetter, asset *model.Asset) {
+func (o *Queryor) bmcLogout(bmc oobQueryor, asset *model.Asset) {
 	// measure BMC connection close
 	startTS := time.Now()
 
@@ -380,6 +371,32 @@ func newBMCClient(ctx context.Context, asset *model.Asset, l *logrus.Logger) *bm
 	}
 
 	return bmcClient
+}
+
+func (o *Queryor) SessionActive(ctx context.Context, bmc oobQueryor) bool {
+	if bmc == nil {
+		return false
+	}
+
+	// check if we're able to query the power state
+	powerStatus, err := bmc.GetPowerState(ctx)
+	if err != nil {
+		o.logger.WithFields(
+			logrus.Fields{
+				"err": err.Error(),
+			},
+		).Trace("session not active, checked with GetPowerState()")
+
+		return false
+	}
+
+	o.logger.WithFields(
+		logrus.Fields{
+			"powerStatus": powerStatus,
+		},
+	).Trace("session currently active, checked with GetPowerState()")
+
+	return true
 }
 
 // setTraceSpanAssetAttributes includes the asset attributes as span attributes

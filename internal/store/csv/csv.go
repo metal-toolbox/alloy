@@ -1,15 +1,14 @@
-package store
+package csvee
 
 import (
 	"context"
 	"encoding/csv"
 	"io"
 	"net"
+	"os"
 	"strings"
-	"sync"
 
 	"github.com/google/uuid"
-	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -21,36 +20,30 @@ const (
 )
 
 var (
-	ErrCSVSource = errors.New("error in CSV")
+	ErrAssetNotFound = errors.New("not found")
+	ErrCSVSource     = errors.New("error in CSV")
 )
 
 type csvee struct {
 	csvReader io.ReadCloser
 	logger    *logrus.Entry
-	config    *app.Configuration
-	syncWg    *sync.WaitGroup
-	assetCh   chan<- *model.Asset
 }
 
-// NewCSVGetter returns a new csv asset getter to retrieve asset information from a CSV file for inventory collection.
-func NewCSVGetter(ctx context.Context, alloy *app.App, csvReader io.ReadCloser) (*csvee, error) {
+// NewCSVStore returns a new csv asset getter to retrieve asset information from a CSV file for inventory collection.
+func NewCSVStore(ctx context.Context, csvFile string, logger *logrus.Logger) (*csvee, error) {
+	fh, err := os.Open(csvFile)
+	if err != nil {
+		return nil, err
+	}
+
 	return &csvee{
-		logger:    alloy.Logger.WithField("component", "getter-csv"),
-		syncWg:    alloy.SyncWg,
-		config:    alloy.Config,
-		csvReader: csvReader,
+		logger:    logger.WithField("component", "store.csv"),
+		csvReader: fh,
 	}, nil
-}
-
-// SetClient satisfies the Getter interface
-func (c *csvee) SetClient(client interface{}) {
 }
 
 // AssetByID returns one asset from the inventory identified by its identifier.
 func (c *csvee) AssetByID(ctx context.Context, assetID string, fetchBmcCredentials bool) (*model.Asset, error) {
-	// attach child span
-	ctx, span := tracer.Start(ctx, "AssetByID()")
-	defer span.End()
 
 	assets, err := c.loadAssets(ctx, c.csvReader)
 	if err != nil {
@@ -67,47 +60,51 @@ func (c *csvee) AssetByID(ctx context.Context, assetID string, fetchBmcCredentia
 }
 
 // ListAll runs the csv asset getter which returns all assets on the assetCh
-func (c *csvee) ListAll(ctx context.Context) error {
-	// channel close tells the channel reader we're done
-	defer close(c.assetCh)
-
-	c.logger.Trace("load assets")
-
-	assets, err := c.loadAssets(ctx, c.csvReader)
-	if err != nil {
-		return err
-	}
-
-	c.logger.WithField("count", len(assets)).Trace("loaded assets")
-
-	for _, asset := range assets {
-		c.assetCh <- asset
-	}
-
-	return nil
-}
-
-// ListByIDs runs the csv asset getter which returns  on the assetCh
-func (c *csvee) ListByIDs(ctx context.Context, assetIDs []string) error {
-	// channel close tells the channel reader we're done
-	defer close(c.assetCh)
-
-	assets, err := c.loadAssets(ctx, c.csvReader)
-	if err != nil {
-		return err
-	}
-
-	for _, asset := range assets {
-		if sliceContains(assetIDs, asset.ID) {
-			c.assetCh <- asset
-		}
-	}
-
-	return nil
-}
+//func (c *csvee) ListAll(ctx context.Context) error {
+//	// channel close tells the channel reader we're done
+//	defer close(c.assetCh)
+//
+//	c.logger.Trace("load assets")
+//
+//	assets, err := c.loadAssets(ctx, c.csvReader)
+//	if err != nil {
+//		return err
+//	}
+//
+//	c.logger.WithField("count", len(assets)).Trace("loaded assets")
+//
+//	for _, asset := range assets {
+//		c.assetCh <- asset
+//	}
+//
+//	return nil
+//}
+//
+//// ListByIDs runs the csv asset getter which returns  on the assetCh
+//func (c *csvee) ListByIDs(ctx context.Context, assetIDs []string) error {
+//	// channel close tells the channel reader we're done
+//	defer close(c.assetCh)
+//
+//	assets, err := c.loadAssets(ctx, c.csvReader)
+//	if err != nil {
+//		return err
+//	}
+//
+//	for _, asset := range assets {
+//		if sliceContains(assetIDs, asset.ID) {
+//			c.assetCh <- asset
+//		}
+//	}
+//
+//	return nil
+//}
 
 func (c *csvee) AssetsByOffsetLimit(ctx context.Context, offset, limit int) (assets []*model.Asset, totalAssets int, err error) {
 	return nil, 0, nil
+}
+
+func (c *csvee) AssetUpdate(ctx context.Context, asset *model.Asset) error {
+	return nil
 }
 
 func sliceContains(sl []string, str string) bool {

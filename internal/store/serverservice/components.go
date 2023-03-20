@@ -9,11 +9,9 @@ import (
 
 	"github.com/bmc-toolbox/common"
 	"github.com/google/uuid"
-	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel/codes"
 
 	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
 )
@@ -31,29 +29,6 @@ func componentBySlugSerial(slug, serial string, components []*serverserviceapi.S
 		if strings.EqualFold(slug, c.ComponentTypeSlug) && strings.EqualFold(serial, c.Serial) {
 			return c
 		}
-	}
-
-	return nil
-}
-
-func (r *serverServiceClient) cacheServerComponentTypes(ctx context.Context) error {
-	// attach child span
-	ctx, span := tracer.Start(ctx, "cacheServerComponentTypes()")
-	defer span.End()
-
-	serverComponentTypes, _, err := r.client.ListServerComponentTypes(ctx, nil)
-	if err != nil {
-		// count error
-		metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
-
-		// set span status
-		span.SetStatus(codes.Error, "ListServerComponentTypes() failed")
-
-		return err
-	}
-
-	for _, ct := range serverComponentTypes {
-		r.slugs[ct.Slug] = ct
 	}
 
 	return nil
@@ -79,7 +54,7 @@ func componentPtrSlice(components serverserviceapi.ServerComponentSlice) []*serv
 }
 
 // toComponentSlice converts an model.AssetDevice object to the server service component slice object
-func (r *serverServiceClient) toComponentSlice(serverID uuid.UUID, device *model.Asset) ([]*serverserviceapi.ServerComponent, error) {
+func (r *serverServiceStore) toComponentSlice(serverID uuid.UUID, device *model.Asset) ([]*serverserviceapi.ServerComponent, error) {
 	componentsTmp := []*serverserviceapi.ServerComponent{}
 	componentsTmp = append(componentsTmp,
 		r.bios(device.Vendor, device.Inventory.BIOS),
@@ -112,7 +87,7 @@ func (r *serverServiceClient) toComponentSlice(serverID uuid.UUID, device *model
 	return components, nil
 }
 
-func (r *serverServiceClient) requiredAttributesEmpty(component *serverserviceapi.ServerComponent) bool {
+func (r *serverServiceStore) requiredAttributesEmpty(component *serverserviceapi.ServerComponent) bool {
 	return component.Serial == "0" &&
 		component.Model == "" &&
 		component.Vendor == "" &&
@@ -120,7 +95,7 @@ func (r *serverServiceClient) requiredAttributesEmpty(component *serverserviceap
 		len(component.VersionedAttributes) == 0
 }
 
-func (r *serverServiceClient) newComponent(slug, cvendor, cmodel, cserial, cproduct string) (*serverserviceapi.ServerComponent, error) {
+func (r *serverServiceStore) newComponent(slug, cvendor, cmodel, cserial, cproduct string) (*serverserviceapi.ServerComponent, error) {
 	// lower case slug to changeObj how its stored in server service
 	slug = strings.ToLower(slug)
 
@@ -151,7 +126,7 @@ func (r *serverServiceClient) newComponent(slug, cvendor, cmodel, cserial, cprod
 	}, nil
 }
 
-func (r *serverServiceClient) gpus(deviceVendor string, gpus []*common.GPU) []*serverserviceapi.ServerComponent {
+func (r *serverServiceStore) gpus(deviceVendor string, gpus []*common.GPU) []*serverserviceapi.ServerComponent {
 	if gpus == nil {
 		return nil
 	}
@@ -195,7 +170,7 @@ func (r *serverServiceClient) gpus(deviceVendor string, gpus []*common.GPU) []*s
 	return components
 }
 
-func (r *serverServiceClient) cplds(deviceVendor string, cplds []*common.CPLD) []*serverserviceapi.ServerComponent {
+func (r *serverServiceStore) cplds(deviceVendor string, cplds []*common.CPLD) []*serverserviceapi.ServerComponent {
 	if cplds == nil {
 		return nil
 	}
@@ -239,7 +214,7 @@ func (r *serverServiceClient) cplds(deviceVendor string, cplds []*common.CPLD) [
 	return components
 }
 
-func (r *serverServiceClient) tpms(deviceVendor string, tpms []*common.TPM) []*serverserviceapi.ServerComponent {
+func (r *serverServiceStore) tpms(deviceVendor string, tpms []*common.TPM) []*serverserviceapi.ServerComponent {
 	if tpms == nil {
 		return nil
 	}
@@ -284,7 +259,7 @@ func (r *serverServiceClient) tpms(deviceVendor string, tpms []*common.TPM) []*s
 	return components
 }
 
-func (r *serverServiceClient) cpus(deviceVendor string, cpus []*common.CPU) []*serverserviceapi.ServerComponent {
+func (r *serverServiceStore) cpus(deviceVendor string, cpus []*common.CPU) []*serverserviceapi.ServerComponent {
 	if cpus == nil {
 		return nil
 	}
@@ -334,7 +309,7 @@ func (r *serverServiceClient) cpus(deviceVendor string, cpus []*common.CPU) []*s
 	return components
 }
 
-func (r *serverServiceClient) storageControllers(deviceVendor string, controllers []*common.StorageController) []*serverserviceapi.ServerComponent {
+func (r *serverServiceStore) storageControllers(deviceVendor string, controllers []*common.StorageController) []*serverserviceapi.ServerComponent {
 	if controllers == nil {
 		return nil
 	}
@@ -402,7 +377,7 @@ func (r *serverServiceClient) storageControllers(deviceVendor string, controller
 	return components
 }
 
-func (r *serverServiceClient) psus(deviceVendor string, psus []*common.PSU) []*serverserviceapi.ServerComponent {
+func (r *serverServiceStore) psus(deviceVendor string, psus []*common.PSU) []*serverserviceapi.ServerComponent {
 	if psus == nil {
 		return nil
 	}
@@ -449,7 +424,7 @@ func (r *serverServiceClient) psus(deviceVendor string, psus []*common.PSU) []*s
 	return components
 }
 
-func (r *serverServiceClient) drives(deviceVendor string, drives []*common.Drive) []*serverserviceapi.ServerComponent {
+func (r *serverServiceStore) drives(deviceVendor string, drives []*common.Drive) []*serverserviceapi.ServerComponent {
 	if drives == nil {
 		return nil
 	}
@@ -511,7 +486,7 @@ func (r *serverServiceClient) drives(deviceVendor string, drives []*common.Drive
 	return components
 }
 
-func (r *serverServiceClient) nics(deviceVendor string, nics []*common.NIC) []*serverserviceapi.ServerComponent {
+func (r *serverServiceStore) nics(deviceVendor string, nics []*common.NIC) []*serverserviceapi.ServerComponent {
 	if nics == nil {
 		return nil
 	}
@@ -562,7 +537,7 @@ func (r *serverServiceClient) nics(deviceVendor string, nics []*common.NIC) []*s
 	return components
 }
 
-func (r *serverServiceClient) dimms(deviceVendor string, dimms []*common.Memory) []*serverserviceapi.ServerComponent {
+func (r *serverServiceStore) dimms(deviceVendor string, dimms []*common.Memory) []*serverserviceapi.ServerComponent {
 	if dimms == nil {
 		return nil
 	}
@@ -621,7 +596,7 @@ func (r *serverServiceClient) dimms(deviceVendor string, dimms []*common.Memory)
 	return components
 }
 
-func (r *serverServiceClient) mainboard(deviceVendor string, c *common.Mainboard) *serverserviceapi.ServerComponent {
+func (r *serverServiceStore) mainboard(deviceVendor string, c *common.Mainboard) *serverserviceapi.ServerComponent {
 	if c == nil {
 		return nil
 	}
@@ -661,7 +636,7 @@ func (r *serverServiceClient) mainboard(deviceVendor string, c *common.Mainboard
 	return sc
 }
 
-func (r *serverServiceClient) enclosures(deviceVendor string, enclosures []*common.Enclosure) []*serverserviceapi.ServerComponent {
+func (r *serverServiceStore) enclosures(deviceVendor string, enclosures []*common.Enclosure) []*serverserviceapi.ServerComponent {
 	if enclosures == nil {
 		return nil
 	}
@@ -708,7 +683,7 @@ func (r *serverServiceClient) enclosures(deviceVendor string, enclosures []*comm
 	return components
 }
 
-func (r *serverServiceClient) bmc(deviceVendor string, c *common.BMC) *serverserviceapi.ServerComponent {
+func (r *serverServiceStore) bmc(deviceVendor string, c *common.BMC) *serverserviceapi.ServerComponent {
 	if c == nil {
 		return nil
 	}
@@ -747,7 +722,7 @@ func (r *serverServiceClient) bmc(deviceVendor string, c *common.BMC) *serverser
 	return sc
 }
 
-func (r *serverServiceClient) bios(deviceVendor string, c *common.BIOS) *serverserviceapi.ServerComponent {
+func (r *serverServiceStore) bios(deviceVendor string, c *common.BIOS) *serverserviceapi.ServerComponent {
 	if c == nil {
 		return nil
 	}
@@ -837,7 +812,7 @@ type versionedAttributes struct {
 	Vendor      string           `json:"vendor,omitempty"`
 }
 
-func (r *serverServiceClient) setAttributes(component *serverserviceapi.ServerComponent, attr *attributes) {
+func (r *serverServiceStore) setAttributes(component *serverserviceapi.ServerComponent, attr *attributes) {
 	// convert attributes to raw json
 	data, err := json.Marshal(attr)
 	if err != nil {
@@ -868,7 +843,7 @@ func (r *serverServiceClient) setAttributes(component *serverserviceapi.ServerCo
 	)
 }
 
-func (r *serverServiceClient) setVersionedAttributes(deviceVendor string, component *serverserviceapi.ServerComponent, vattr *versionedAttributes) {
+func (r *serverServiceStore) setVersionedAttributes(deviceVendor string, component *serverserviceapi.ServerComponent, vattr *versionedAttributes) {
 	ctx := context.TODO()
 
 	// add FirmwareData
@@ -915,7 +890,7 @@ func (r *serverServiceClient) setVersionedAttributes(deviceVendor string, compon
 }
 
 // addFirmwareData queries ServerService for the firmware version and try to find a matcr.
-func (r *serverServiceClient) addFirmwareData(ctx context.Context, deviceVendor string, component *serverserviceapi.ServerComponent, vattr *versionedAttributes) (vatrr *versionedAttributes, err error) {
+func (r *serverServiceStore) addFirmwareData(ctx context.Context, deviceVendor string, component *serverserviceapi.ServerComponent, vattr *versionedAttributes) (vatrr *versionedAttributes, err error) {
 	// Check in the cache if we have a match by vendor + version
 	for _, fw := range r.firmwares[component.Vendor] {
 		if strings.EqualFold(fw.Version, vattr.Firmware.Installed) {

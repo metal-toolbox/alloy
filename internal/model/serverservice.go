@@ -35,7 +35,7 @@ const (
 )
 
 // ServerBIOSConfigNS returns the namespace server bios configuration are stored in.
-func ServerBIOSConfigNS(appKind string) string {
+func ServerBIOSConfigNS(appKind AppKind) string {
 	if biosConfigNS := os.Getenv("SERVERSERVICE_BIOS_CONFIG_NS"); biosConfigNS != "" {
 		return biosConfigNS
 	}
@@ -44,12 +44,12 @@ func ServerBIOSConfigNS(appKind string) string {
 }
 
 // ServerServiceAttributeNS returns the namespace server component attributes are stored in.
-func ServerComponentAttributeNS(appKind string) string {
+func ServerComponentAttributeNS(appKind AppKind) string {
 	return fmt.Sprintf("%s.%s.metadata", ServerServiceNSPrefix, appKind)
 }
 
 // ServerComponentVersionedAttributeNS returns the namespace server component versioned attributes are stored in.
-func ServerComponentVersionedAttributeNS(appKind string) string {
+func ServerComponentVersionedAttributeNS(appKind AppKind) string {
 	return fmt.Sprintf("%s.%s.status", ServerServiceNSPrefix, appKind)
 }
 

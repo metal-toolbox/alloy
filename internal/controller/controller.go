@@ -6,10 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/metal-toolbox/alloy/internal/asset"
-	"github.com/metal-toolbox/alloy/internal/collect"
+	"github.com/metal-toolbox/alloy/internal/collector"
 	"github.com/metal-toolbox/alloy/internal/model"
-	"github.com/metal-toolbox/alloy/internal/publish"
+	"github.com/metal-toolbox/alloy/internal/store"
 
 	// TODO: move these two into a shared package
 
@@ -25,42 +24,52 @@ var (
 )
 
 type Controller struct {
-	syncWG           *sync.WaitGroup
-	assetGetter      asset.Getter
-	collector        collect.Collector
-	publisher        publish.Publisher
+	multiCollector   *collector.AssetIterCollector
+	singleCollector  *collector.SingleDeviceCollector
+	repository       store.Repository
 	streamBroker     events.StreamBroker
-	logger           *logrus.Logger
 	checkpointHelper TaskCheckpointer
 	tasksLocker      *TasksLocker
+	syncWG           *sync.WaitGroup
+	logger           *logrus.Logger
 }
 
 func New(
-	logger *logrus.Logger,
-	getter asset.Getter,
-	collector collect.Collector,
-	publisher publish.Publisher,
+	ctx context.Context,
+	multiCollector *collector.AssetIterCollector,
+	singleCollector *collector.SingleDeviceCollector,
+	repository store.Repository,
 	streamBroker events.StreamBroker,
-
 	syncWG *sync.WaitGroup,
-) *Controller {
+	logger *logrus.Logger,
+) (*Controller, error) {
 	tasksLocker := NewTasksLocker()
 
 	checkpointHelper, err := NewTaskCheckpointer("http://conditionorc-api:9001", tasksLocker)
 	if err != nil {
-		logger.Fatal(err)
+		return nil, err
+	}
+
+	singleCollector, err = collector.NewSingleDeviceCollectorWithRepository(
+		ctx,
+		repository,
+		model.AppKindOutOfBand,
+		logger,
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	return &Controller{
-		logger:           logger,
-		assetGetter:      getter,
-		collector:        collector,
-		publisher:        publisher,
+		multiCollector:   multiCollector,
+		singleCollector:  singleCollector,
+		repository:       repository,
 		streamBroker:     streamBroker,
-		syncWG:           syncWG,
 		checkpointHelper: checkpointHelper,
 		tasksLocker:      tasksLocker,
-	}
+		syncWG:           syncWG,
+		logger:           logger,
+	}, nil
 }
 
 func (c *Controller) Run(ctx context.Context) error {
@@ -71,12 +80,6 @@ func (c *Controller) Run(ctx context.Context) error {
 	if err != nil {
 		c.logger.Fatal(err)
 	}
-
-	// init inventory collection channel
-	assetCh := make(chan *model.Asset, 0)
-	c.assetGetter.SetAssetChannel(assetCh)
-	c.collector.SetAssetChannel(assetCh)
-	c.publisher.SetAssetChannel(assetCh)
 
 	c.logger.Info("listening for events ...")
 
@@ -97,7 +100,6 @@ func (c *Controller) Run(ctx context.Context) error {
 			go c.ackActive(ctx)
 
 		case <-ctx.Done():
-			close(assetCh)
 			c.streamBroker.Close()
 
 			return nil

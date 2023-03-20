@@ -2,176 +2,19 @@ package serverservice
 
 import (
 	"context"
+	"encoding/json"
 	"net"
 
 	// _ "net/http/pprof"
-	"os"
-	"strconv"
-	"sync"
-	"testing"
-	"time"
 
-	"github.com/metal-toolbox/alloy/internal/app"
+	"testing"
+
+	"github.com/bmc-toolbox/common"
 	"github.com/metal-toolbox/alloy/internal/fixtures"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/stretchr/testify/assert"
 	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
 )
-
-func newMockServerServiceGetter(t *testing.T, alloy *app.App) *serverServiceStore {
-	t.Helper()
-
-	return &serverServiceStore{
-		logger: alloy.Logger.WithField("component", "test"),
-		config: alloy.Config,
-		client: fixtures.NewMockServerServiceClient(),
-	}
-}
-
-func Test_ServerServiceListByIDs(t *testing.T) {
-	// left commented out here to indicate a means of debugging
-	//	go func() {
-	//		log.Println(http.ListenAndServe("localhost:9091", nil))
-	// }()
-	// init alloy app
-	alloy, err := app.New(context.TODO(), model.AppKindOutOfBand, "", model.LogLevelTrace)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	got := []*model.Asset{}
-	expected := []*model.Asset{
-		fixtures.MockAssets["foo"],
-		fixtures.MockAssets["bar"],
-	}
-
-	var collectTimedOut bool
-
-	// background routine to receive asset objects objects sent from the asset getter
-	// mocks a collector
-	alloy.SyncWg.Add(1)
-
-	go func(t *testing.T, wg *sync.WaitGroup) {
-		t.Helper()
-
-		defer wg.Done()
-
-		timeout := time.NewTicker(time.Second * 5).C
-	Loop:
-		for {
-			select {
-			case asset, ok := <-alloy.AssetCh:
-				if !ok {
-					break Loop
-				}
-				got = append(got, asset)
-			case <-timeout:
-				collectTimedOut = true
-				break Loop
-			}
-		}
-	}(t, alloy.SyncWg)
-
-	// init asset getter
-	getter := newMockServerServiceGetter(t, alloy)
-
-	err = getter.ListByIDs(context.TODO(), []string{"foo", "bar"})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// wait for routines to complete
-	alloy.SyncWg.Wait()
-
-	// test inventory items match expected
-	assert.ElementsMatch(t, expected, got)
-	assert.False(t, collectTimedOut)
-}
-
-func Test_ServerServiceListAll(t *testing.T) {
-	// nolint:govet // test struct is clearer to read in this alignment
-	testcases := []struct {
-		batchSize   int
-		totalAssets int
-		name        string
-	}{
-		{
-			1,
-			1,
-			"total == batch size",
-		},
-		{
-			1,
-			11,
-			"total > batch size",
-		},
-		{
-			20,
-			11,
-			"total < batch size",
-		},
-	}
-
-	os.Setenv("TEST_ENV", "1")
-	defer os.Unsetenv("TEST_ENV")
-
-	for _, tc := range testcases {
-		t.Run(tc.name, func(t *testing.T) {
-			var collectTimedOut bool
-			got := []*model.Asset{}
-
-			assetCh := make(chan *model.Asset)
-
-			alloy, err := app.New(context.Background(), model.AppKindOutOfBand, "", model.LogLevelInfo)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			// alloy.Config.ServerserviceOptions.Concurrency = model.ConcurrencyDefault
-
-			getter := newMockServerServiceGetter(t, alloy)
-			getter.assetCh = assetCh
-
-			// rigs the mock AssetsByOffsetLimit to return the total count of assets
-			os.Setenv("FIXTURE_TOTAL_ASSETS", strconv.Itoa(tc.totalAssets))
-			defer os.Unsetenv("FIXTURE_TOTAL_ASSETS")
-
-			// background routine to receive asset objects objects sent from the asset getter
-			// mocks a collector
-			getter.syncWg.Add(1)
-			go func(t *testing.T) {
-				t.Helper()
-				defer getter.syncWg.Done()
-
-				timeout := time.NewTicker(time.Second*delayBetweenRequests + 5).C
-			Loop:
-				for {
-					select {
-					case asset, ok := <-assetCh:
-						if !ok {
-							break Loop
-						}
-						got = append(got, asset)
-					case <-timeout:
-						collectTimedOut = true
-						break Loop
-					}
-				}
-			}(t)
-
-			err = getter.ListAll(context.TODO())
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			// wait for routines to return
-			getter.syncWg.Wait()
-
-			assert.Equal(t, tc.totalAssets, len(got))
-			assert.False(t, collectTimedOut)
-		})
-	}
-}
 
 func Test_validateRequiredAttribtues(t *testing.T) {
 	// nolint:govet // ignore struct alignment in test
@@ -302,6 +145,249 @@ func Test_toAsset(t *testing.T) {
 
 			assert.Nil(t, err)
 			assert.Equal(t, tc.expectedAsset, asset)
+		})
+	}
+}
+
+func Test_vendorDataUpdate(t *testing.T) {
+	type args struct {
+		new     map[string]string
+		current map[string]string
+	}
+
+	// nolint:govet // test code is test code - disable struct fieldalignment error
+	tests := []struct {
+		name string
+		args args
+		want map[string]string
+	}{
+		{
+			"current is nil",
+			args{
+				new: map[string]string{
+					model.ServerSerialAttributeKey: "01234",
+					model.ServerVendorAttributeKey: "foo",
+					model.ServerModelAttributeKey:  "bar",
+				},
+				current: nil,
+			},
+			map[string]string{
+				model.ServerSerialAttributeKey: "01234",
+				model.ServerVendorAttributeKey: "foo",
+				model.ServerModelAttributeKey:  "bar",
+			},
+		},
+		{
+			"current and new data is equal",
+			args{
+				new: map[string]string{
+					model.ServerSerialAttributeKey: "01234",
+					model.ServerVendorAttributeKey: "foo",
+					model.ServerModelAttributeKey:  "bar",
+				},
+				current: map[string]string{
+					model.ServerSerialAttributeKey: "01234",
+					model.ServerVendorAttributeKey: "foo",
+					model.ServerModelAttributeKey:  "bar",
+				},
+			},
+			nil,
+		},
+		{
+			"current empty attribute is updated",
+			args{
+				new: map[string]string{
+					model.ServerSerialAttributeKey: "01234",
+					model.ServerVendorAttributeKey: "foo",
+					model.ServerModelAttributeKey:  "bar",
+				},
+				current: map[string]string{
+					model.ServerSerialAttributeKey: "01234",
+					model.ServerVendorAttributeKey: "",
+					model.ServerModelAttributeKey:  "bar",
+				},
+			},
+			map[string]string{
+				model.ServerSerialAttributeKey: "01234",
+				model.ServerVendorAttributeKey: "foo",
+				model.ServerModelAttributeKey:  "bar",
+			},
+		},
+		{
+			"current unknown and empty attributes are updated",
+			args{
+				new: map[string]string{
+					model.ServerSerialAttributeKey: "01234",
+					model.ServerVendorAttributeKey: "foo",
+					model.ServerModelAttributeKey:  "bar",
+				},
+				current: map[string]string{
+					model.ServerSerialAttributeKey: "unknown",
+					model.ServerVendorAttributeKey: "",
+					model.ServerModelAttributeKey:  "bar",
+				},
+			},
+			map[string]string{
+				model.ServerSerialAttributeKey: "01234",
+				model.ServerVendorAttributeKey: "foo",
+				model.ServerModelAttributeKey:  "bar",
+			},
+		},
+		{
+			"current attributes are not updated",
+			args{
+				new: map[string]string{
+					model.ServerSerialAttributeKey: "01234LLL",
+					model.ServerVendorAttributeKey: "foo",
+					model.ServerModelAttributeKey:  "bar",
+				},
+				current: map[string]string{
+					model.ServerSerialAttributeKey: "01234",
+					model.ServerVendorAttributeKey: "foo",
+					model.ServerModelAttributeKey:  "bar",
+				},
+			},
+			nil,
+		},
+		{
+			"current attributes are not updated - with unknown value",
+			args{
+				new: map[string]string{
+					model.ServerSerialAttributeKey: "01234",
+					model.ServerVendorAttributeKey: "unknown",
+					model.ServerModelAttributeKey:  "bar",
+				},
+				current: map[string]string{
+					model.ServerSerialAttributeKey: "01234",
+					model.ServerVendorAttributeKey: "foo",
+					model.ServerModelAttributeKey:  "bar",
+				},
+			},
+			nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := vendorDataUpdate(tt.args.new, tt.args.current)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func assertComponentAttributes(t *testing.T, obj *serverserviceapi.ServerComponent, expectedVersion string) {
+	t.Helper()
+
+	assert.NotNil(t, obj)
+	assert.NotNil(t, obj.ServerUUID)
+	assert.NotNil(t, obj.UUID)
+	assert.NotNil(t, obj.ComponentTypeSlug)
+	assert.NotEmpty(t, obj.VersionedAttributes[0].Data)
+	assert.True(t, rawVersionAttributeFirmwareEquals(t, expectedVersion, obj.VersionedAttributes[0].Data))
+}
+
+// rawVersionAttributeKVEquals returns a bool value when the given key and value is equal
+func rawVersionAttributeFirmwareEquals(t *testing.T, expectedVersion string, rawVA []byte) bool {
+	t.Helper()
+
+	va := &versionedAttributes{}
+
+	err := json.Unmarshal(rawVA, va)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return va.Firmware.Installed == expectedVersion
+}
+
+func Test_ServerServiceChangeList(t *testing.T) {
+	components := fixtures.CopyServerServiceComponentSlice(fixtures.ServerServiceR6515Components_fc167440)
+
+	// nolint:govet // struct alignment kept for readability
+	testcases := []struct {
+		name            string // test name
+		current         []*serverserviceapi.ServerComponent
+		expectedUpdate  int
+		expectedAdd     int
+		expectedRemove  int
+		slug            string // the component slug
+		vaUpdates       *versionedAttributes
+		aUpdates        *attributes
+		addComponent    bool // adds a new component into the new slice before comparison
+		removeComponent bool // removes a component from the new slice
+	}{
+		{
+			"no changes in component lists",
+			componentPtrSlice(fixtures.CopyServerServiceComponentSlice(components)),
+			0,
+			0,
+			0,
+			"",
+			nil,
+			nil,
+			false,
+			false,
+		},
+		{
+			"updated component part of update slice",
+			componentPtrSlice(fixtures.CopyServerServiceComponentSlice(components)),
+			1,
+			0,
+			0,
+			common.SlugBIOS,
+			&versionedAttributes{Firmware: &common.Firmware{Installed: "2.2.6"}},
+			nil,
+			false,
+			false,
+		},
+		{
+			"added component part of add slice",
+			componentPtrSlice(fixtures.CopyServerServiceComponentSlice(components)),
+			0,
+			1,
+			0,
+			common.SlugNIC,
+			&versionedAttributes{Firmware: &common.Firmware{Installed: "1.3.3"}},
+			nil,
+			true,
+			false,
+		},
+		{
+			"component removed from slice",
+			componentPtrSlice(fixtures.CopyServerServiceComponentSlice(components)),
+			0,
+			0,
+			1,
+			"",
+			nil,
+			nil,
+			false,
+			true,
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			newObjs := componentPtrSlice(fixtures.CopyServerServiceComponentSlice(fixtures.ServerServiceR6515Components_fc167440))
+
+			switch {
+			case tc.expectedAdd > 0:
+				newObjs = addcomponent(newObjs, t, tc.slug, tc.vaUpdates)
+			case tc.expectedUpdate > 0:
+				newObjs = updateComponentVA(newObjs, t, tc.slug, tc.vaUpdates)
+			case tc.expectedRemove > 0:
+				newObjs = newObjs[:len(newObjs)-1]
+			default:
+			}
+
+			gotAdd, gotUpdate, gotRemove, err := serverServiceChangeList(context.TODO(), tc.current, newObjs)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assert.Equal(t, tc.expectedAdd, len(gotAdd), "add list differs")
+			assert.Equal(t, tc.expectedUpdate, len(gotUpdate), "update list differs")
+			assert.Equal(t, tc.expectedRemove, len(gotRemove), "remove list differs")
 		})
 	}
 }

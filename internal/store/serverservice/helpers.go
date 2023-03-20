@@ -3,15 +3,20 @@ package serverservice
 import (
 	"context"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 
 	"github.com/coreos/go-oidc"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/metal-toolbox/alloy/internal/app"
+	"github.com/metal-toolbox/alloy/internal/model"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/oauth2/clientcredentials"
+
+	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
 )
 
 // TODO move this under an interface
@@ -110,4 +115,54 @@ func newServerserviceClientWithOAuthOtel(ctx context.Context, cfg *app.Serverser
 		endpoint,
 		retryableClient.StandardClient(),
 	)
+}
+
+// serverPtrSlice returns a slice of pointers to serverserviceapi.Server
+//
+// The server service server list methods return a slice of server objects,
+// this helper method is to reduce the amount of copying of component objects (~176 bytes each) when passed around between methods and range loops,
+// while it seems like a minor optimization, it also keeps the linter happy.
+func serverPtrSlice(servers []serverserviceapi.Server) []*serverserviceapi.Server {
+	returned := make([]*serverserviceapi.Server, 0, len(servers))
+
+	// nolint:gocritic // the copying has to be done somewhere
+	for _, s := range servers {
+		s := s
+		returned = append(returned, &s)
+	}
+
+	return returned
+}
+
+func toAsset(server *serverserviceapi.Server, credential *serverserviceapi.ServerCredential, expectCredentials bool) (*model.Asset, error) {
+	if err := validateRequiredAttributes(server, credential, expectCredentials); err != nil {
+		return nil, errors.Wrap(ErrServerServiceObject, err.Error())
+	}
+
+	serverAttributes, err := serverAttributes(server.Attributes, expectCredentials)
+	if err != nil {
+		return nil, errors.Wrap(ErrServerServiceObject, err.Error())
+	}
+
+	serverMetadataAttributes, err := serverMetadataAttributes(server.Attributes)
+	if err != nil {
+		return nil, errors.Wrap(ErrServerServiceObject, err.Error())
+	}
+
+	asset := &model.Asset{
+		ID:       server.UUID.String(),
+		Serial:   serverAttributes[model.ServerSerialAttributeKey],
+		Model:    serverAttributes[model.ServerModelAttributeKey],
+		Vendor:   serverAttributes[model.ServerVendorAttributeKey],
+		Metadata: serverMetadataAttributes,
+		Facility: server.FacilityCode,
+	}
+
+	if credential != nil {
+		asset.BMCUsername = credential.Username
+		asset.BMCPassword = credential.Password
+		asset.BMCAddress = net.ParseIP(serverAttributes[bmcIPAddressAttributeKey])
+	}
+
+	return asset, nil
 }

@@ -27,9 +27,14 @@ type Configuration struct {
 	LogLevel string `mapstructure:"log_level"`
 
 	// AppKind is either inband or outofband
-	AppKind string `mapstructure:"app_kind"`
+	AppKind model.AppKind `mapstructure:"app_kind"`
 
+	// StoreKind declares the type of storage repository that holds asset inventory data.
 	StoreKind string `mapstructure:"store_kind"`
+
+	// CSV file path when StoreKind is set to csv.
+	CsvFile string `mapstructure:"csv_file"`
+
 	// ServerserviceOptions defines the serverservice client configuration parameters
 	//
 	// This parameter is required when StoreKind is set to serverservice.

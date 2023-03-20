@@ -7,13 +7,27 @@ import (
 	"github.com/bmc-toolbox/common"
 )
 
+type (
+	AppKind   string
+	StoreKind string
+
+	// LogLevel is the logging level string.
+	LogLevel string
+)
+
 const (
-	AppName            = "alloy"
-	AppKindInband      = "inband"
-	AppKindOutOfBand   = "outofband"
-	LogLevelInfo       = 0
-	LogLevelDebug      = 1
-	LogLevelTrace      = 2
+	AppName                  = "alloy"
+	AppKindInband    AppKind = "inband"
+	AppKindOutOfBand AppKind = "outofband"
+
+	StoreKindCsv           StoreKind = "csv"
+	StoreKindServerservice StoreKind = "serverservice"
+	StoreKindMock          StoreKind = "mock"
+
+	LogLevelInfo  LogLevel = "info"
+	LogLevelDebug LogLevel = "debug"
+	LogLevelTrace LogLevel = "trace"
+
 	ConcurrencyDefault = 5
 	ProfilingEndpoint  = "localhost:9091"
 	MetricsEndpoint    = "0.0.0.0:9090"
@@ -22,11 +36,6 @@ const (
 	// EnvVarDumpDiffers when enabled, will dump component differ data for debugging
 	// differences identified in component objects in the publish package.
 	EnvVarDumpDiffers = "DEBUG_DUMP_DIFFERS"
-)
-
-var (
-	// App logging level
-	LogLevel = 0
 )
 
 // Asset represents attributes of an asset retrieved from the asset store

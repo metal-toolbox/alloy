@@ -10,12 +10,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/metal-toolbox/alloy/internal/helpers"
 	"github.com/metal-toolbox/alloy/internal/model"
+	"github.com/pkg/errors"
 	r3diff "github.com/r3labs/diff/v3"
 	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
 )
 
 // createUpdateServerAttributes creates/updates the server serial, vendor, model attributes
-func (r *serverServiceClient) createUpdateServerAttributes(ctx context.Context, server *serverserviceapi.Server, asset *model.Asset) error {
+func (r *serverServiceStore) createUpdateServerAttributes(ctx context.Context, server *serverserviceapi.Server, asset *model.Asset) error {
 	// device vendor data
 	deviceVendorData := r.deviceVendorData(asset)
 
@@ -34,7 +35,7 @@ func (r *serverServiceClient) createUpdateServerAttributes(ctx context.Context, 
 	inventoryAttrs := attributeByNamespace(model.ServerVendorAttributeNS, server.Attributes)
 	if inventoryAttrs == nil {
 		// create if none exists
-		_, err = r.client.CreateAttributes(ctx, server.UUID, *deviceVendorAttributes)
+		_, err = r.CreateAttributes(ctx, server.UUID, *deviceVendorAttributes)
 		return err
 	}
 
@@ -44,7 +45,7 @@ func (r *serverServiceClient) createUpdateServerAttributes(ctx context.Context, 
 		// update vendor data since it seems to be invalid
 		r.logger.Warn("server vendor attributes data invalid, updating..")
 
-		_, err = r.client.UpdateAttributes(ctx, server.UUID, model.ServerVendorAttributeNS, deviceVendorDataBytes)
+		_, err = r.UpdateAttributes(ctx, server.UUID, model.ServerVendorAttributeNS, deviceVendorDataBytes)
 
 		return err
 	}
@@ -56,7 +57,7 @@ func (r *serverServiceClient) createUpdateServerAttributes(ctx context.Context, 
 			return err
 		}
 
-		_, err = r.client.UpdateAttributes(ctx, server.UUID, model.ServerVendorAttributeNS, updateBytes)
+		_, err = r.UpdateAttributes(ctx, server.UUID, model.ServerVendorAttributeNS, updateBytes)
 
 		return err
 	}
@@ -65,7 +66,7 @@ func (r *serverServiceClient) createUpdateServerAttributes(ctx context.Context, 
 }
 
 // initializes a map with the device vendor data attributes
-func (r *serverServiceClient) deviceVendorData(asset *model.Asset) map[string]string {
+func (r *serverServiceStore) deviceVendorData(asset *model.Asset) map[string]string {
 	// initialize map
 	m := map[string]string{
 		model.ServerSerialAttributeKey: "unknown",
@@ -119,7 +120,7 @@ func vendorDataUpdate(newData, currentData map[string]string) map[string]string 
 }
 
 // createUpdateServerMetadataAttributes creates/updates metadata attributes of a server
-func (r *serverServiceClient) createUpdateServerMetadataAttributes(ctx context.Context, serverID uuid.UUID, asset *model.Asset) error {
+func (r *serverServiceStore) createUpdateServerMetadataAttributes(ctx context.Context, serverID uuid.UUID, asset *model.Asset) error {
 	// no metadata reported in inventory from device
 	if len(asset.Inventory.Metadata) == 0 {
 		return nil
@@ -138,7 +139,7 @@ func (r *serverServiceClient) createUpdateServerMetadataAttributes(ctx context.C
 
 	// current asset metadata has no attributes set, create
 	if len(asset.Metadata) == 0 {
-		_, err = r.client.CreateAttributes(ctx, serverID, attribute)
+		_, err = r.CreateAttributes(ctx, serverID, attribute)
 		return err
 	}
 
@@ -148,12 +149,12 @@ func (r *serverServiceClient) createUpdateServerMetadataAttributes(ctx context.C
 	}
 
 	// update vendor, model attributes
-	_, err = r.client.UpdateAttributes(ctx, serverID, model.ServerMetadataAttributeNS, metadata)
+	_, err = r.UpdateAttributes(ctx, serverID, model.ServerMetadataAttributeNS, metadata)
 
 	return err
 }
 
-func (r *serverServiceClient) createUpdateServerBIOSConfiguration(ctx context.Context, serverID uuid.UUID, biosConfig map[string]string) error {
+func (r *serverServiceStore) createUpdateServerBIOSConfiguration(ctx context.Context, serverID uuid.UUID, biosConfig map[string]string) error {
 	// marshal metadata from device
 	bc, err := json.Marshal(biosConfig)
 	if err != nil {
@@ -161,21 +162,17 @@ func (r *serverServiceClient) createUpdateServerBIOSConfiguration(ctx context.Co
 	}
 
 	va := serverserviceapi.VersionedAttributes{
-		Namespace: model.ServerBIOSConfigNS(r.config.AppKind),
+		Namespace: model.ServerBIOSConfigNS(r.appKind),
 		Data:      bc,
 	}
 
-	_, err = r.client.CreateVersionedAttributes(ctx, serverID, va)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	_, err = r.CreateVersionedAttributes(ctx, serverID, va)
+	return err
 }
 
 // createUpdateServerMetadataAttributes creates/updates metadata attributes of a server
 // nolint:gocyclo // (joel) theres a bunch of validation going on here, I'll split the method out if theres more to come.
-func (r *serverServiceClient) createUpdateServerBMCErrorAttributes(ctx context.Context, serverID uuid.UUID, current *serverserviceapi.Attributes, asset *model.Asset) error {
+func (r *serverServiceStore) createUpdateServerBMCErrorAttributes(ctx context.Context, serverID uuid.UUID, current *serverserviceapi.Attributes, asset *model.Asset) error {
 	// 1. no errors reported, none currently present
 	if len(asset.Errors) == 0 {
 		// server has no bmc errors registered
@@ -184,7 +181,7 @@ func (r *serverServiceClient) createUpdateServerBMCErrorAttributes(ctx context.C
 		}
 
 		// server has bmc errors registered, update the attributes to purge existing errors
-		_, err := r.client.UpdateAttributes(ctx, serverID, model.ServerBMCErrorsAttributeNS, []byte(`{}`))
+		_, err := r.UpdateAttributes(ctx, serverID, model.ServerBMCErrorsAttributeNS, []byte(`{}`))
 		return err
 	}
 
@@ -201,7 +198,7 @@ func (r *serverServiceClient) createUpdateServerBMCErrorAttributes(ctx context.C
 
 	// 2. current data has no BMC error attributes object, create
 	if current == nil || len(current.Data) == 0 {
-		_, err = r.client.CreateAttributes(ctx, serverID, attribute)
+		_, err = r.CreateAttributes(ctx, serverID, attribute)
 		return err
 	}
 
@@ -219,12 +216,8 @@ func (r *serverServiceClient) createUpdateServerBMCErrorAttributes(ctx context.C
 	}
 
 	// update vendor, model attributes
-	_, err = r.client.UpdateAttributes(ctx, serverID, model.ServerBMCErrorsAttributeNS, newData)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	_, err = r.UpdateAttributes(ctx, serverID, model.ServerBMCErrorsAttributeNS, newData)
+	return err
 }
 
 func diffComponentObjectsAttributes(currentObj, changeObj *serverserviceapi.ServerComponent) ([]serverserviceapi.Attributes, []serverserviceapi.VersionedAttributes, error) {
@@ -328,7 +321,7 @@ func diffVersionedAttributes(currentObjs, newObjs []serverserviceapi.VersionedAt
 //
 // This is to ensure that this instance of Alloy is only working with the data that
 // is part of the defined attributes, versioned attributes namespaces
-func (r *serverServiceClient) filterByAttributeNamespace(components []*serverserviceapi.ServerComponent) {
+func (r *serverServiceStore) filterByAttributeNamespace(components []*serverserviceapi.ServerComponent) {
 	for cIdx, component := range components {
 		attributes := []serverserviceapi.Attributes{}
 		versionedAttributes := []serverserviceapi.VersionedAttributes{}
@@ -360,4 +353,103 @@ func attributeByNamespace(ns string, attributes []serverserviceapi.Attributes) *
 	}
 
 	return nil
+}
+
+// serverAttributes parses the server service attribute data
+// and returns a map containing the bmc address, server serial, vendor, model attributes
+// and optionally the BMC address and attributes.
+func serverAttributes(attributes []serverserviceapi.Attributes, wantBmcCredentials bool) (map[string]string, error) {
+	// returned server attributes map
+	sAttributes := map[string]string{}
+
+	// bmc IP Address attribute data is unpacked into this map
+	bmcData := map[string]string{}
+
+	// server vendor, model attribute data is unpacked into this map
+	serverVendorData := map[string]string{}
+
+	for _, attribute := range attributes {
+		// bmc address attribute
+		if wantBmcCredentials && (attribute.Namespace == bmcAttributeNamespace) {
+			if err := json.Unmarshal(attribute.Data, &bmcData); err != nil {
+				return nil, errors.Wrap(ErrServerServiceObject, "bmc address attribute: "+err.Error())
+			}
+		}
+
+		// server vendor, model attributes
+		if attribute.Namespace == model.ServerVendorAttributeNS {
+			if err := json.Unmarshal(attribute.Data, &serverVendorData); err != nil {
+				return nil, errors.Wrap(ErrServerServiceObject, "server vendor attribute: "+err.Error())
+			}
+		}
+	}
+
+	if wantBmcCredentials {
+		if len(bmcData) == 0 {
+			return nil, errors.New("expected server attributes with BMC address, got none")
+		}
+
+		// set bmc address attribute
+		sAttributes[bmcIPAddressAttributeKey] = bmcData[bmcIPAddressAttributeKey]
+		if sAttributes[bmcIPAddressAttributeKey] == "" {
+			return nil, errors.New("expected BMC address attribute empty")
+		}
+	}
+
+	// set server vendor, model attributes in the returned map
+	serverAttributes := []string{
+		model.ServerSerialAttributeKey,
+		model.ServerModelAttributeKey,
+		model.ServerVendorAttributeKey,
+	}
+
+	for _, key := range serverAttributes {
+		sAttributes[key] = serverVendorData[key]
+		if sAttributes[key] == "" {
+			sAttributes[key] = "unknown"
+		}
+	}
+
+	return sAttributes, nil
+}
+
+func validateRequiredAttributes(server *serverserviceapi.Server, credential *serverserviceapi.ServerCredential, expectCredentials bool) error {
+	if server == nil {
+		return errors.New("server object nil")
+	}
+
+	if expectCredentials && credential == nil {
+		return errors.New("server credential object nil")
+	}
+
+	if len(server.Attributes) == 0 {
+		return errors.New("server attributes slice empty")
+	}
+
+	if expectCredentials && credential.Username == "" {
+		return errors.New("BMC username field empty")
+	}
+
+	if expectCredentials && credential.Password == "" {
+		return errors.New("BMC password field empty")
+	}
+
+	return nil
+}
+
+// serverMetadataAttributes parses the server service server metdata attribute data
+// and returns a map containing the server metadata
+func serverMetadataAttributes(attributes []serverserviceapi.Attributes) (map[string]string, error) {
+	metadata := map[string]string{}
+
+	for _, attribute := range attributes {
+		// bmc address attribute
+		if attribute.Namespace == model.ServerMetadataAttributeNS {
+			if err := json.Unmarshal(attribute.Data, &metadata); err != nil {
+				return nil, errors.Wrap(ErrServerServiceObject, "server metadata attribute: "+err.Error())
+			}
+		}
+	}
+
+	return metadata, nil
 }

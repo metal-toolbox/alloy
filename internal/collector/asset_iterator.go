@@ -1,4 +1,4 @@
-package runner
+package collector
 
 import (
 	"context"
@@ -26,24 +26,24 @@ var (
 	stageLabelFetcher = prometheus.Labels{"stage": "fetcher"}
 )
 
-type AssetFetcher struct {
+type AssetIterator struct {
 	store   store.Repository
 	assetCh chan<- *model.Asset
 	logger  *logrus.Logger
 }
 
-// NewAssetFetcher returns an AssetFetcher with methods, and an asset channel over which assets can be read from.
-func NewAssetFetcher(store store.Repository, logger *logrus.Logger) *AssetFetcher {
-	return &AssetFetcher{store: store, logger: logger, assetCh: make(chan *model.Asset)}
+// NewAssetIterator returns an AssetIterator with methods, and an asset channel over which assets can be read from.
+func NewAssetIterator(store store.Repository, logger *logrus.Logger) *AssetIterator {
+	return &AssetIterator{store: store, logger: logger, assetCh: make(chan *model.Asset)}
 }
 
 // AssetChannel returns the channel to read assets from when the fetcher is invoked through its Iter* method.
-func (s *AssetFetcher) AssetChannel() <-chan *model.Asset {
+func (s *AssetIterator) AssetChannel() <-chan *model.Asset {
 	return s.AssetChannel()
 }
 
 // IterInBatches queries the store for assets in batches, returning them over the assetCh
-func (s *AssetFetcher) IterInBatches(ctx context.Context, pauser *Pauser) error {
+func (s *AssetIterator) IterInBatches(ctx context.Context, pauser *Pauser) error {
 	// attach child span
 	ctx, span := tracer.Start(ctx, "IterateInBatches()")
 	defer span.End()
@@ -55,7 +55,7 @@ func (s *AssetFetcher) IterInBatches(ctx context.Context, pauser *Pauser) error 
 	if err != nil {
 		// count serverService query errors
 		if errors.Is(err, ErrFetcherQuery) {
-			metrics.FetcherQueryErrorCount.With(stageLabelFetcher).Inc()
+			metrics.ServerServiceQueryErrorCount.With(stageLabelFetcher).Inc()
 		}
 
 		return err
@@ -111,7 +111,7 @@ func (s *AssetFetcher) IterInBatches(ctx context.Context, pauser *Pauser) error 
 		assets, _, err := s.store.AssetsByOffsetLimit(ctx, offset, batchSize)
 		if err != nil {
 			if errors.Is(err, ErrFetcherQuery) {
-				metrics.FetcherQueryErrorCount.With(stageLabelFetcher).Inc()
+				metrics.ServerServiceQueryErrorCount.With(stageLabelFetcher).Inc()
 			}
 
 			s.logger.Warn(err)
@@ -150,7 +150,7 @@ func (s *AssetFetcher) IterInBatches(ctx context.Context, pauser *Pauser) error 
 }
 
 // ListByIDs implements the Getter interface to query the inventory for the assetIDs and return found assets over the asset channel.
-func (s *AssetFetcher) ListByIDs(ctx context.Context, assetIDs []string, assetCh chan<- *model.Asset) error {
+func (s *AssetIterator) ListByIDs(ctx context.Context, assetIDs []string, assetCh chan<- *model.Asset) error {
 	// attach child span
 	ctx, span := tracer.Start(ctx, "ListByIDs()")
 	defer span.End()
@@ -177,7 +177,7 @@ func (s *AssetFetcher) ListByIDs(ctx context.Context, assetIDs []string, assetCh
 		if err != nil {
 			// count serverService query errors
 			if errors.Is(err, ErrFetcherQuery) {
-				metrics.FetcherQueryErrorCount.With(stageLabelFetcher).Inc()
+				metrics.ServerServiceQueryErrorCount.With(stageLabelFetcher).Inc()
 			}
 
 			s.logger.WithField("serverID", assetID).Warn(err)

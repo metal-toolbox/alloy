@@ -1,15 +1,13 @@
-package publish
+package serverservice
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-// Publisher specific metrics are defined and initialized here.
-
 var (
-	// stageLabel is the label included in all metrics collected by the publisher
-	stageLabel = prometheus.Labels{"stage": "publisher"}
+	// stageLabel is the label included in all metrics collected by the serverservice store
+	stageLabel = prometheus.Labels{"stage": "serverservice"}
 
 	// metricAssetComponentsIdentified measures the count of hardware components in the device components data from the collector.
 	metricAssetComponentsIdentified *prometheus.GaugeVec
@@ -19,6 +17,9 @@ var (
 
 	// metricInventorized count measures the number of assets inventorized - both successful and not.
 	metricInventorized *prometheus.GaugeVec
+
+	// metricBiosCfgCollected count measures the number of assets of which BIOS configuraton was collected - both successful and not.
+	metricBiosCfgCollected *prometheus.GaugeVec
 )
 
 func init() {
@@ -42,6 +43,15 @@ func init() {
 		prometheus.GaugeOpts{
 			Name: "alloy_assets_inventoried_count",
 			Help: "A gauge metric to count the total assets inventoried - successful and not.",
+		},
+		// status is one of success/failure
+		[]string{"status"},
+	)
+
+	metricBiosCfgCollected = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "alloy_assets_bios_cfg_collected_count",
+			Help: "A gauge metric to count measures the number of assets of which BIOS configuraton was collected - both successful and not.",
 		},
 		// status is one of success/failure
 		[]string{"status"},

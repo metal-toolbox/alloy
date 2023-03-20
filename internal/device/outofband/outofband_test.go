@@ -28,7 +28,7 @@ func Test_OutOfBandInventoryRemote(t *testing.T) {
 	}()
 
 	// init mock collector which mocks OOB inventory
-	collector := NewCollector(alloy)
+	collector := NewQueryor(alloy)
 	collector.SetMockGetter(fixtures.NewMockBmclib())
 
 	// mock assets the collector will collect OOB inventory for
@@ -61,7 +61,7 @@ func Test_OutOfBandInventoryRemote(t *testing.T) {
 	Loop:
 		for {
 			select {
-			case device, ok := <-alloy.CollectorCh:
+			case device, ok := <-alloy.QueryorCh:
 				if !ok {
 					break Loop
 				}
