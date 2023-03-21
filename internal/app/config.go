@@ -6,7 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jeremywohl/flatten"
 	"github.com/metal-toolbox/alloy/internal/model"
+	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"go.hollow.sh/toolbox/events"
 )
@@ -19,9 +21,6 @@ var (
 //
 // nolint:govet // prefer readability over field alignment optimization for this case.
 type Configuration struct {
-	// file is the configuration file path
-	file string `mapstructure:"-"`
-
 	// LogLevel is the app verbose logging level.
 	// one of - info, debug, trace
 	LogLevel string `mapstructure:"log_level"`
@@ -30,7 +29,7 @@ type Configuration struct {
 	AppKind model.AppKind `mapstructure:"app_kind"`
 
 	// StoreKind declares the type of storage repository that holds asset inventory data.
-	StoreKind string `mapstructure:"store_kind"`
+	StoreKind model.StoreKind `mapstructure:"store_kind"`
 
 	// CSV file path when StoreKind is set to csv.
 	CsvFile string `mapstructure:"csv_file"`
@@ -38,30 +37,14 @@ type Configuration struct {
 	// ServerserviceOptions defines the serverservice client configuration parameters
 	//
 	// This parameter is required when StoreKind is set to serverservice.
-	ServerserviceOptions ServerserviceOptions `mapstructure:"serverservice_options"`
+	ServerserviceOptions *ServerserviceOptions `mapstructure:"serverservice"`
 
-	// Out of band collector configuration
-	CollectorOutofband struct {
-		Concurrency int `mapstructure:"concurrency"`
-	} `mapstructure:"collector_outofband"`
+	// Controller Out of band collector concurrency
+	Concurrency int `mapstructure:"concurrency"`
 
-	// AssetGetter is where alloy looks up assets information like BMC credentials
-	// to collect inventory.
-	AssetGetter struct {
-		// supported parameters: csv OR serverService
-		Kind string `mapstructure:"kind"`
+	CollectInterval time.Duration `mapstructure:"collect_interval"`
 
-		// Csv is the CSV asset getter type configuration.
-		Csv struct {
-			File string `mapstructure:"file"`
-		} `mapstructure:"csv"`
-	} `mapstructure:"asset_getter"`
-
-	// Publisher is the inventory store where alloy writes collected inventory data
-	InventoryPublisher struct {
-		// supported parameters: stdout, serverService
-		Kind string `mapstructure:"kind"`
-	} `mapstructure:"inventory_publisher"`
+	CollectIntervalSplay time.Duration `mapstructure:"collect_interval_splay"`
 
 	// EventsBrokerKind indicates the kind of event broker configuration to enable,
 	//
@@ -71,7 +54,7 @@ type Configuration struct {
 	// NatsOptions defines the NATs events broker configuration parameters.
 	//
 	// This parameter is required when EventsBrokerKind is set to nats.
-	NatsOptions events.NatsOptions `mapstructure:"nats_options"`
+	NatsOptions *events.NatsOptions `mapstructure:"nats"`
 }
 
 // ServerserviceOptions defines configuration for the Serverservice client.
@@ -88,13 +71,19 @@ type ServerserviceOptions struct {
 	DisableOAuth         bool     `mapstructure:"disable_oauth"`
 }
 
-func (a *App) LoadConfiguration(cfgFile string) error {
+func (a *App) LoadConfiguration(cfgFile string, storeKind model.StoreKind) error {
 	a.v.SetConfigType("yaml")
 	a.v.SetEnvPrefix(model.AppName)
 	a.v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	a.v.AutomaticEnv()
 
-	a.Config = &Configuration{}
+	// these are initialized here so viper can read in configuration from env vars
+	// once https://github.com/spf13/viper/pull/1429 is merged, this can go.
+	a.Config.ServerserviceOptions = &ServerserviceOptions{}
+	a.Config.NatsOptions = &events.NatsOptions{
+		Stream:   &events.NatsStreamOptions{},
+		Consumer: &events.NatsConsumerOptions{},
+	}
 
 	if cfgFile != "" {
 		fh, err := os.Open(cfgFile)
@@ -105,14 +94,30 @@ func (a *App) LoadConfiguration(cfgFile string) error {
 		if err = a.v.ReadConfig(fh); err != nil {
 			return errors.Wrap(ErrConfig, "ReadConfig error:"+err.Error())
 		}
+	}
 
-		if err := a.v.Unmarshal(a.Config); err != nil {
-			return errors.Wrap(ErrConfig, "Unmarshal error: "+err.Error())
-		}
+	a.v.SetDefault("log.level", "info")
+	a.v.SetDefault("collect.interval", 72*time.Hour)
+	a.v.SetDefault("collect.interval.splay", 4*time.Hour)
+
+	if err := a.envBindVars(a.Config); err != nil {
+		return errors.Wrap(ErrConfig, "env var bind error:"+err.Error())
+	}
+
+	if err := a.v.Unmarshal(a.Config); err != nil {
+		return errors.Wrap(ErrConfig, "Unmarshal error: "+err.Error())
 	}
 
 	if a.v.GetString("log.level") != "" {
 		a.Config.LogLevel = a.v.GetString("log.level")
+	}
+
+	if a.v.GetDuration("collect.interval") != 0 {
+		a.Config.CollectInterval = a.v.GetDuration("collect.interval")
+	}
+
+	if a.v.GetDuration("collect.interval.splay") != 0 {
+		a.Config.CollectIntervalSplay = a.v.GetDuration("collect.interval.splay")
 	}
 
 	if a.Config.EventsBorkerKind == "nats" {
@@ -121,9 +126,36 @@ func (a *App) LoadConfiguration(cfgFile string) error {
 		}
 	}
 
-	if a.Config.StoreKind == "serverservice" {
+	if storeKind == model.StoreKindServerservice {
 		if err := a.envVarServerserviceOverrides(); err != nil {
 			return errors.Wrap(ErrConfig, "serverservice env overrides error:"+err.Error())
+		}
+	}
+
+	return nil
+}
+
+// envBindVars binds environment variables to the struct
+// without a configuration file being unmarshalled,
+// this is a workaround for a viper bug,
+//
+// This can be replaced by the solution in https://github.com/spf13/viper/pull/1429
+// once that PR is merged.
+func (a *App) envBindVars(cfg *Configuration) error {
+	envKeysMap := map[string]interface{}{}
+	if err := mapstructure.Decode(a.Config, &envKeysMap); err != nil {
+		return err
+	}
+
+	// Flatten nested conf map
+	flat, err := flatten.Flatten(envKeysMap, "", flatten.DotStyle)
+	if err != nil {
+		return errors.Wrap(err, "Unable to flatten config")
+	}
+
+	for k := range flat {
+		if err := a.v.BindEnv(k); err != nil {
+			return errors.Wrap(ErrConfig, "env var bind error: "+err.Error())
 		}
 	}
 
@@ -136,6 +168,10 @@ var (
 )
 
 func (a *App) envVarNatsOverrides() error {
+	if a.Config.NatsOptions == nil {
+		a.Config.NatsOptions = &events.NatsOptions{}
+	}
+
 	if a.v.GetString("nats.url") != "" {
 		a.Config.NatsOptions.URL = a.v.GetString("nats.url")
 	}
@@ -157,11 +193,23 @@ func (a *App) envVarNatsOverrides() error {
 	}
 
 	if a.v.GetString("nats.stream.name") != "" {
+		if a.Config.NatsOptions.Stream == nil {
+			a.Config.NatsOptions.Stream = &events.NatsStreamOptions{}
+		}
+
 		a.Config.NatsOptions.Stream.Name = a.v.GetString("nats.stream.name")
 	}
 
 	if a.Config.NatsOptions.Stream.Name == "" {
 		return errors.New("A stream name is required")
+	}
+
+	if a.v.GetString("nats.consumer.name") != "" {
+		if a.Config.NatsOptions.Consumer == nil {
+			a.Config.NatsOptions.Consumer = &events.NatsConsumerOptions{}
+		}
+
+		a.Config.NatsOptions.Consumer.Name = a.v.GetString("nats.consumer.name")
 	}
 
 	if a.Config.NatsOptions.ConnectTimeout == 0 {
@@ -175,6 +223,10 @@ func (a *App) envVarNatsOverrides() error {
 
 // nolint:gocyclo // parameter validation is cyclomatic
 func (a *App) envVarServerserviceOverrides() error {
+	if a.Config.ServerserviceOptions == nil {
+		a.Config.ServerserviceOptions = &ServerserviceOptions{}
+	}
+
 	if a.v.GetString("serverservice.endpoint") != "" {
 		a.Config.ServerserviceOptions.Endpoint = a.v.GetString("serverservice.endpoint")
 	}

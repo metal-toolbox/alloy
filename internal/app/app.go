@@ -21,6 +21,8 @@ var (
 type App struct {
 	// Viper loads configuration parameters.
 	v *viper.Viper
+
+	Kind model.AppKind
 	// App configuration.
 	Config *Configuration
 	// TermCh is the channel to terminate the app based on a signal
@@ -32,26 +34,25 @@ type App struct {
 }
 
 // New returns a new alloy application object with the configuration loaded
-func New(ctx context.Context, kind model.AppKind, cfgFile string, loglevel string) (app *App, err error) {
-	switch kind {
+func New(ctx context.Context, appKind model.AppKind, storeKind model.StoreKind, cfgFile string, loglevel string) (app *App, err error) {
+	switch appKind {
 	case model.AppKindInband, model.AppKindOutOfBand:
 	default:
-		return nil, errors.Wrap(ErrAppInit, "invalid app kind: "+string(kind))
+		return nil, errors.Wrap(ErrAppInit, "invalid app kind: "+string(appKind))
 	}
 
 	app = &App{
 		v:      viper.New(),
+		Kind:   appKind,
+		Config: &Configuration{},
 		TermCh: make(chan os.Signal),
 		SyncWg: &sync.WaitGroup{},
 		Logger: logrus.New(),
 	}
 
-	if err := app.LoadConfiguration(cfgFile); err != nil {
+	if err := app.LoadConfiguration(cfgFile, storeKind); err != nil {
 		return nil, err
 	}
-
-	// set here again since LoadConfiguration could overwrite it.
-	app.Config.AppKind = kind
 
 	switch model.LogLevel(loglevel) {
 	case model.LogLevelDebug:
