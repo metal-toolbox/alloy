@@ -1,14 +1,14 @@
 log_level: debug
-app_kind: outofband
+app_kind: inband
 collector_outofband:
   concurrency: 5
 store_kind: serverservice
-serverservice_options:
+serverservice:
   endpoint: http://serverservice:8000
   disable_oauth: true
   facility_code: dc13
 events_broker_kind: nats
-nats_options:
+nats:
   url: nats://nats:4222
   app_name: conditionorc
   publisher_subject_prefix: com.hollow.sh.controllers.responses
@@ -19,3 +19,21 @@ nats_options:
   stream_user: alloy
   stream_pass: password
   #creds_file:
+  consumer:
+    pull: true
+    name: alloy
+    ack_wait: 5m
+    max_ack_pending: 10
+    queue_group: controllers
+    subscribe_subjects:
+      - com.hollow.sh.controllers.commands.>
+    # filter_subject required for a workqueue stream
+    filter_subject: com.hollow.sh.controllers.commands.>
+  stream:
+    name: controllers
+    subjects:
+      - com.hollow.sh.controllers.commands.>
+      - com.hollow.sh.controllers.responses.>
+    acknowledgements: true
+    duplicate_window: 5m
+    retention: workQueue
