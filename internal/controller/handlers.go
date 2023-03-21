@@ -3,11 +3,33 @@ package controller
 import (
 	"context"
 
+	"github.com/metal-toolbox/alloy/internal/collector"
+	"github.com/metal-toolbox/alloy/internal/model"
 	cptypes "github.com/metal-toolbox/conditionorc/pkg/types"
 	"github.com/sirupsen/logrus"
 )
 
 func (c *Controller) inventoryOutofband(ctx context.Context, task *Task) {
+	// init OOB collector
+	oobcollector, err := collector.NewSingleDeviceCollectorWithRepository(
+		ctx,
+		c.repository,
+		model.AppKindOutOfBand,
+		c.logger,
+	)
+	if err != nil {
+		if err := c.checkpointHelper.Set(ctx, task, cptypes.Failed, err.Error()); err != nil {
+			c.logger.WithFields(
+				logrus.Fields{
+					"err":      err.Error(),
+					"serverID": task.Urn.ResourceID.String(),
+				},
+			).Error("collection error")
+		}
+
+		return
+	}
+
 	if err := c.checkpointHelper.Set(ctx, task, cptypes.Active, "querying inventory for BMC credentials"); err != nil {
 		c.logger.WithFields(
 			logrus.Fields{
@@ -46,7 +68,7 @@ func (c *Controller) inventoryOutofband(ctx context.Context, task *Task) {
 	c.checkpointHelper.Set(ctx, task, cptypes.Active, "querying device BMC for inventory")
 
 	// collect inventory from asset hardware
-	if err := c.singleCollector.Collect(ctx, &task.Asset); err != nil {
+	if err := oobcollector.CollectOutofband(ctx, &task.Asset); err != nil {
 		c.logger.WithFields(
 			logrus.Fields{
 				"serverID": &task.Asset.ID,
