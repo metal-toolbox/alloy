@@ -8,21 +8,22 @@ require (
 	github.com/bombsimon/logrusr/v2 v2.0.1
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/davecgh/go-spew v1.1.1
-	github.com/equinix-labs/otel-init-go v0.0.7
-	github.com/gammazero/workerpool v1.1.3
+	github.com/fatih/structs v1.1.0
 	github.com/google/go-cmp v0.5.9
 	github.com/google/uuid v1.3.0
+	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/jacobweinstock/registrar v0.4.6
+	github.com/jeremywohl/flatten v1.0.1
 	github.com/jinzhu/copier v0.3.5
 	github.com/metal-toolbox/conditionorc v0.0.0-20230310114252-2fb02720276d
 	github.com/metal-toolbox/ironlib v0.2.6-0.20230313083928-82c470aff5e5
-	github.com/peterbourgon/ff/v3 v3.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.14.0
 	github.com/r3labs/diff/v3 v3.0.1
 	github.com/sanity-io/litter v1.5.5
 	github.com/sirupsen/logrus v1.9.0
+	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.15.0
 	github.com/stretchr/testify v1.8.2
 	go.hollow.sh/serverservice v0.15.1
@@ -42,7 +43,6 @@ require (
 	github.com/beevik/etree v1.1.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/sonic v1.8.0 // indirect
-	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/cockroachdb/cockroach-go/v2 v2.2.20 // indirect
@@ -51,7 +51,6 @@ require (
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/friendsofgo/errors v0.9.2 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
-	github.com/gammazero/deque v0.2.1 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/gin-gonic/gin v1.9.0 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
@@ -67,10 +66,8 @@ require (
 	github.com/googleapis/gax-go/v2 v2.7.0 // indirect
 	github.com/gosimple/slug v1.13.1 // indirect
 	github.com/gosimple/unidecode v1.0.1 // indirect
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
@@ -106,7 +103,6 @@ require (
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/spf13/afero v1.9.3 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
-	github.com/spf13/cobra v1.6.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stmcginnis/gofish v0.13.1-0.20221107140645-5cc43fad050f // indirect
@@ -127,12 +123,7 @@ require (
 	github.com/volatiletech/sqlboiler/v4 v4.14.0 // indirect
 	github.com/volatiletech/strmangle v0.0.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.11.2 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.11.2 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.11.2 // indirect
 	go.opentelemetry.io/otel/metric v0.37.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.11.2 // indirect
-	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	gocloud.dev v0.27.0 // indirect
 	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
 	golang.org/x/crypto v0.6.0 // indirect
