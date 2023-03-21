@@ -28,7 +28,7 @@ const (
 	delayBetweenRequests = 2 * time.Second
 
 	// server service attribute to look up the BMC IP Address in
-	bmcAttributeNamespace = "sr.hollow.bmc_info"
+	bmcAttributeNamespace = "sh.hollow.bmc_info"
 
 	// server server service BMC address attribute key found under the bmcAttributeNamespace
 	bmcIPAddressAttributeKey = "address"
@@ -298,6 +298,10 @@ func (r *serverServiceStore) createUpdateServerComponents(ctx context.Context, s
 	// attach child span
 	ctx, span := tracer.Start(ctx, "createUpdateServerComponents()")
 	defer span.End()
+
+	if device.Inventory == nil {
+		return nil
+	}
 
 	// convert model.AssetDevice to server service component slice
 	newInventory, err := r.toComponentSlice(serverID, device)

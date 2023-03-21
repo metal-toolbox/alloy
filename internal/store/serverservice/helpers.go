@@ -2,6 +2,7 @@ package serverservice
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -19,10 +20,18 @@ import (
 	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
 )
 
+var (
+	ErrConfig = errors.New("error in serverservice client configuration")
+)
+
 // TODO move this under an interface
 
 // NewServerServiceClient instantiates and returns a serverService client
 func NewServerServiceClient(ctx context.Context, cfg *app.ServerserviceOptions, logger *logrus.Entry) (*serverserviceapi.Client, error) {
+	if cfg == nil {
+		return nil, errors.Wrap(ErrConfig, "configuration is nil")
+	}
+
 	if cfg.DisableOAuth {
 		return newServerserviceClientWithOtel(cfg, cfg.Endpoint, logger)
 	}
@@ -32,6 +41,10 @@ func NewServerServiceClient(ctx context.Context, cfg *app.ServerserviceOptions, 
 
 // returns a serverservice retryable client with Otel
 func newServerserviceClientWithOtel(cfg *app.ServerserviceOptions, endpoint string, logger *logrus.Entry) (*serverserviceapi.Client, error) {
+	if cfg == nil {
+		return nil, errors.Wrap(ErrConfig, "configuration is nil")
+	}
+
 	// init retryable http client
 	retryableClient := retryablehttp.NewClient()
 
@@ -69,6 +82,10 @@ func newServerserviceClientWithOtel(cfg *app.ServerserviceOptions, endpoint stri
 
 // returns a serverservice retryable http client with Otel and Oauth wrapped in
 func newServerserviceClientWithOAuthOtel(ctx context.Context, cfg *app.ServerserviceOptions, endpoint string, logger *logrus.Entry) (*serverserviceapi.Client, error) {
+	if cfg == nil {
+		return nil, errors.Wrap(ErrConfig, "configuration is nil")
+	}
+
 	// init retryable http client
 	retryableClient := retryablehttp.NewClient()
 
@@ -141,6 +158,7 @@ func toAsset(server *serverserviceapi.Server, credential *serverserviceapi.Serve
 
 	serverAttributes, err := serverAttributes(server.Attributes, expectCredentials)
 	if err != nil {
+		fmt.Println(err.Error())
 		return nil, errors.Wrap(ErrServerServiceObject, err.Error())
 	}
 

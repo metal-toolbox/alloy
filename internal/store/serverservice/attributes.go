@@ -74,16 +74,18 @@ func (r *serverServiceStore) deviceVendorData(asset *model.Asset) map[string]str
 		model.ServerModelAttributeKey:  "unknown",
 	}
 
-	if asset.Inventory.Serial != "" {
-		m[model.ServerSerialAttributeKey] = asset.Inventory.Serial
-	}
+	if asset.Inventory != nil {
+		if asset.Inventory.Serial != "" {
+			m[model.ServerSerialAttributeKey] = asset.Inventory.Serial
+		}
 
-	if asset.Inventory.Model != "" {
-		m[model.ServerModelAttributeKey] = asset.Inventory.Model
-	}
+		if asset.Inventory.Model != "" {
+			m[model.ServerModelAttributeKey] = asset.Inventory.Model
+		}
 
-	if asset.Inventory.Vendor != "" {
-		m[model.ServerVendorAttributeKey] = asset.Inventory.Vendor
+		if asset.Inventory.Vendor != "" {
+			m[model.ServerVendorAttributeKey] = asset.Inventory.Vendor
+		}
 	}
 
 	return m
@@ -122,7 +124,7 @@ func vendorDataUpdate(newData, currentData map[string]string) map[string]string 
 // createUpdateServerMetadataAttributes creates/updates metadata attributes of a server
 func (r *serverServiceStore) createUpdateServerMetadataAttributes(ctx context.Context, serverID uuid.UUID, asset *model.Asset) error {
 	// no metadata reported in inventory from device
-	if len(asset.Inventory.Metadata) == 0 {
+	if asset.Inventory == nil || len(asset.Inventory.Metadata) == 0 {
 		return nil
 	}
 

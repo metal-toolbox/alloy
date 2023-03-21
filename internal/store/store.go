@@ -30,7 +30,7 @@ type Repository interface {
 func NewRepository(ctx context.Context, storeKind model.StoreKind, appKind model.AppKind, cfg *app.Configuration, logger *logrus.Logger) (Repository, error) {
 	switch storeKind {
 	case model.StoreKindServerservice:
-		return serverservice.NewServerServiceStore(ctx, appKind, &cfg.ServerserviceOptions, logger)
+		return serverservice.NewServerServiceStore(ctx, appKind, cfg.ServerserviceOptions, logger)
 
 	case model.StoreKindCsv:
 		return csvee.NewCSVStore(ctx, cfg.CsvFile, logger)
