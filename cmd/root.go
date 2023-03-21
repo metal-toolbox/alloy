@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/spf13/cobra"
 )
 
@@ -31,6 +32,8 @@ var (
 
 	// outputStdout when set causes alloy to write the collected data to stdout
 	outputStdout bool
+
+	enableProfiling bool
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -51,7 +54,8 @@ func Execute() {
 func init() {
 	// Read in env vars with appName as prefix
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "configuration file")
-	rootCmd.PersistentFlags().StringVar(&storeKind, "store", "mock", "The inventory asset identifier")
+	rootCmd.PersistentFlags().StringVar(&storeKind, "store", "mock", "The inventory store kind (serverservice, csv)")
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "set logging level - debug, trace")
 	rootCmd.PersistentFlags().BoolVarP(&outputStdout, "output-stdout", "", false, "Output collected data to STDOUT instead of the store")
+	rootCmd.PersistentFlags().BoolVarP(&enableProfiling, "enable-pprof", "", false, "Enable profiling endpoint at: "+model.ProfilingEndpoint)
 }

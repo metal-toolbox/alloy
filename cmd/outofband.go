@@ -6,8 +6,13 @@ import (
 
 	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/collector"
+	"github.com/metal-toolbox/alloy/internal/controller"
+	"github.com/metal-toolbox/alloy/internal/helpers"
+	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/spf13/cobra"
+	"go.hollow.sh/toolbox/events"
+	"golang.org/x/net/context"
 )
 
 var (
@@ -32,51 +37,87 @@ var cmdOutofband = &cobra.Command{
 	Use:   "outofband",
 	Short: "Collect inventory data, bios configuration data through the BMC",
 	Run: func(cmd *cobra.Command, args []string) {
-		app, err := app.New(cmd.Context(), model.AppKindInband, cfgFile, logLevel)
+		alloy, err := app.New(cmd.Context(), model.AppKindInband, model.StoreKind(storeKind), cfgFile, logLevel)
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		// profiling endpoint
+		if enableProfiling {
+			helpers.EnablePProfile()
+		}
+
+		// serve metrics endpoint
+		metrics.ListenAndServe()
+
+		// setup cancel context with cancel func
+		ctx, cancelFunc := context.WithCancel(cmd.Context())
+
+		// routine listens for termination signal and cancels the context
+		go func() {
+			<-alloy.TermCh
+			cancelFunc()
+		}()
 
 		if outputStdout {
 			storeKind = string(model.StoreKindMock)
 		}
 
 		if len(assetIDs) > 0 {
-			c, err := collector.NewSingleDeviceCollector(
-				cmd.Context(),
-				model.StoreKind(storeKind),
-				model.AppKindOutOfBand,
-				app.Config,
-				app.Logger,
-			)
-
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			for _, assetID := range assetIDs {
-				asset := &model.Asset{ID: assetID}
-				if err := c.Collect(cmd.Context(), asset); err != nil {
-					app.Logger.Warn(err)
-				}
-			}
+			runOnAssets(ctx, alloy)
 
 			return
 		}
 
 		if controllerMode {
+			runController(ctx, alloy)
 
 			return
 		}
 
-		log.Fatal("either --asset-ids OR --controller was expected")
+		log.Fatal("either --asset-ids OR --controller-mode was expected")
 	},
+}
+
+func runController(ctx context.Context, alloy *app.App) {
+	streamBroker, err := events.NewStreamBroker(alloy.Config.NatsOptions)
+	if err != nil {
+		alloy.Logger.Fatal(err)
+	}
+
+	acontroller, err := controller.New(ctx, streamBroker, alloy.Config, alloy.SyncWg, alloy.Logger)
+	if err != nil {
+		alloy.Logger.Fatal(err)
+	}
+
+	acontroller.Run(ctx)
+}
+
+func runOnAssets(ctx context.Context, alloy *app.App) {
+	c, err := collector.NewSingleDeviceCollector(
+		ctx,
+		model.StoreKind(storeKind),
+		model.AppKindOutOfBand,
+		alloy.Config,
+		alloy.Logger,
+	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, assetID := range assetIDs {
+		asset := &model.Asset{ID: assetID}
+		if err := c.CollectOutofband(ctx, asset); err != nil {
+			alloy.Logger.Warn(err)
+		}
+	}
 }
 
 // install command flags
 func init() {
-	cmdOutofband.PersistentFlags().DurationVar(&interval, "interval", 72*time.Hour, "interval sets the periodic data collection interval")
-	cmdOutofband.PersistentFlags().DurationVar(&splay, "splay", 3*time.Hour, "splay adds jitter to the collection interval")
+	cmdOutofband.PersistentFlags().DurationVar(&interval, "collect-interval", 72*time.Hour, "interval sets the periodic data collection interval")
+	cmdOutofband.PersistentFlags().DurationVar(&splay, "collect-splay", 3*time.Hour, "splay adds jitter to the collection interval")
 	cmdOutofband.PersistentFlags().StringSliceVar(&assetIDs, "asset-ids", []string{}, "Collect inventory for the given comma separated list of asset IDs.")
 	cmdOutofband.PersistentFlags().BoolVarP(&controllerMode, "controller-mode", "", false, "Run Alloy in a controller loop that periodically refreshes inventory, BIOS configuration data in the store and listens for events.")
 

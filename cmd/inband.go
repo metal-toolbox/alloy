@@ -7,6 +7,7 @@ import (
 	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/collector"
 	"github.com/metal-toolbox/alloy/internal/model"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 )
@@ -14,6 +15,8 @@ import (
 var (
 	// inbandTimeout time.Duration string value is used to timeout the inventory collection operation.
 	inbandTimeout time.Duration
+
+	assetID string
 )
 
 // inband inventory collection command
@@ -21,7 +24,7 @@ var cmdInband = &cobra.Command{
 	Use:   "inband",
 	Short: "Collect inventory data, bios configuration data on the host",
 	Run: func(cmd *cobra.Command, args []string) {
-		app, err := app.New(cmd.Context(), model.AppKindInband, cfgFile, logLevel)
+		alloy, err := app.New(cmd.Context(), model.AppKindInband, model.StoreKind(storeKind), cfgFile, logLevel)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -30,16 +33,8 @@ var cmdInband = &cobra.Command{
 			storeKind = string(model.StoreKindMock)
 		}
 
-		c, err := collector.NewSingleDeviceCollector(
-			cmd.Context(),
-			model.StoreKind(storeKind),
-			model.AppKindInband,
-			app.Config,
-			app.Logger,
-		)
-
-		if err != nil {
-			log.Fatal(err)
+		if storeKind == string(model.StoreKindServerservice) && assetID == "" {
+			log.Fatal("--assetid flag required for inband command with serverservice store")
 		}
 
 		// execution timeout
@@ -48,8 +43,6 @@ var cmdInband = &cobra.Command{
 		// setup cancel context with cancel func
 		ctx, cancelFunc := context.WithCancel(cmd.Context())
 		defer cancelFunc()
-
-		asset := &model.Asset{}
 
 		// doneCh is where the goroutine below notifies when its complete
 		doneCh := make(chan struct{})
@@ -62,9 +55,7 @@ var cmdInband = &cobra.Command{
 				}
 			}()
 
-			if err := c.Collect(ctx, asset); err != nil {
-				app.Logger.Error(err)
-			}
+			collectInband(ctx, alloy.Config, alloy.Logger)
 		}()
 
 		// loop with a timeout to ensure collection does not exceed the configured timeout.
@@ -72,22 +63,44 @@ var cmdInband = &cobra.Command{
 		for {
 			select {
 			case <-timeoutC:
-				app.Logger.Error("aborted, timeout exceeded: " + inbandTimeout.String())
+				alloy.Logger.Error("aborted, timeout exceeded: " + inbandTimeout.String())
 				break Loop
-			case <-app.TermCh:
-				app.Logger.Error("aborted on TERM signal.")
+			case <-alloy.TermCh:
+				alloy.Logger.Error("aborted on TERM signal.")
 				break Loop
 			case <-doneCh:
-				app.Logger.Info("collection complete.")
 				break Loop
 			}
 		}
 	},
 }
 
+func collectInband(ctx context.Context, cfg *app.Configuration, logger *logrus.Logger) {
+	c, err := collector.NewSingleDeviceCollector(
+		ctx,
+		model.StoreKind(storeKind),
+		model.AppKindInband,
+		cfg,
+		logger,
+	)
+
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+
+	if err := c.CollectInband(ctx, &model.Asset{ID: assetID}); err != nil {
+		logger.Error(err)
+		return
+	}
+
+	logger.Info("collection completed successfully.")
+}
+
 // install command flags
 func init() {
-	cmdInband.PersistentFlags().DurationVar(&inbandTimeout, "timeout", 10*time.Minute, "timeout inventory collection if the duration exceeds the given parameter, accepted values are int time.Duration string format - 12h, 5d...")
+	cmdInband.PersistentFlags().StringVarP(&assetID, "asset-id", "", "", "The asset identifier - required when store is set to serverservice")
+	cmdInband.PersistentFlags().DurationVar(&inbandTimeout, "timeout", 1*time.Minute, "timeout inventory collection if the duration exceeds the given parameter, accepted values are int time.Duration string format - 12h, 5d...")
 
 	rootCmd.AddCommand(cmdInband)
 }
