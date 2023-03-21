@@ -47,6 +47,7 @@ func (s *AssetIterator) IterInBatches(ctx context.Context, pauser *Pauser) error
 	// attach child span
 	ctx, span := tracer.Start(ctx, "IterateInBatches()")
 	defer span.End()
+	defer close(s.assetCh)
 
 	// first request to figures out total items
 	offset := 1
@@ -143,8 +144,6 @@ func (s *AssetIterator) IterInBatches(ctx context.Context, pauser *Pauser) error
 
 		fetched += batchSize
 	}
-
-	close(s.assetCh)
 
 	return nil
 }

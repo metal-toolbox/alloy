@@ -2,7 +2,6 @@ package collector
 
 import (
 	"context"
-	"errors"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -13,6 +12,7 @@ import (
 	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/metal-toolbox/alloy/internal/store"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -60,14 +60,26 @@ func NewSingleDeviceCollectorWithRepository(ctx context.Context, repository stor
 	}, nil
 }
 
-func (c *SingleDeviceCollector) Collect(ctx context.Context, asset *model.Asset) error {
+func (c *SingleDeviceCollector) CollectOutofband(ctx context.Context, asset *model.Asset) error {
 	var errs error
 
 	// fetch existing asset information from inventory
-	existing, err := c.repository.AssetByID(ctx, asset.ID, c.kind == model.AppKindOutOfBand)
+	existing, err := c.repository.AssetByID(ctx, asset.ID, true)
 	if err != nil {
 		errs = multierror.Append(errs, err)
+
+		return errs
 	}
+
+	if existing == nil {
+		return errors.Wrap(ErrInventoryCollect, "asset not found in store with required attributes")
+	}
+
+	// copy over attributes required for outofband collection
+	asset.BMCAddress = existing.BMCAddress
+	asset.BMCPassword = existing.BMCPassword
+	asset.BMCUsername = existing.BMCUsername
+	asset.Facility = existing.Facility
 
 	// collect inventory
 	if err := c.queryor.Inventory(ctx, asset); err != nil {
@@ -77,8 +89,6 @@ func (c *SingleDeviceCollector) Collect(ctx context.Context, asset *model.Asset)
 	// collect BIOS configurations
 	if err := c.queryor.BiosConfiguration(ctx, asset); err != nil {
 		errs = multierror.Append(errs, err)
-
-		return errs
 	}
 
 	// set collected inventory attributes based on inventory data
@@ -104,6 +114,50 @@ func (c *SingleDeviceCollector) Collect(ctx context.Context, asset *model.Asset)
 	return nil
 }
 
+func (c *SingleDeviceCollector) CollectInband(ctx context.Context, asset *model.Asset) error {
+	var errs error
+
+	// fetch existing asset information from inventory
+	existing, err := c.repository.AssetByID(ctx, asset.ID, c.kind == model.AppKindOutOfBand)
+	if err != nil {
+		errs = multierror.Append(errs, err)
+	}
+
+	// collect inventory
+	if err := c.queryor.Inventory(ctx, asset); err != nil {
+		errs = multierror.Append(errs, err)
+	}
+
+	// collect BIOS configurations
+	if err := c.queryor.BiosConfiguration(ctx, asset); err != nil {
+		errs = multierror.Append(errs, err)
+	}
+
+	if existing != nil {
+		// set collected inventory attributes based on inventory data
+		// so as to not overwrite any of these existing values when published.
+		if existing.Model != "" {
+			asset.Model = existing.Model
+		}
+
+		if existing.Vendor != "" {
+			asset.Vendor = existing.Vendor
+		}
+
+		if existing.Serial != "" {
+			asset.Serial = existing.Serial
+		}
+	}
+
+	if err := c.repository.AssetUpdate(ctx, asset); err != nil {
+		errs = multierror.Append(errs, err)
+
+		return errs
+	}
+
+	return nil
+}
+
 type AssetIterCollector struct {
 	concurrency   int32
 	queryor       device.Queryor
@@ -113,7 +167,14 @@ type AssetIterCollector struct {
 	logger        *logrus.Logger
 }
 
-func NewAssetIterCollector(ctx context.Context, storeKind model.StoreKind, appKind model.AppKind, cfg *app.Configuration, syncWG *sync.WaitGroup, logger *logrus.Logger) (*AssetIterCollector, error) {
+func NewAssetIterCollector(
+	ctx context.Context,
+	storeKind model.StoreKind,
+	appKind model.AppKind,
+	cfg *app.Configuration,
+	syncWG *sync.WaitGroup,
+	logger *logrus.Logger,
+) (*AssetIterCollector, error) {
 	repository, err := store.NewRepository(ctx, storeKind, appKind, cfg, logger)
 	if err != nil {
 		return nil, err
@@ -127,7 +188,32 @@ func NewAssetIterCollector(ctx context.Context, storeKind model.StoreKind, appKi
 	assetIterator := NewAssetIterator(repository, logger)
 
 	return &AssetIterCollector{
-		concurrency:   int32(cfg.CollectorOutofband.Concurrency),
+		concurrency:   int32(cfg.Concurrency),
+		queryor:       queryor,
+		assetIterator: *assetIterator,
+		repository:    repository,
+		syncWG:        syncWG,
+		logger:        logger,
+	}, nil
+}
+
+func NewAssetIterCollectorWithStore(
+	ctx context.Context,
+	appKind model.AppKind,
+	repository store.Repository,
+	concurrency int32,
+	syncWG *sync.WaitGroup,
+	logger *logrus.Logger,
+) (*AssetIterCollector, error) {
+	queryor, err := device.NewQueryor(appKind, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	assetIterator := NewAssetIterator(repository, logger)
+
+	return &AssetIterCollector{
+		concurrency:   concurrency,
 		queryor:       queryor,
 		assetIterator: *assetIterator,
 		repository:    repository,
@@ -234,7 +320,7 @@ func (d *AssetIterCollector) collect(ctx context.Context, asset *model.Asset) {
 		repository: d.repository,
 	}
 
-	if err := collector.Collect(ctx, asset); err != nil {
+	if err := collector.CollectOutofband(ctx, asset); err != nil {
 		d.logger.WithFields(logrus.Fields{
 			"assetID": asset.ID,
 			"err":     err.Error(),
