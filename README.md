@@ -11,10 +11,10 @@ Inventory collection with Alloy can be executed in two modes,
 
 The `outofband` command will cause Alloy to collect inventory from the server BMC.
 
-Assets are fetched from an `asset source`, this is defined by the by the `-asset-source` flag,
-see [examples](examples/assets.csv). Accepted `-asset-source` parameters are `csv` and `serverService`.
+Assets are fetched from a store, this is defined by the by the `-store` flag,
+see [examples](examples/assets.csv). Accepted `-store` parameters are `csv`, `serverservice`, `mock`.
 
-Collected inventory is published to a `publish target`, this is defined by the `-publish-target` flag. Accepted `-publish-target` parameters are `stdout` or `serverService`.
+When running with `--output-stdout` the collected data is printed to stdoud.
 
 For Alloy internals see [README-development.md](docs/README-development.md)
 
@@ -32,19 +32,19 @@ b. build osx executable
 
 1. CSV file asset source with inventory published to `stdout`
 ```
-./alloy outofband  -asset-source csv \
-                   -csv-file examples/assets.csv \
-                   -publish-target stdout
+./alloy outofband  --store csv \
+                   --csv-file examples/assets.csv \
+                   --output-stdout
 ```
 
-2. CSV file asset source with inventory published to `serverService`
+2. CSV file asset source with inventory published to `serverservice`
 ```
-export SERVERSERVICE_AUTH_TOKEN="hunter2"
-export SERVERSERVICE_ENDPOINT="http://127.0.0.1:8000"
+export ALLOY_SERVERSERVICE_AUTH_TOKEN="hunter2"
+export ALLOY_SERVERSERVICE_ENDPOINT="http://127.0.0.1:8000"
 
-./alloy outofband  -asset-source csv \
+./alloy outofband   csv \
                    -csv-file examples/assets.csv \
-                   -publish-target serverService
+                   --store serverService
 ```
 
 
@@ -98,15 +98,15 @@ collect and publish to server service.
 The `-timeout` parameter ensures that the alloy utility will terminate if it exceeds
 the given timeout value. The default timeout is `10m`.
 ```
-docker run -e SERVERSERVICE_FACILITY_CODE="dc13" \
-           -e SERVERSERVICE_AUTH_TOKEN="asd"    \
-           -e SERVERSERVICE_ENDPOINT="http://localhost:8000"
+docker run -e ALLOY_SERVERSERVICE_FACILITY_CODE="dc13" \
+           -e ALLOY_SERVERSERVICE_AUTH_TOKEN="asd"    \
+           -e ALLOY_SERVERSERVICE_ENDPOINT="http://localhost:8000"
            -v /dev:/dev \
            -v /proc:/proc \
            -v /sys:/sys  --network host \
            --privileged \
            -ti ghcr.io/metal-toolbox/alloy-inband \
-           "alloy inband -timeout 600s  -asset-id f0c8e4ac-5cce-4370-93ff-bd3196fd3b9e -publish-target serverService"
+           "alloy inband --timeout 600s  --asset-id f0c8e4ac-5cce-4370-93ff-bd3196fd3b9e --store serverService"
 ```
 
 ### Metrics and traces
