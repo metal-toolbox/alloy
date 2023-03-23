@@ -3,17 +3,25 @@ package publish
 import (
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/metal-toolbox/alloy/internal/fixtures"
 	"github.com/metal-toolbox/alloy/internal/model"
+	"github.com/sanity-io/litter"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	serverservice "go.hollow.sh/serverservice/pkg/api/v1"
 )
 
+// To refresh the fixtures used below, set dumpFixtures to true and run the test.
+// copy over the slice elements from the dumped object slice into alloy/internal/fixtures/serverservice_components_$deviceModel.go
+//
+// The object slice elements copied over will need to be changed to be of serverservice.ServerComponent
+// instead of &serverservice.ServerComponent
 func Test_ToComponentSlice(t *testing.T) {
+	dumpFixture := false
 	handler := http.NewServeMux()
 
 	// get firmwares query
@@ -78,19 +86,18 @@ func Test_ToComponentSlice(t *testing.T) {
 				tc.expected[idx].ServerUUID = uuid.Nil
 			}
 
-			//
-			// left commented out here for future reference
-			//
-			// filterFunc := func(f reflect.StructField, v reflect.Value) bool {
-			// 	switch f.Name {
-			// 	case "ServerUUID", "UUID", "CreatedAt", "UpdatedAt", "LastReportedAt":
-			// 		return false
-			// 	default:
-			// 		return true
-			// 	}
-			// }
-			// l := litter.Options{FieldFilter: filterFunc}
-			// l.Dump(sc)
+			if dumpFixture {
+				filterFunc := func(f reflect.StructField, v reflect.Value) bool {
+					switch f.Name {
+					case "ServerUUID", "UUID", "CreatedAt", "UpdatedAt", "LastReportedAt":
+						return false
+					default:
+						return true
+					}
+				}
+				l := litter.Options{FieldFilter: filterFunc}
+				l.Dump(sc)
+			}
 
 			assert.Equal(t, tc.expected, sc)
 		})
