@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"time"
 
 	"github.com/metal-toolbox/alloy/internal/collector"
 	"github.com/metal-toolbox/alloy/internal/model"
@@ -10,6 +11,13 @@ import (
 )
 
 func (c *Controller) inventoryOutofband(ctx context.Context, task *Task) {
+	c.logger.WithFields(
+		logrus.Fields{
+			"serverID": task.Urn.ResourceID.String(),
+		},
+	).Info("processing condition event inventoryOutofband")
+
+	startTS := time.Now()
 	// init OOB collector
 	oobcollector, err := collector.NewSingleDeviceCollectorWithRepository(
 		ctx,
@@ -97,5 +105,5 @@ func (c *Controller) inventoryOutofband(ctx context.Context, task *Task) {
 		},
 	).Info("collection complete")
 
-	c.checkpointHelper.Set(ctx, task, cptypes.Failed, "all done _o/")
+	c.checkpointHelper.Set(ctx, task, cptypes.Succeeded, "completed in "+time.Since(startTS).String())
 }

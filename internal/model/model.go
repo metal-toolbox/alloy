@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/bmc-toolbox/common"
+
+	cptypes "github.com/metal-toolbox/conditionorc/pkg/types"
 )
 
 type (
@@ -19,6 +21,9 @@ const (
 	AppName                  = "alloy"
 	AppKindInband    AppKind = "inband"
 	AppKindOutOfBand AppKind = "outofband"
+
+	// conditions reconciled by this controller
+	InventoryOutofband cptypes.ConditionKind = "inventoryOutofband"
 
 	StoreKindCsv           StoreKind = "csv"
 	StoreKindServerservice StoreKind = "serverservice"

@@ -80,7 +80,7 @@ var cmdOutofband = &cobra.Command{
 }
 
 func runController(ctx context.Context, alloy *app.App) {
-	streamBroker, err := events.NewStreamBroker(alloy.Config.NatsOptions)
+	streamBroker, err := events.NewStreamBroker(*alloy.Config.NatsOptions)
 	if err != nil {
 		alloy.Logger.Fatal(err)
 	}

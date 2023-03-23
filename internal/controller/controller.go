@@ -19,6 +19,8 @@ import (
 	"go.hollow.sh/toolbox/events"
 )
 
+
+
 var (
 	concurrency          = 10
 	collectInterval      = 1 * time.Hour
@@ -91,8 +93,6 @@ func (c *Controller) connectStream(ctx context.Context) (events.MsgCh, error) {
 }
 
 func (c *Controller) Run(ctx context.Context) {
-	c.logger.Info("listening for events ...")
-
 	// TODO: implement stream reconnect loop
 	eventCh, err := c.connectStream(ctx)
 	if err != nil {
@@ -103,7 +103,7 @@ func (c *Controller) Run(ctx context.Context) {
 		return
 	}
 
-	c.logger.Error("connected to event stream.")
+	c.logger.Info("connected to event stream.")
 	c.loopWithEventstream(ctx, eventCh)
 }
 

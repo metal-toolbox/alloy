@@ -505,6 +505,7 @@ func (r *serverServiceStore) nics(deviceVendor string, nics []*common.NIC) []*se
 			return nil
 		}
 
+		// TODO: fix up duplicate NIC attribute being dropped
 		for _, p := range c.NICPorts {
 			r.setAttributes(
 				sc,
@@ -812,6 +813,7 @@ type versionedAttributes struct {
 	Vendor      string           `json:"vendor,omitempty"`
 }
 
+// setAttributes updates the serverservice API component object with the given attributes
 func (r *serverServiceStore) setAttributes(component *serverserviceapi.ServerComponent, attr *attributes) {
 	// convert attributes to raw json
 	data, err := json.Marshal(attr)
@@ -832,6 +834,21 @@ func (r *serverServiceStore) setAttributes(component *serverserviceapi.ServerCom
 
 	if component.Attributes == nil {
 		component.Attributes = []serverserviceapi.Attributes{}
+	} else {
+		for _, existingA := range component.Attributes {
+			if existingA.Namespace != r.attributeNS {
+				continue
+			}
+
+			r.logger.WithFields(
+				logrus.Fields{
+					"slug":      component.ComponentTypeSlug,
+					"kind":      fmt.Sprintf("%T", data),
+					"namespace": r.attributeNS,
+				}).Warn("duplicate attribute on component dropped.")
+
+			return
+		}
 	}
 
 	component.Attributes = append(
@@ -843,6 +860,9 @@ func (r *serverServiceStore) setAttributes(component *serverserviceapi.ServerCom
 	)
 }
 
+// setVersionedAttributes sets the given attributes on the serverservice server component.
+//
+// note: versioned attributes has a constraint on the server_component_id, namespace
 func (r *serverServiceStore) setVersionedAttributes(deviceVendor string, component *serverserviceapi.ServerComponent, vattr *versionedAttributes) {
 	ctx := context.TODO()
 
@@ -878,6 +898,21 @@ func (r *serverServiceStore) setVersionedAttributes(deviceVendor string, compone
 
 	if component.VersionedAttributes == nil {
 		component.VersionedAttributes = []serverserviceapi.VersionedAttributes{}
+	} else {
+		for _, existingVA := range component.VersionedAttributes {
+			if existingVA.Namespace != r.versionedAttributeNS {
+				continue
+			}
+
+			r.logger.WithFields(
+				logrus.Fields{
+					"slug":      component.ComponentTypeSlug,
+					"kind":      fmt.Sprintf("%T", data),
+					"namespace": r.versionedAttributeNS,
+				}).Warn("duplicate versioned attribute on component dropped.")
+
+			return
+		}
 	}
 
 	component.VersionedAttributes = append(

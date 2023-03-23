@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/coreos/go-oidc"
 	"github.com/hashicorp/go-retryablehttp"
@@ -21,6 +22,8 @@ import (
 )
 
 var (
+	// timeout for requests made by this client.
+	timeout   = 30 * time.Second
 	ErrConfig = errors.New("error in serverservice client configuration")
 )
 
@@ -73,10 +76,14 @@ func newServerserviceClientWithOtel(cfg *app.ServerserviceOptions, endpoint stri
 		retryableClient.Logger = logger
 	}
 
+	// requests taking longer than timeout value should be canceled.
+	client := retryableClient.StandardClient()
+	client.Timeout = timeout
+
 	return serverserviceapi.NewClientWithToken(
 		"dummy",
 		endpoint,
-		retryableClient.StandardClient(),
+		client,
 	)
 }
 
@@ -127,10 +134,14 @@ func newServerserviceClientWithOAuthOtel(ctx context.Context, cfg *app.Serverser
 	retryableClient.HTTPClient.Transport = oAuthclient.Transport
 	retryableClient.HTTPClient.Jar = oAuthclient.Jar
 
+	// requests taking longer than timeout value should be canceled.
+	client := retryableClient.StandardClient()
+	client.Timeout = timeout
+
 	return serverserviceapi.NewClientWithToken(
 		cfg.OidcClientSecret,
 		endpoint,
-		retryableClient.StandardClient(),
+		client,
 	)
 }
 

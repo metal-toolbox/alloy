@@ -89,6 +89,10 @@ func NewServerServiceStore(ctx context.Context, appKind model.AppKind, cfg *app.
 		return nil, err
 	}
 
+	if len(s.slugs) == 0 {
+		return nil, errors.Wrap(ErrSlugs, "required component slugs not found in serverservice")
+	}
+
 	return s, nil
 }
 
@@ -227,13 +231,14 @@ func (r *serverServiceStore) AssetUpdate(ctx context.Context, asset *model.Asset
 		return errors.Wrap(ErrServerServiceQuery, "got nil Server object")
 	}
 
-	// insert/update inventory.
+	// create/update inventory.
 	if err := r.createUpdateInventory(ctx, asset, server); err != nil {
 		r.logger.WithFields(
 			logrus.Fields{
-				"id": id,
-				"hr": hr,
-			}).Warn("inventory update error")
+				"id":  id,
+				"hr":  hr,
+				"err": err.Error(),
+			}).Warn("inventory asset insert/update error")
 
 		metricInventorized.With(prometheus.Labels{"status": "failed"}).Add(1)
 	} else {
@@ -384,6 +389,7 @@ func (r *serverServiceStore) createUpdateServerComponents(ctx context.Context, s
 
 		_, err = r.CreateComponents(ctx, serverID, add)
 		if err != nil {
+
 			// count error
 			metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
 
