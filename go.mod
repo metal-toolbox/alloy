@@ -3,7 +3,7 @@ module github.com/metal-toolbox/alloy
 go 1.19
 
 require (
-	github.com/bmc-toolbox/bmclib/v2 v2.0.1-0.20230308154037-6f5089bc74fe
+	github.com/bmc-toolbox/bmclib/v2 v2.0.1-0.20230324092939-d39fb75b6aa9
 	github.com/bmc-toolbox/common v0.0.0-20230220061748-93ff001f4a1d
 	github.com/bombsimon/logrusr/v2 v2.0.1
 	github.com/coreos/go-oidc v2.2.1+incompatible
@@ -75,6 +75,7 @@ require (
 	github.com/jackc/pgtype v1.13.0 // indirect
 	github.com/jackc/pgx/v4 v4.17.2 // indirect
 	github.com/jacobweinstock/go-amt v0.0.0-20221125040441-53475f4ae023 // indirect
+	github.com/jacobweinstock/iamt v0.0.0-20230304043040-a6b4a1001123 // indirect
 	github.com/jacobweinstock/wsman v0.0.0-20221125035617-2eae65734c77 // indirect
 	github.com/jmoiron/sqlx v1.3.5 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
