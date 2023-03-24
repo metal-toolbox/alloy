@@ -22,6 +22,11 @@ import (
 	serverservice "go.hollow.sh/serverservice/pkg/api/v1"
 )
 
+var (
+	// httpConnectionTimeout is the maximum amount of time spent on each http connection.
+	httpConnectionTimeout = 30 * time.Second
+)
+
 // EnablePProfile enables the profiling endpoint
 func EnablePProfile() {
 	go func() {
@@ -90,10 +95,13 @@ func newServerserviceClientWithOtel(cfg *model.Config, endpoint string, logger *
 		retryableClient.Logger = logger
 	}
 
+	httpClient := retryableClient.StandardClient()
+	httpClient.Timeout = httpConnectionTimeout
+
 	return serverservice.NewClientWithToken(
 		"dummy",
 		endpoint,
-		retryableClient.StandardClient(),
+		httpClient,
 	)
 }
 
@@ -140,10 +148,13 @@ func newServerserviceClientWithOAuthOtel(ctx context.Context, cfg *model.Config,
 	retryableClient.HTTPClient.Transport = oAuthclient.Transport
 	retryableClient.HTTPClient.Jar = oAuthclient.Jar
 
+	httpClient := retryableClient.StandardClient()
+	httpClient.Timeout = httpConnectionTimeout
+
 	return serverservice.NewClientWithToken(
 		cfg.ServerService.ClientSecret,
 		endpoint,
-		retryableClient.StandardClient(),
+		httpClient,
 	)
 }
 
