@@ -5,3 +5,4 @@ steps:
       env:
         ALLOY_TAG: "${BUILDKITE_TAG}"
         ALLOY_COMMIT: "${BUILDKITE_COMMIT}"
+        ALLOY_BRANCH: "${BUILDKITE_BRANCH}"
