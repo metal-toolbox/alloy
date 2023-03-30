@@ -38,6 +38,10 @@ func init() {
 const (
 	// logoutTimeout is the timeout value for each bmc logout attempt.
 	logoutTimeout = "1m"
+
+	// bmclib will attempt multiple providers (drivers) - to perform an action,
+	// this is maximum amount of time bmclib will spend performing a query on a BMC.
+	bmclibProviderTimeout = 180 * time.Second
 )
 
 // OutOfBand collector collects hardware, firmware inventory out of band
@@ -348,6 +352,7 @@ func newBMCClient(ctx context.Context, asset *model.Asset, l *logrus.Logger) *bm
 		asset.BMCUsername,
 		asset.BMCPassword,
 		bmclibv2.WithLogger(logruslogr),
+		bmclibv2.WithPerProviderTimeout(bmclibProviderTimeout),
 	)
 
 	// set bmclibv2 driver
