@@ -1,7 +1,6 @@
 package serverservice
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -505,32 +504,53 @@ func (r *Store) nics(deviceVendor string, nics []*common.NIC) []*serverserviceap
 			return nil
 		}
 
-		// TODO: fix up duplicate NIC attribute being dropped
-		for _, p := range c.NICPorts {
-			r.setAttributes(
-				sc,
-				&attributes{
-					Description:  c.Description,
-					ProductName:  c.ProductName,
-					Oem:          c.Oem,
-					Metadata:     c.Metadata,
-					PhysicalID:   p.PhysicalID,
-					BusInfo:      p.BusInfo,
-					MacAddress:   p.MacAddress,
-					SpeedBits:    p.SpeedBits,
-					Capabilities: c.Capabilities,
-				},
-			)
-		}
+		// NIC port attributes go in here
+		nicPortAttrs := []*attributes{}
 
-		r.setVersionedAttributes(
-			deviceVendor,
-			sc,
-			&versionedAttributes{
+		// include NIC firmware attributes
+		//
+		// NIC port attributes are populated below.
+		versionedAttrs := []*versionedAttributes{
+			{
 				Firmware: c.Firmware,
 				Status:   c.Status,
 			},
-		)
+		}
+
+		// TODO: fix up duplicate NIC attribute being dropped
+		for _, p := range c.NICPorts {
+			nicPortAttrs = append(nicPortAttrs, &attributes{
+				ID:           p.ID,
+				Description:  c.Description,
+				ProductName:  c.ProductName,
+				Oem:          c.Oem,
+				Metadata:     c.Metadata,
+				PhysicalID:   p.PhysicalID,
+				BusInfo:      p.BusInfo,
+				MacAddress:   p.MacAddress,
+				SpeedBits:    p.SpeedBits,
+				Capabilities: c.Capabilities,
+			})
+
+			if p.Status == nil && p.LinkStatus == "" && p.ActiveLinkTechnology == "" && !p.AutoNeg && p.MTUSize == 0 {
+				continue
+			}
+			// Store the NIC Port status
+			versionedAttrs = append(versionedAttrs, &versionedAttributes{
+				NicPortStatus: &nicPortStatus{
+					ID:                   p.ID,
+					MTUSize:              p.MTUSize,
+					MacAddress:           p.MacAddress,
+					Status:               p.Status,
+					LinkStatus:           p.LinkStatus,
+					AutoSpeedNegotiation: p.AutoNeg,
+					ActiveLinkTechnology: p.ActiveLinkTechnology,
+				},
+			})
+		}
+
+		r.setAttributesList(sc, nicPortAttrs)
+		r.setVersionedAttributesList(deviceVendor, sc, versionedAttrs)
 
 		components = append(components, sc)
 	}
@@ -804,13 +824,74 @@ type attributes struct {
 	Oem                          bool                 `json:"oem,omitempty"`
 }
 
+// nicPortStatus holds the NIC port status which includes the health status and link status information.
+type nicPortStatus struct {
+	*common.Status
+	ID                   string `json:"id,omitempty"`
+	MacAddress           string `json:"macaddress,omitempty"`
+	ActiveLinkTechnology string `json:"active_link_technology,omitempty"`
+	LinkStatus           string `json:"link_status,omitempty"`
+	MTUSize              int    `json:"mtu_size,omitempty"`
+	AutoSpeedNegotiation bool   `json:"autospeednegotiation,omitempty"`
+}
+
 // versionedAttributes are component attributes to be versioned in server service
 type versionedAttributes struct {
-	Firmware    *common.Firmware `json:"firmware,omitempty"`
-	Status      *common.Status   `json:"status,omitempty"`
-	UUID        *uuid.UUID       `json:"uuid,omitempty"` // UUID references firmware UUID identified in serverservice based on component/device attributes.
-	SmartStatus string           `json:"smart_status,omitempty"`
-	Vendor      string           `json:"vendor,omitempty"`
+	Firmware      *common.Firmware `json:"firmware,omitempty"`
+	Status        *common.Status   `json:"status,omitempty"`
+	NicPortStatus *nicPortStatus   `json:"nic_port_status,omitempty"`
+	UUID          *uuid.UUID       `json:"uuid,omitempty"` // UUID references firmware UUID identified in serverservice based on component/device attributes.
+	SmartStatus   string           `json:"smart_status,omitempty"`
+	Vendor        string           `json:"vendor,omitempty"`
+}
+
+// setAttributesList updates the given component with the given list of attributes.
+//
+// attributes per component in serverservice have a unique constraint on the component ID, namespace values.
+//
+// so if this method is called twice for the same component, namespace, that attribute will be ignored,
+func (r *Store) setAttributesList(component *serverserviceapi.ServerComponent, attrs []*attributes) {
+	if len(attrs) == 0 {
+		return
+	}
+
+	// convert attributes to raw json
+	data, err := json.Marshal(attrs)
+	if err != nil {
+		r.logger.WithFields(
+			logrus.Fields{
+				"slug": component.ComponentTypeSlug,
+				"kind": fmt.Sprintf("%T", data),
+				"err":  err,
+			}).Warn("error in conversion of versioned attributes to raw data")
+	}
+
+	if component.Attributes == nil {
+		component.Attributes = []serverserviceapi.Attributes{}
+	} else {
+		for _, existingA := range component.Attributes {
+			if existingA.Namespace != r.attributeNS {
+				continue
+			}
+
+			r.logger.WithFields(
+				logrus.Fields{
+					"slug":      component.ComponentTypeSlug,
+					"kind":      fmt.Sprintf("%T", data),
+					"namespace": r.attributeNS,
+				}).Warn("duplicate attribute list on component dropped - this is unexpected.")
+
+			return
+		}
+	}
+
+	component.Attributes = append(
+		component.Attributes,
+		serverserviceapi.Attributes{
+			Namespace: r.attributeNS,
+			Data:      data,
+		},
+	)
 }
 
 // setAttributes updates the serverservice API component object with the given attributes
@@ -845,7 +926,7 @@ func (r *Store) setAttributes(component *serverserviceapi.ServerComponent, attr 
 					"slug":      component.ComponentTypeSlug,
 					"kind":      fmt.Sprintf("%T", data),
 					"namespace": r.attributeNS,
-				}).Warn("duplicate attribute on component dropped.")
+				}).Warn("duplicate attribute on component dropped - use setAttributesList() instead.")
 
 			return
 		}
@@ -860,23 +941,85 @@ func (r *Store) setAttributes(component *serverserviceapi.ServerComponent, attr 
 	)
 }
 
-// setVersionedAttributes sets the given attributes on the serverservice server component.
+// setVersionedAttributesList updates the given component with given list of versioned attributes.
 //
-// note: versioned attributes has a constraint on the server_component_id, namespace
-func (r *Store) setVersionedAttributes(deviceVendor string, component *serverserviceapi.ServerComponent, vattr *versionedAttributes) {
-	ctx := context.TODO()
+// versioned attributes per component in serverservice have a unique constraint on
+// the component ID, namespace, created_at values.
+// If this method is called twice for the same component, namespace, that versioned attribute will be ignored.
+func (r *Store) setVersionedAttributesList(deviceVendor string, component *serverserviceapi.ServerComponent, vattrs []*versionedAttributes) {
+	if len(vattrs) == 0 {
+		return
+	}
 
-	// add FirmwareData
-	if vattr.Firmware != nil {
-		var err error
+	// enrich firmware data
+	for _, vattr := range vattrs {
+		if vattr.Firmware == nil {
+			continue
+		}
 
-		vattr, err = r.addFirmwareData(ctx, deviceVendor, component, vattr)
-		if err != nil {
+		r.enrichFirmwareData(deviceVendor, component.Vendor, vattr)
+	}
+
+	// convert versioned attributes to raw json
+	data, err := json.Marshal(vattrs)
+	if err != nil {
+		r.logger.WithFields(
+			logrus.Fields{
+				"slug": component.ComponentTypeSlug,
+				"kind": fmt.Sprintf("%T", data),
+				"err":  err,
+			}).Warn("error in conversion of versioned attributes to raw data")
+	}
+
+	// skip empty json data containing just the braces `{}`
+	min := 2
+	if len(data) == min {
+		return
+	}
+
+	if component.VersionedAttributes == nil {
+		component.VersionedAttributes = []serverserviceapi.VersionedAttributes{}
+	} else {
+		// versioned attributes per component in serverservice have a unique constraint on
+		// the component ID, namespace, created_at values.
+		//
+		// so here we ignore the new attribute with the same namespace, if one already exists.
+		for _, existingVA := range component.VersionedAttributes {
+			if existingVA.Namespace != r.versionedAttributeNS {
+				continue
+			}
+
 			r.logger.WithFields(
 				logrus.Fields{
-					"err": err,
-				}).Warn("error adding firmware data to versioned attribute")
+					"slug":      component.ComponentTypeSlug,
+					"kind":      fmt.Sprintf("%T", data),
+					"namespace": r.versionedAttributeNS,
+				}).Warn("duplicate versioned attribute on component dropped - this was unexpected.")
+
+			return
 		}
+	}
+
+	component.VersionedAttributes = append(
+		component.VersionedAttributes,
+		serverserviceapi.VersionedAttributes{
+			Namespace: r.versionedAttributeNS,
+			Data:      data,
+		},
+	)
+}
+
+// setVersionedAttributes updates a component with single versioned attribute.
+//
+// versioned attributes per component in serverservice have a unique constraint on
+// the component ID, namespace, created_at values.
+//
+// so if this method is called twice for the same component, namespace, that versioned attribute will be ignored,
+// the caller should invoke setVersionedAttributesList() instead.
+func (r *Store) setVersionedAttributes(deviceVendor string, component *serverserviceapi.ServerComponent, vattr *versionedAttributes) {
+	// add FirmwareData
+	if vattr.Firmware != nil {
+		r.enrichFirmwareData(deviceVendor, component.Vendor, vattr)
 	}
 
 	// convert versioned attributes to raw json
@@ -924,15 +1067,15 @@ func (r *Store) setVersionedAttributes(deviceVendor string, component *serverser
 	)
 }
 
-// addFirmwareData queries ServerService for the firmware version and try to find a matcr.
-func (r *Store) addFirmwareData(ctx context.Context, deviceVendor string, component *serverserviceapi.ServerComponent, vattr *versionedAttributes) (vatrr *versionedAttributes, err error) {
+// enrichFirmwareData queries ServerService for the firmware version and try to find a match.
+//
+// the given versionedAttribute object is updated to include the firmware vendor and the serverservice firmware UUID.
+func (r *Store) enrichFirmwareData(deviceVendor, componentVendor string, vattr *versionedAttributes) {
 	// Check in the cache if we have a match by vendor + version
-	for _, fw := range r.firmwares[component.Vendor] {
+	for _, fw := range r.firmwares[componentVendor] {
 		if strings.EqualFold(fw.Version, vattr.Firmware.Installed) {
 			vattr.Vendor = fw.Vendor
 			vattr.UUID = &fw.UUID
-
-			return vattr, nil
 		}
 	}
 
@@ -940,10 +1083,6 @@ func (r *Store) addFirmwareData(ctx context.Context, deviceVendor string, compon
 		if strings.EqualFold(fw.Version, vattr.Firmware.Installed) {
 			vattr.Vendor = fw.Vendor
 			vattr.UUID = &fw.UUID
-
-			return vattr, nil
 		}
 	}
-
-	return vattr, nil
 }
