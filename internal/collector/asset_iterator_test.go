@@ -5,12 +5,25 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/metal-toolbox/alloy/internal/store"
 	"github.com/metal-toolbox/alloy/internal/store/mock"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/goleak"
 )
 
+func newTestAssetIterator(repository store.Repository) *AssetIterator {
+	logger := logrus.New()
+	// nolint: gocritic // comment kept for reference
+	// logger.Level = logrus.TraceLevel
+
+	return NewAssetIterator(repository, logger)
+}
+
 func Test_IterInBatches(t *testing.T) {
+	ignorefunc := "go.opencensus.io/stats/view.(*worker).start"
+	defer goleak.VerifyNone(t, goleak.IgnoreTopFunction(ignorefunc))
+
 	testcases := []struct {
 		name     string
 		limit    int
@@ -58,13 +71,8 @@ func Test_IterInBatches(t *testing.T) {
 	for _, tt := range testcases {
 		t.Run(tt.name, func(t *testing.T) {
 			mockstore, _ := mock.New(tt.total)
-			logger := logrus.New()
-			// nolint: gocritic // comment kept for reference
-			// logger.Level = logrus.TraceLevel
+			assetIterator := newTestAssetIterator(mockstore)
 			pauser := NewPauser()
-
-			assetIterator := NewAssetIterator(mockstore, logger)
-
 			var got int
 
 			var syncWG sync.WaitGroup

@@ -1,40 +1,37 @@
-package fixtures
+package outofband
 
 import (
 	"context"
-	"os"
 
 	bmclibv2 "github.com/bmc-toolbox/bmclib/v2"
 	"github.com/bmc-toolbox/common"
 )
 
-const (
-	EnvMockBMCOpen  = "MOCK_BMC_OPEN"
-	EnvMockBMCClose = "MOCK_BMC_CLOSE"
-)
-
+// nolint:govet // fieldalignment, pointless in tests
 type MockBmclib struct {
 	// embed bmclib client to provide methods
 	bmclibv2.Client
-	device *common.Device
+	device     *common.Device
+	connOpened bool
+	connClosed bool
 }
 
-func NewBmclibClient() *MockBmclib {
+func NewMockBmclibClient() *MockBmclib {
 	return &MockBmclib{}
 }
 
 func (m *MockBmclib) Open(ctx context.Context) error {
-	os.Setenv(EnvMockBMCOpen, "true")
+	m.connOpened = true
 	return nil
 }
 
 func (m *MockBmclib) Close(ctx context.Context) error {
-	os.Setenv(EnvMockBMCClose, "true")
+	m.connClosed = true
 	return nil
 }
 
 func (m *MockBmclib) Inventory(ctx context.Context) (*common.Device, error) {
-	return CopyDevice(E3C246D4INL), nil
+	return &common.Device{Common: common.Common{Vendor: "foo", Model: "bar"}}, nil
 }
 
 func (m *MockBmclib) GetBiosConfiguration(ctx context.Context) (biosConfig map[string]string, err error) {

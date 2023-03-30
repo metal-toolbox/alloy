@@ -13,8 +13,6 @@ import (
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/metal-toolbox/alloy/internal/store"
 
-	// TODO: move these two into a shared package
-
 	cptypes "github.com/metal-toolbox/conditionorc/pkg/types"
 	"github.com/sirupsen/logrus"
 	"go.hollow.sh/toolbox/events"

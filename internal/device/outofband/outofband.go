@@ -25,8 +25,10 @@ import (
 var (
 	// The outofband collector tracer
 	tracer        trace.Tracer
-	ErrConnect    = errors.New("error connecting to BMC")
-	ErrBMCSession = errors.New("error in BMC session")
+	ErrInventory  = errors.New("inventory collection error")
+	ErrBiosConfig = errors.New("BIOS configuration collection error")
+	ErrConnect    = errors.New("BMC connection error")
+	ErrBMCSession = errors.New("BMC session error")
 )
 
 func init() {
@@ -40,14 +42,14 @@ const (
 
 // OutOfBand collector collects hardware, firmware inventory out of band
 type Queryor struct {
-	mockClient    oobQueryor
+	mockClient    BMCQueryor
 	logger        *logrus.Entry
 	logoutTimeout time.Duration
 }
 
-// oobQueryor interface defines methods that the bmclib client exposes
+// BMCQueryor interface defines methods that the bmclib client exposes
 // this is mainly to swap the bmclib instance for tests
-type oobQueryor interface {
+type BMCQueryor interface {
 	Open(ctx context.Context) error
 	Close(ctx context.Context) error
 	Inventory(ctx context.Context) (*common.Device, error)
@@ -143,7 +145,7 @@ func (o *Queryor) BiosConfiguration(ctx context.Context, asset *model.Asset) err
 // it updates the asset.BiosConfig attribute with the data collected.
 //
 // If any errors occurred in the collection, those are included in the asset.Errors attribute.
-func (o *Queryor) biosConfiguration(ctx context.Context, bmc oobQueryor, asset *model.Asset) error {
+func (o *Queryor) biosConfiguration(ctx context.Context, bmc BMCQueryor, asset *model.Asset) error {
 	// measure BMC biosConfiguration query
 	startTS := time.Now()
 
@@ -171,7 +173,7 @@ func (o *Queryor) biosConfiguration(ctx context.Context, bmc oobQueryor, asset *
 			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "GetBiosConfigurationError")
 		}
 
-		return err
+		return errors.Wrap(ErrBiosConfig, err.Error())
 	}
 
 	// measure BMC GetBiosConfiguration query time
@@ -186,7 +188,7 @@ func (o *Queryor) biosConfiguration(ctx context.Context, bmc oobQueryor, asset *
 // it updates the asset.Inventory attribute with the data collected.
 //
 // If any errors occurred in the collection, those are included in the asset.Errors attribute.
-func (o *Queryor) bmcInventory(ctx context.Context, bmc oobQueryor, asset *model.Asset) error {
+func (o *Queryor) bmcInventory(ctx context.Context, bmc BMCQueryor, asset *model.Asset) error {
 	// measure BMC inventory query
 	startTS := time.Now()
 
@@ -210,7 +212,11 @@ func (o *Queryor) bmcInventory(ctx context.Context, bmc oobQueryor, asset *model
 			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "inventory")
 		}
 
-		return err
+		return errors.Wrap(ErrInventory, err.Error())
+	}
+
+	if inventory == nil {
+		return errors.Wrap(ErrInventory, "nil *common.Device object returned")
 	}
 
 	// measure BMC inventory query time
@@ -235,9 +241,9 @@ func (o *Queryor) bmcInventory(ctx context.Context, bmc oobQueryor, asset *model
 // bmcLogin initiates the BMC session
 //
 // when theres an error in the login process, asset.Errors is updated to include that information.
-func (o *Queryor) bmcLogin(ctx context.Context, asset *model.Asset) (oobQueryor, error) {
+func (o *Queryor) bmcLogin(ctx context.Context, asset *model.Asset) (BMCQueryor, error) {
 	// bmc is the bmc client instance
-	var bmc oobQueryor
+	var bmc BMCQueryor
 
 	// attach child span
 	ctx, span := tracer.Start(ctx, "bmcLogin()")
@@ -282,7 +288,7 @@ func (o *Queryor) bmcLogin(ctx context.Context, asset *model.Asset) (oobQueryor,
 	return bmc, nil
 }
 
-func (o *Queryor) bmcLogout(bmc oobQueryor, asset *model.Asset) {
+func (o *Queryor) bmcLogout(bmc BMCQueryor, asset *model.Asset) {
 	// measure BMC connection close
 	startTS := time.Now()
 
@@ -372,7 +378,7 @@ func newBMCClient(ctx context.Context, asset *model.Asset, l *logrus.Logger) *bm
 	return bmcClient
 }
 
-func (o *Queryor) SessionActive(ctx context.Context, bmc oobQueryor) bool {
+func (o *Queryor) SessionActive(ctx context.Context, bmc BMCQueryor) bool {
 	if bmc == nil {
 		return false
 	}

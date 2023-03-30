@@ -239,7 +239,7 @@ func NewAssetIterCollectorWithStore(
 	}, nil
 }
 
-// Collect iterates over assets returned by the AssetIterator and collects inventory, bios configuration data for them.
+// Collect iterates over assets returned by the AssetIterator and collects their inventory, bios configuration data.
 func (d *AssetIterCollector) Collect(ctx context.Context) {
 	tracer := otel.Tracer("collector.AssetIteratorCollector")
 	ctx, span := tracer.Start(context.TODO(), "Collect()")
@@ -354,7 +354,7 @@ func (d *AssetIterCollector) collect(ctx context.Context, asset *model.Asset) {
 			"assetID": asset.ID,
 			"BMC":     asset.BMCAddress,
 		},
-	).Info("collection complete.")
+	).Debug("collection complete.")
 }
 
 // throttle allows this collector to to 'push back' on the asset iterator

@@ -1,76 +1,9 @@
 ## Notes on running Alloy with serverservice as the inventory store
 
-### Serverservice server component types data
-
-Server service has to be populated with the component types which Alloy depends on,
-for this, check out the following snippet.
-
-```go
-package main
-
-import (
-    "log"
-    "strings"
-    "context"
-
-    "github.com/bmc-toolbox/common"
-    "github.com/hashicorp/go-retryablehttp"
-    serverservice "go.hollow.sh/serverservice/pkg/api/v1"
-)
-
-func main {
-	client, err := serverservice.NewClientWithToken(
-		"foobar",
-		"http://localhost:5000", // assuming the service is available on this port
-		retryablehttp.NewClient().StandardClient(),
-	)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	componentSlugs := []string{
-		common.SlugBackplaneExpander,
-		common.SlugChassis,
-		common.SlugTPM,
-		common.SlugGPU,
-		common.SlugCPU,
-		common.SlugPhysicalMem,
-		common.SlugStorageController,
-		common.SlugBMC,
-		common.SlugBIOS,
-		common.SlugDrive,
-		common.SlugDriveTypePCIeNVMEeSSD,
-		common.SlugDriveTypeSATASSD,
-		common.SlugDriveTypeSATAHDD,
-		common.SlugNIC,
-		common.SlugPSU,
-		common.SlugCPLD,
-		common.SlugEnclosure,
-		common.SlugUnknown,
-		common.SlugMainboard,
-	}
-
-	for _, slug := range componentSlugs {
-		sct := serverservice.ServerComponentType{
-			Name: slug,
-			Slug: strings.ToLower(slug),
-		}
-
-		hr, err := client.CreateServerComponentType(context.TODO(), sct)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		fmt.Println(hr)
-	}
-}
-```
 
 ### Alloy with a local development instance of serverservice
 
-To have Alloy submit data to serverservice, various configuration env variables are expected to be exported,
-among them are the OAUTH related env variables.
+To have Alloy submit data to serverservice, various configuration env variables are expected to be exported, among them are the OAUTH related env variables.
 
 
 To auth with a development instance of serverservice, include the env var `SERVERSERVICE_DISABLE_OAUTH=true` .

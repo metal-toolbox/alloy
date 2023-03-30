@@ -2,17 +2,18 @@ package mock
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
 	"github.com/metal-toolbox/alloy/internal/model"
 )
 
 // Mock is a mock store
-type Mock struct{ totalAssets int }
+type Mock struct {
+	TotalAssets   int
+	UpdatedAssets int
+}
 
 func New(totalAssets int) (*Mock, error) {
-	return &Mock{totalAssets}, nil
+	return &Mock{TotalAssets: totalAssets}, nil
 }
 
 // Kind returns the repository store kind.
@@ -29,11 +30,11 @@ func (m *Mock) AssetByID(ctx context.Context, assetID string, fetchBmcCredential
 func (m *Mock) AssetsByOffsetLimit(ctx context.Context, offset, limit int) (assets []*model.Asset, totalAssets int, err error) {
 	var count int
 
-	if m.totalAssets == 0 {
-		return assets, m.totalAssets, nil
+	if m.TotalAssets == 0 {
+		return assets, m.TotalAssets, nil
 	}
 
-	for i := offset; i <= m.totalAssets; i++ {
+	for i := offset; i <= m.TotalAssets; i++ {
 		assets = append(assets, &model.Asset{})
 		count++
 
@@ -42,17 +43,12 @@ func (m *Mock) AssetsByOffsetLimit(ctx context.Context, offset, limit int) (asse
 		}
 	}
 
-	return assets, m.totalAssets, nil
+	return assets, m.TotalAssets, nil
 }
 
 // AssetUpdate inserts and updates collected data for the asset in the store.
 func (m *Mock) AssetUpdate(ctx context.Context, asset *model.Asset) error {
-	b, err := json.MarshalIndent(asset, "", " ")
-	if err != nil {
-		return err
-	}
-
-	fmt.Println(string(b))
+	m.UpdatedAssets++
 
 	return nil
 }
