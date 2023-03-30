@@ -1,4 +1,4 @@
-package csvee
+package csv
 
 import (
 	"context"
@@ -24,27 +24,31 @@ var (
 	ErrCSVSource     = errors.New("error in CSV")
 )
 
-type csvee struct {
+type Store struct {
 	csvReader io.ReadCloser
 	logger    *logrus.Entry
 }
 
-// NewCSVStore returns a new csv asset getter to retrieve asset information from a CSV file for inventory collection.
-func NewCSVStore(ctx context.Context, csvFile string, logger *logrus.Logger) (*csvee, error) {
+// New returns a new csv asset getter to retrieve asset information from a CSV file for inventory collection.
+func New(ctx context.Context, csvFile string, logger *logrus.Logger) (*Store, error) {
 	fh, err := os.Open(csvFile)
 	if err != nil {
 		return nil, err
 	}
 
-	return &csvee{
+	return &Store{
 		logger:    logger.WithField("component", "store.csv"),
 		csvReader: fh,
 	}, nil
 }
 
-// AssetByID returns one asset from the inventory identified by its identifier.
-func (c *csvee) AssetByID(ctx context.Context, assetID string, fetchBmcCredentials bool) (*model.Asset, error) {
+// Kind returns the repository store kind.
+func (c *Store) Kind() model.StoreKind {
+	return model.StoreKindCsv
+}
 
+// AssetByID returns one asset from the inventory identified by its identifier.
+func (c *Store) AssetByID(ctx context.Context, assetID string, fetchBmcCredentials bool) (*model.Asset, error) {
 	assets, err := c.loadAssets(ctx, c.csvReader)
 	if err != nil {
 		return nil, err
@@ -59,66 +63,16 @@ func (c *csvee) AssetByID(ctx context.Context, assetID string, fetchBmcCredentia
 	return nil, errors.Wrap(ErrAssetNotFound, assetID)
 }
 
-// ListAll runs the csv asset getter which returns all assets on the assetCh
-//func (c *csvee) ListAll(ctx context.Context) error {
-//	// channel close tells the channel reader we're done
-//	defer close(c.assetCh)
-//
-//	c.logger.Trace("load assets")
-//
-//	assets, err := c.loadAssets(ctx, c.csvReader)
-//	if err != nil {
-//		return err
-//	}
-//
-//	c.logger.WithField("count", len(assets)).Trace("loaded assets")
-//
-//	for _, asset := range assets {
-//		c.assetCh <- asset
-//	}
-//
-//	return nil
-//}
-//
-//// ListByIDs runs the csv asset getter which returns  on the assetCh
-//func (c *csvee) ListByIDs(ctx context.Context, assetIDs []string) error {
-//	// channel close tells the channel reader we're done
-//	defer close(c.assetCh)
-//
-//	assets, err := c.loadAssets(ctx, c.csvReader)
-//	if err != nil {
-//		return err
-//	}
-//
-//	for _, asset := range assets {
-//		if sliceContains(assetIDs, asset.ID) {
-//			c.assetCh <- asset
-//		}
-//	}
-//
-//	return nil
-//}
-
-func (c *csvee) AssetsByOffsetLimit(ctx context.Context, offset, limit int) (assets []*model.Asset, totalAssets int, err error) {
+func (c *Store) AssetsByOffsetLimit(ctx context.Context, offset, limit int) (assets []*model.Asset, totalAssets int, err error) {
 	return nil, 0, nil
 }
 
-func (c *csvee) AssetUpdate(ctx context.Context, asset *model.Asset) error {
+func (c *Store) AssetUpdate(ctx context.Context, asset *model.Asset) error {
 	return nil
 }
 
-func sliceContains(sl []string, str string) bool {
-	for _, elem := range sl {
-		if elem == str {
-			return true
-		}
-	}
-
-	return false
-}
-
 // loadAssets returns a slice of assets from the given csv io.Reader
-func (c *csvee) loadAssets(ctx context.Context, csvReader io.ReadCloser) ([]*model.Asset, error) {
+func (c *Store) loadAssets(ctx context.Context, csvReader io.ReadCloser) ([]*model.Asset, error) {
 	records, err := csv.NewReader(csvReader).ReadAll()
 	if err != nil {
 		return nil, err

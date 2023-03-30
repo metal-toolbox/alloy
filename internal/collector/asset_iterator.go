@@ -3,7 +3,6 @@ package collector
 import (
 	"context"
 	"errors"
-	"os"
 	"time"
 
 	"github.com/metal-toolbox/alloy/internal/metrics"
@@ -11,55 +10,59 @@ import (
 	"github.com/metal-toolbox/alloy/internal/store"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel"
 )
 
+// TODO: this should run as a separate process -
+// the iterator can be run as the alloy-scheduler, which periodically
+// sets conditions for data collection on servers, and the collector just full fills the conditions.
+
 var (
-	// batchSize is the default number of assets to retrieve per request
-	batchSize = 10
-
-	// delay between server service requests.
-	delayBetweenRequests = 2 * time.Second
-	tracer               trace.Tracer
-
-	ErrFetcherQuery   = errors.New("Error querying asset data from inventory")
+	ErrFetcherQuery   = errors.New("error querying asset data from store")
 	stageLabelFetcher = prometheus.Labels{"stage": "fetcher"}
 )
 
+// AssetIterator holds methods to recurse over assets in a store and return them over the asset channel.
 type AssetIterator struct {
 	store   store.Repository
-	assetCh chan<- *model.Asset
+	assetCh chan *model.Asset
 	logger  *logrus.Logger
 }
 
-// NewAssetIterator returns an AssetIterator with methods, and an asset channel over which assets can be read from.
-func NewAssetIterator(store store.Repository, logger *logrus.Logger) *AssetIterator {
-	return &AssetIterator{store: store, logger: logger, assetCh: make(chan *model.Asset)}
+// NewAssetIterator is a constructor method that returns an AssetIterator.
+//
+// The returned AssetIterator will recurse over all assets in the store and send them over the asset channel,
+// The caller of this method should invoke AssetChannel() to retrieve the channel to read assets from.
+func NewAssetIterator(repository store.Repository, logger *logrus.Logger) *AssetIterator {
+	return &AssetIterator{store: repository, logger: logger, assetCh: make(chan *model.Asset, 1)}
 }
 
-// AssetChannel returns the channel to read assets from when the fetcher is invoked through its Iter* method.
-func (s *AssetIterator) AssetChannel() <-chan *model.Asset {
-	return s.AssetChannel()
+// Channel returns the channel to read assets from when the fetcher is invoked through its Iter* method.
+func (s *AssetIterator) Channel() <-chan *model.Asset {
+	return s.assetCh
 }
 
 // IterInBatches queries the store for assets in batches, returning them over the assetCh
-func (s *AssetIterator) IterInBatches(ctx context.Context, pauser *Pauser) error {
-	// attach child span
-	ctx, span := tracer.Start(ctx, "IterateInBatches()")
-	defer span.End()
+//
+// nolint:gocyclo // for now it makes sense to have the iter method logic in one method
+func (s *AssetIterator) IterInBatches(ctx context.Context, batchSize int, pauser *Pauser) {
 	defer close(s.assetCh)
 
-	// first request to figures out total items
-	offset := 1
+	tracer := otel.Tracer("collector.AssetIterator")
+	ctx, span := tracer.Start(ctx, "IterInBatches()")
 
-	assets, total, err := s.store.AssetsByOffsetLimit(ctx, offset, 1)
+	defer span.End()
+
+	assets, total, err := s.store.AssetsByOffsetLimit(ctx, 1, batchSize)
 	if err != nil {
 		// count serverService query errors
 		if errors.Is(err, ErrFetcherQuery) {
 			metrics.ServerServiceQueryErrorCount.With(stageLabelFetcher).Inc()
 		}
 
-		return err
+		s.logger.WithError(err).Error(ErrFetcherQuery)
+
+		return
 	}
 
 	// count assets retrieved
@@ -73,27 +76,22 @@ func (s *AssetIterator) IterInBatches(ctx context.Context, pauser *Pauser) error
 		metrics.AssetsSent.With(stageLabelFetcher).Inc()
 	}
 
-	if total <= 1 {
-		return nil
+	// all assets fetched in first query
+	if len(assets) == total || total <= batchSize {
+		return
 	}
 
-	var finalBatch bool
+	iterations := total / batchSize
+	limit := batchSize
+
+	s.logger.WithFields(logrus.Fields{
+		"total":      total,
+		"iterations": iterations,
+		"limit":      limit,
+	}).Trace()
 
 	// continue from offset 2
-	offset = 2
-	fetched := 1
-
-	for {
-		// final batch
-		if total < batchSize {
-			batchSize = total
-			finalBatch = true
-		}
-
-		if (fetched + batchSize) >= total {
-			finalBatch = true
-		}
-
+	for offset := 2; offset < iterations+1; offset++ {
 		// idle when pause flag is set and context isn't canceled.
 		for pauser.Value() && ctx.Err() == nil {
 			time.Sleep(1 * time.Second)
@@ -101,30 +99,30 @@ func (s *AssetIterator) IterInBatches(ctx context.Context, pauser *Pauser) error
 
 		// context canceled
 		if ctx.Err() != nil {
+			s.logger.WithError(err).Error("aborting collection")
+
 			break
 		}
 
-		// pause between spawning workers - skip delay for tests
-		if os.Getenv("TEST_ENV") == "" {
-			time.Sleep(delayBetweenRequests)
-		}
-
-		assets, _, err := s.store.AssetsByOffsetLimit(ctx, offset, batchSize)
+		assets, _, err := s.store.AssetsByOffsetLimit(ctx, offset, limit)
 		if err != nil {
 			if errors.Is(err, ErrFetcherQuery) {
 				metrics.ServerServiceQueryErrorCount.With(stageLabelFetcher).Inc()
 			}
 
-			s.logger.Warn(err)
+			s.logger.WithError(err).Warn(ErrFetcherQuery)
 		}
 
 		s.logger.WithFields(logrus.Fields{
-			"offset":  offset,
-			"limit":   batchSize,
-			"total":   total,
-			"fetched": fetched,
-			"got":     len(assets),
+			"offset": offset,
+			"limit":  limit,
+			"total":  total,
+			"got":    len(assets),
 		}).Trace()
+
+		if len(assets) == 0 {
+			break
+		}
 
 		// count assets retrieved
 		metrics.ServerServiceAssetsRetrieved.With(stageLabelFetcher).Add(float64(len(assets)))
@@ -135,64 +133,5 @@ func (s *AssetIterator) IterInBatches(ctx context.Context, pauser *Pauser) error
 			// count assets sent to collector
 			metrics.AssetsSent.With(stageLabelFetcher).Inc()
 		}
-
-		if finalBatch {
-			break
-		}
-
-		offset++
-
-		fetched += batchSize
 	}
-
-	return nil
-}
-
-// ListByIDs implements the Getter interface to query the inventory for the assetIDs and return found assets over the asset channel.
-func (s *AssetIterator) ListByIDs(ctx context.Context, assetIDs []string, assetCh chan<- *model.Asset) error {
-	// attach child span
-	ctx, span := tracer.Start(ctx, "ListByIDs()")
-	defer span.End()
-
-	// close assetCh to notify consumers
-	//defer close(s.assetCh)
-
-	// submit inventory collection to worker pool
-	for _, assetID := range assetIDs {
-		assetID := assetID
-
-		// idle when pauser flag is set, unless context is canceled.
-		//for s.pauser.Value() && ctx.Err() == nil {
-		// 	time.Sleep(1 * time.Second)
-		// }
-
-		// context canceled
-		if ctx.Err() != nil {
-			break
-		}
-
-		// lookup asset by its ID from the inventory asset store
-		asset, err := s.store.AssetByID(ctx, assetID, true)
-		if err != nil {
-			// count serverService query errors
-			if errors.Is(err, ErrFetcherQuery) {
-				metrics.ServerServiceQueryErrorCount.With(stageLabelFetcher).Inc()
-			}
-
-			s.logger.WithField("serverID", assetID).Warn(err)
-
-			continue
-		}
-
-		// count assets retrieved
-		metrics.ServerServiceAssetsRetrieved.With(stageLabelFetcher).Inc()
-
-		// send asset for inventory collection
-		assetCh <- asset
-
-		// count assets sent to collector
-		metrics.AssetsSent.With(stageLabelFetcher).Inc()
-	}
-
-	return nil
 }

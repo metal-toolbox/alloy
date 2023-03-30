@@ -22,19 +22,24 @@ type App struct {
 	// Viper loads configuration parameters.
 	v *viper.Viper
 
-	Kind model.AppKind
 	// App configuration.
 	Config *Configuration
+
 	// TermCh is the channel to terminate the app based on a signal
 	TermCh chan os.Signal
+
 	// Sync waitgroup to wait for running go routines on termination.
 	SyncWg *sync.WaitGroup
+
 	// Logger is the app logger
 	Logger *logrus.Logger
+
+	// Kind is the type of application - inband/outofband
+	Kind model.AppKind
 }
 
 // New returns a new alloy application object with the configuration loaded
-func New(ctx context.Context, appKind model.AppKind, storeKind model.StoreKind, cfgFile string, loglevel string) (app *App, err error) {
+func New(ctx context.Context, appKind model.AppKind, storeKind model.StoreKind, cfgFile string, loglevel model.LogLevel) (app *App, err error) {
 	switch appKind {
 	case model.AppKindInband, model.AppKindOutOfBand:
 	default:

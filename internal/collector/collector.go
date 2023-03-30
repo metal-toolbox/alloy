@@ -14,6 +14,7 @@ import (
 	"github.com/metal-toolbox/alloy/internal/store"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -22,14 +23,19 @@ var (
 	ErrInventoryCollect = errors.New("error collecting inventory data")
 )
 
-type SingleDeviceCollector struct {
-	outputStdout bool
-	kind         model.AppKind
-	queryor      device.Queryor
-	repository   store.Repository
+func init() {
+
 }
 
-func NewSingleDeviceCollector(ctx context.Context, storeKind model.StoreKind, appKind model.AppKind, cfg *app.Configuration, logger *logrus.Logger) (*SingleDeviceCollector, error) {
+// DeviceCollector holds attributes to collect inventory, bios configuration data from a single device.
+type DeviceCollector struct {
+	queryor    device.Queryor
+	repository store.Repository
+	kind       model.AppKind
+}
+
+// NewDeviceCollector is a constructor method to return a inventory, bios configuration data collector.
+func NewDeviceCollector(ctx context.Context, storeKind model.StoreKind, appKind model.AppKind, cfg *app.Configuration, logger *logrus.Logger) (*DeviceCollector, error) {
 	repository, err := store.NewRepository(ctx, storeKind, appKind, cfg, logger)
 	if err != nil {
 		return nil, err
@@ -40,27 +46,29 @@ func NewSingleDeviceCollector(ctx context.Context, storeKind model.StoreKind, ap
 		return nil, err
 	}
 
-	return &SingleDeviceCollector{
+	return &DeviceCollector{
 		kind:       appKind,
 		queryor:    queryor,
 		repository: repository,
 	}, nil
 }
 
-func NewSingleDeviceCollectorWithRepository(ctx context.Context, repository store.Repository, appKind model.AppKind, logger *logrus.Logger) (*SingleDeviceCollector, error) {
+// NewDeviceCollectorWithStore is a constructor method that accepts an initialized store repository - to return a inventory, bios configuration data collector.
+func NewDeviceCollectorWithStore(ctx context.Context, repository store.Repository, appKind model.AppKind, logger *logrus.Logger) (*DeviceCollector, error) {
 	queryor, err := device.NewQueryor(appKind, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return &SingleDeviceCollector{
+	return &DeviceCollector{
 		kind:       appKind,
 		queryor:    queryor,
 		repository: repository,
 	}, nil
 }
 
-func (c *SingleDeviceCollector) CollectOutofband(ctx context.Context, asset *model.Asset) error {
+// CollectOutofband querys inventory and bios configuration data for a device through its BMC.
+func (c *DeviceCollector) CollectOutofband(ctx context.Context, asset *model.Asset) error {
 	var errs error
 
 	// fetch existing asset information from inventory
@@ -80,6 +88,7 @@ func (c *SingleDeviceCollector) CollectOutofband(ctx context.Context, asset *mod
 	asset.BMCPassword = existing.BMCPassword
 	asset.BMCUsername = existing.BMCUsername
 	asset.Facility = existing.Facility
+	asset.Errors = make(map[string]string)
 
 	// collect inventory
 	if err := c.queryor.Inventory(ctx, asset); err != nil {
@@ -114,7 +123,9 @@ func (c *SingleDeviceCollector) CollectOutofband(ctx context.Context, asset *mod
 	return nil
 }
 
-func (c *SingleDeviceCollector) CollectInband(ctx context.Context, asset *model.Asset) error {
+// CollectInband querys inventory and bios configuration data for a device through the host OS
+// this expects Alloy is running within the alloy-inband docker image based on ironlib.
+func (c *DeviceCollector) CollectInband(ctx context.Context, asset *model.Asset) error {
 	var errs error
 
 	// fetch existing asset information from inventory
@@ -149,6 +160,8 @@ func (c *SingleDeviceCollector) CollectInband(ctx context.Context, asset *model.
 		}
 	}
 
+	asset.Errors = make(map[string]string)
+
 	if err := c.repository.AssetUpdate(ctx, asset); err != nil {
 		errs = multierror.Append(errs, err)
 
@@ -158,15 +171,18 @@ func (c *SingleDeviceCollector) CollectInband(ctx context.Context, asset *model.
 	return nil
 }
 
+// AssetIterCollector holds attributes to iterate over the assets in the store repository and collect
+// inventory, bios configuration for them remotely.
 type AssetIterCollector struct {
-	concurrency   int32
+	assetIterator AssetIterator
 	queryor       device.Queryor
 	repository    store.Repository
-	assetIterator AssetIterator
 	syncWG        *sync.WaitGroup
 	logger        *logrus.Logger
+	concurrency   int32
 }
 
+// NewAssetIterCollector is a constructor method that returns an AssetIterCollector.
 func NewAssetIterCollector(
 	ctx context.Context,
 	storeKind model.StoreKind,
@@ -197,6 +213,7 @@ func NewAssetIterCollector(
 	}, nil
 }
 
+// NewAssetIterCollectorWithStore is a constructor method that accepts an initialized store to return an AssetIterCollector.
 func NewAssetIterCollectorWithStore(
 	ctx context.Context,
 	appKind model.AppKind,
@@ -222,15 +239,15 @@ func NewAssetIterCollectorWithStore(
 	}, nil
 }
 
+// Collect iterates over assets returned by the AssetIterator and collects inventory, bios configuration data for them.
 func (d *AssetIterCollector) Collect(ctx context.Context) {
-	ctx, span := tracer.Start(ctx, "Collect()")
+	tracer := otel.Tracer("collector.AssetIteratorCollector")
+	ctx, span := tracer.Start(context.TODO(), "Collect()")
+
 	defer span.End()
 
-	assetCh := d.assetIterator.AssetChannel()
-
-	// pauser is a flag, when set will cause the asset fetcher to pause sending assets
-	// on the asset channel until the flag has been cleared.
-	var pauser *Pauser
+	// pauser helps throttle asset retrieval to match the data collection rate.
+	pauser := NewPauser()
 
 	// count of routines spawned to retrieve assets
 	var dispatched int32
@@ -240,20 +257,17 @@ func (d *AssetIterCollector) Collect(ctx context.Context) {
 	// asset fetcher routine
 	go func() {
 		defer d.syncWG.Done()
-		d.assetIterator.IterInBatches(ctx, pauser)
+		d.assetIterator.IterInBatches(ctx, int(d.concurrency), pauser)
 	}()
 
-	// bool set when asset fetcher routine completes
-	var fetcherDone bool
+	// bool set when asset iterator closes its channel.
+	var done bool
 
-	// init OOB collector
-	// outofbandCollector := outofband.NewCollector(d.logger)
+	// interval to check collection completion
+	var checkCompletionInterval = 1 * time.Second
 
-	// tickerCh is the interval at which the loop below checks the collector task queue size
-	// and if its reached completion.
-	//
-	// nolint:gomnd // ticker is internal to this method and is clear as is.
-	tickerCh := time.NewTicker(1 * time.Second).C
+	tickerCheckComplete := time.NewTicker(checkCompletionInterval)
+	defer tickerCheckComplete.Stop()
 
 	// routines spawned by the loop below indicate on doneCh when complete.
 	doneCh := make(chan struct{})
@@ -261,12 +275,10 @@ func (d *AssetIterCollector) Collect(ctx context.Context) {
 Loop:
 	for {
 		select {
-		case <-tickerCh:
-			// pause/unpause asset fetcher based on the task queue size.
-			d.taskQueueWait(span, pauser, dispatched)
+		case <-tickerCheckComplete.C:
 
 			// tasks dispatched were completed and the asset getter is completed.
-			if dispatched == 0 && fetcherDone {
+			if dispatched == 0 && done {
 				break Loop
 			}
 
@@ -277,10 +289,10 @@ Loop:
 			atomic.AddInt32(&dispatched, ^int32(0))
 
 		// spawn routines to collect inventory for assets
-		case asset, ok := <-assetCh:
-			// assetCh closed - getter completed
+		case asset, ok := <-d.assetIterator.Channel():
+			// assetCh closed - iterator returned.
 			if !ok {
-				fetcherDone = true
+				done = true
 
 				continue
 			}
@@ -298,8 +310,11 @@ Loop:
 			// increment spawned count
 			atomic.AddInt32(&dispatched, 1)
 
+			// throttle asset iterator based on dispatched vs concurrency limit
+			d.throttle(span, pauser, dispatched)
+
+			// run collection in routine
 			go func(ctx context.Context, asset *model.Asset) {
-				// submit inventory collection to worker pool
 				defer d.syncWG.Done()
 				defer func() {
 					doneCh <- struct{}{}
@@ -315,10 +330,17 @@ Loop:
 }
 
 func (d *AssetIterCollector) collect(ctx context.Context, asset *model.Asset) {
-	collector := &SingleDeviceCollector{
+	collector := &DeviceCollector{
 		queryor:    d.queryor,
 		repository: d.repository,
 	}
+
+	d.logger.WithFields(
+		logrus.Fields{
+			"assetID": asset.ID,
+			"BMC":     asset.BMCAddress,
+		},
+	).Debug("collecting data for asset")
 
 	if err := collector.CollectOutofband(ctx, asset); err != nil {
 		d.logger.WithFields(logrus.Fields{
@@ -326,15 +348,18 @@ func (d *AssetIterCollector) collect(ctx context.Context, asset *model.Asset) {
 			"err":     err.Error(),
 		}).Warn("data collector error")
 	}
+
+	d.logger.WithFields(
+		logrus.Fields{
+			"assetID": asset.ID,
+			"BMC":     asset.BMCAddress,
+		},
+	).Info("collection complete.")
 }
 
-// taskQueueWait sets, unsets the asset getter pause flag.
-//
-// This enables the DeviceQueryor to 'push back' on the asset fetcher to
-// pause assets being sent on the asset channel based on the the number of queryor routines active.
-//
-// The asset getter pause flag is unset once the count of tasks waiting in the worker queue is below threshold levels.
-func (d *AssetIterCollector) taskQueueWait(span trace.Span, pauser *Pauser, dispatched int32) {
+// throttle allows this collector to to 'push back' on the asset iterator
+// to throttle assets being sent based on the routines dispatched and the configured concurrency value.
+func (d *AssetIterCollector) throttle(span trace.Span, pauser *Pauser, dispatched int32) {
 	// measure tasks waiting queue size
 	metrics.TaskQueueSize.With(metrics.StageLabelCollector).Set(float64(dispatched))
 
@@ -350,7 +375,7 @@ func (d *AssetIterCollector) taskQueueWait(span trace.Span, pauser *Pauser, disp
 			"component":   "oob collector",
 			"active":      dispatched,
 			"concurrency": d.concurrency,
-		}).Trace("paused asset getter.")
+		}).Trace("paused asset iterator.")
 
 		return
 	}
@@ -362,6 +387,6 @@ func (d *AssetIterCollector) taskQueueWait(span trace.Span, pauser *Pauser, disp
 			"component":   "oob collector",
 			"active":      dispatched,
 			"concurrency": d.concurrency,
-		}).Trace("un-paused asset getter.")
+		}).Trace("resumed asset iterator.")
 	}
 }

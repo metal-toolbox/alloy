@@ -14,7 +14,8 @@ import (
 )
 
 var (
-	ErrCheckpointSet = errors.New("error setting task checkpoint")
+	ErrCheckpointSet    = errors.New("error setting task checkpoint")
+	ErrConditionOrcResp = errors.New("error in conditionorc response")
 )
 
 // TaskCheckpointer checkpoints a task by updating its status
@@ -119,7 +120,7 @@ func (c *OrcCheckpointer) updateCondition(ctx context.Context, serverID uuid.UUI
 	}
 
 	if response == nil || response.Record == nil || response.Record.Condition == nil {
-		return errors.New("got invalid response from conditionorc")
+		return ErrConditionOrcResp
 	}
 
 	update := v1ctypes.ConditionUpdate{

@@ -17,6 +17,11 @@ var (
 	ErrConfig = errors.New("configuration error")
 )
 
+const (
+	DefaultCollectInterval = 72 * time.Hour
+	DefaultCollectSplay    = 4 * time.Hour
+)
+
 // Configuration holds application configuration read from a YAML or set by env variables.
 //
 // nolint:govet // prefer readability over field alignment optimization for this case.
@@ -71,6 +76,9 @@ type ServerserviceOptions struct {
 	DisableOAuth         bool     `mapstructure:"disable_oauth"`
 }
 
+// LoadConfiguration loads application configuration
+//
+// Reads in the cfgFile when available and overrides from environment variables.
 func (a *App) LoadConfiguration(cfgFile string, storeKind model.StoreKind) error {
 	a.v.SetConfigType("yaml")
 	a.v.SetEnvPrefix(model.AppName)
@@ -97,8 +105,8 @@ func (a *App) LoadConfiguration(cfgFile string, storeKind model.StoreKind) error
 	}
 
 	a.v.SetDefault("log.level", "info")
-	a.v.SetDefault("collect.interval", 72*time.Hour)
-	a.v.SetDefault("collect.interval.splay", 4*time.Hour)
+	a.v.SetDefault("collect.interval", DefaultCollectInterval)
+	a.v.SetDefault("collect.interval.splay", DefaultCollectSplay)
 
 	if err := a.envBindVars(a.Config); err != nil {
 		return errors.Wrap(ErrConfig, "env var bind error:"+err.Error())
@@ -108,17 +116,7 @@ func (a *App) LoadConfiguration(cfgFile string, storeKind model.StoreKind) error
 		return errors.Wrap(ErrConfig, "Unmarshal error: "+err.Error())
 	}
 
-	if a.v.GetString("log.level") != "" {
-		a.Config.LogLevel = a.v.GetString("log.level")
-	}
-
-	if a.v.GetDuration("collect.interval") != 0 {
-		a.Config.CollectInterval = a.v.GetDuration("collect.interval")
-	}
-
-	if a.v.GetDuration("collect.interval.splay") != 0 {
-		a.Config.CollectIntervalSplay = a.v.GetDuration("collect.interval.splay")
-	}
+	a.appOverrides()
 
 	if a.Config.EventsBorkerKind == "nats" {
 		if err := a.envVarNatsOverrides(); err != nil {
@@ -133,6 +131,20 @@ func (a *App) LoadConfiguration(cfgFile string, storeKind model.StoreKind) error
 	}
 
 	return nil
+}
+
+func (a *App) appOverrides() {
+	if a.v.GetString("log.level") != "" {
+		a.Config.LogLevel = a.v.GetString("log.level")
+	}
+
+	if a.v.GetDuration("collect.interval") != 0 {
+		a.Config.CollectInterval = a.v.GetDuration("collect.interval")
+	}
+
+	if a.v.GetDuration("collect.interval.splay") != 0 {
+		a.Config.CollectIntervalSplay = a.v.GetDuration("collect.interval.splay")
+	}
 }
 
 // envBindVars binds environment variables to the struct
@@ -167,6 +179,7 @@ var (
 	defaultNatsConnectTimeout = 100 * time.Millisecond
 )
 
+// nolint:gocyclo // nats env config load is cyclomatic
 func (a *App) envVarNatsOverrides() error {
 	if a.Config.NatsOptions == nil {
 		a.Config.NatsOptions = &events.NatsOptions{}

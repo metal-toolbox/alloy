@@ -5,7 +5,7 @@ import (
 
 	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/model"
-	csvee "github.com/metal-toolbox/alloy/internal/store/csv"
+	"github.com/metal-toolbox/alloy/internal/store/csv"
 	"github.com/metal-toolbox/alloy/internal/store/mock"
 	"github.com/metal-toolbox/alloy/internal/store/serverservice"
 	"github.com/pkg/errors"
@@ -17,6 +17,9 @@ var (
 )
 
 type Repository interface {
+	// Kind returns the repository store kind.
+	Kind() model.StoreKind
+
 	// AssetByID returns one asset from the inventory identified by its identifier.
 	AssetByID(ctx context.Context, assetID string, fetchBmcCredentials bool) (*model.Asset, error)
 
@@ -30,13 +33,14 @@ type Repository interface {
 func NewRepository(ctx context.Context, storeKind model.StoreKind, appKind model.AppKind, cfg *app.Configuration, logger *logrus.Logger) (Repository, error) {
 	switch storeKind {
 	case model.StoreKindServerservice:
-		return serverservice.NewServerServiceStore(ctx, appKind, cfg.ServerserviceOptions, logger)
+		return serverservice.New(ctx, appKind, cfg.ServerserviceOptions, logger)
 
 	case model.StoreKindCsv:
-		return csvee.NewCSVStore(ctx, cfg.CsvFile, logger)
+		return csv.New(ctx, cfg.CsvFile, logger)
 
 	case model.StoreKindMock:
-		return mock.NewMockStore()
+		assets := 10
+		return mock.New(assets)
 
 	default:
 		return nil, errors.Wrap(ErrStore, "unsupported store kind: "+string(storeKind))

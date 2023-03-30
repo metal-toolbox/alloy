@@ -24,7 +24,7 @@ var cmdInband = &cobra.Command{
 	Use:   "inband",
 	Short: "Collect inventory data, bios configuration data on the host",
 	Run: func(cmd *cobra.Command, args []string) {
-		alloy, err := app.New(cmd.Context(), model.AppKindInband, model.StoreKind(storeKind), cfgFile, logLevel)
+		alloy, err := app.New(cmd.Context(), model.AppKindInband, model.StoreKind(storeKind), cfgFile, model.LogLevel(logLevel))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -76,7 +76,7 @@ var cmdInband = &cobra.Command{
 }
 
 func collectInband(ctx context.Context, cfg *app.Configuration, logger *logrus.Logger) {
-	c, err := collector.NewSingleDeviceCollector(
+	c, err := collector.NewDeviceCollector(
 		ctx,
 		model.StoreKind(storeKind),
 		model.AppKindInband,

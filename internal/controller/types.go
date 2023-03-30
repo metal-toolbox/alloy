@@ -1,13 +1,11 @@
 package controller
 
 import (
-	"encoding/json"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/metal-toolbox/alloy/internal/model"
-	"github.com/pkg/errors"
 	"go.hollow.sh/toolbox/events"
 	"go.infratographer.com/x/pubsubx"
 	"go.infratographer.com/x/urnx"
@@ -15,11 +13,9 @@ import (
 	cptypes "github.com/metal-toolbox/conditionorc/pkg/types"
 )
 
-var (
-	ErrNewTask = errors.New("error retrieving work from message")
-)
-
 // Task represents a task the controller works on
+//
+// nolint:govet // fieldalignment - struct layout is preferred as is.
 type Task struct {
 	// ID is the task identifier
 	ID uuid.UUID
@@ -52,37 +48,6 @@ type Task struct {
 
 	// UpdatedAt is the timestamp this task was updated.
 	UpdatedAt time.Time
-}
-
-// NewTaskFromMsg returns a new task object with the given parameters
-func NewTaskFromMsg(msg events.Message, msgData *pubsubx.Message, urn *urnx.URN) (*Task, error) {
-	value, exists := msgData.AdditionalData["data"]
-	if !exists {
-		return nil, errors.Wrap(ErrNewTask, "data in msg is empty")
-	}
-
-	// we do this marshal, unmarshal dance here
-	// since value is of type map[string]interface{} and unpacking this
-	// into a known type isn't easily feasible (or atleast I'd be happy to find out otherwise).
-	cbytes, err := json.Marshal(value)
-	if err != nil {
-		return nil, errors.Wrap(ErrNewTask, err.Error())
-	}
-
-	condition := &cptypes.Condition{}
-	if err := json.Unmarshal(cbytes, condition); err != nil {
-		return nil, errors.Wrap(ErrNewTask, err.Error())
-	}
-
-	return &Task{
-		ID:        uuid.New(),
-		State:     cptypes.Pending,
-		Request:   condition,
-		Msg:       msg,
-		Data:      *msgData,
-		Urn:       *urn,
-		CreatedAt: time.Now(),
-	}, nil
 }
 
 // TasksLocker holds the list of tasks a controller is dealing with.

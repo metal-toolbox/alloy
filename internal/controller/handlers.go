@@ -7,10 +7,79 @@ import (
 	"github.com/metal-toolbox/alloy/internal/collector"
 	"github.com/metal-toolbox/alloy/internal/model"
 	cptypes "github.com/metal-toolbox/conditionorc/pkg/types"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
-func (c *Controller) inventoryOutofband(ctx context.Context, task *Task) {
+var (
+	ErrHandlerTaskCheckpoint = errors.New("handler task checkpoint error")
+	ErrHandlerStoreQuery     = errors.New("handler store query error")
+	ErrHandlerDeviceQuery    = errors.New("handler device query error")
+)
+
+// iterCollectOutofband collects inventory, bios configuation data for all store assets out of band.
+func (c *Controller) iterCollectOutofband(ctx context.Context) {
+	if c.iterCollectActive {
+		c.logger.Warn("iterCollectOutofband currently running, skipped re-run")
+		return
+	}
+
+	c.iterCollectActive = true
+	defer func() { c.iterCollectActive = false }()
+
+	iterCollector, err := collector.NewAssetIterCollectorWithStore(
+		ctx,
+		model.AppKindOutOfBand,
+		c.repository,
+		// int32(c.cfg.Concurrency),TODO (joel): revert after testing
+		1,
+		c.syncWG,
+		c.logger,
+	)
+	if err != nil {
+		c.logger.WithError(err).Error("collectAll asset iterator error")
+		return
+	}
+
+	c.logger.Info("collecting inventory for all assets..")
+	iterCollector.Collect(ctx)
+}
+
+// checkpointTaskFailure checkpoints the task failure in the store.
+func (c *Controller) checkpointTaskFailure(ctx context.Context, task *Task, state cptypes.ConditionState, err error) {
+	if errC := c.checkpointHelper.Set(ctx, task, state, err.Error()); errC != nil {
+		c.logger.WithFields(
+			logrus.Fields{
+				"err":      errC.Error(),
+				"serverID": task.Urn.ResourceID.String(),
+			},
+		).Error(ErrHandlerTaskCheckpoint)
+	}
+}
+
+// checkpointTaskUpdate checkpoints the task progress in the store,
+// this method is invoked when the task has a successful/informational transition to be recorded.
+//
+// If the checkpoint set in this method fails and the condition has `FailOnCheckpointError“ set to true, this method returns an error.
+func (c *Controller) checkpointTaskUpdate(ctx context.Context, task *Task, state cptypes.ConditionState, info string) error {
+	if err := c.checkpointHelper.Set(ctx, task, state, info); err != nil {
+		c.logger.WithFields(
+			logrus.Fields{
+				"err":      err.Error(),
+				"serverID": task.Urn.ResourceID.String(),
+			},
+		).Error(ErrHandlerTaskCheckpoint)
+	}
+
+	if task.Request.FailOnCheckpointError {
+		return ErrHandlerTaskCheckpoint
+	}
+
+	return nil
+}
+
+// collectOutofbandForTask collects inventory, bios configuration out of band for the given task.
+func (c *Controller) collectOutofbandForTask(ctx context.Context, task *Task) {
 	c.logger.WithFields(
 		logrus.Fields{
 			"serverID": task.Urn.ResourceID.String(),
@@ -19,32 +88,20 @@ func (c *Controller) inventoryOutofband(ctx context.Context, task *Task) {
 
 	startTS := time.Now()
 	// init OOB collector
-	oobcollector, err := collector.NewSingleDeviceCollectorWithRepository(
+	oobcollector, err := collector.NewDeviceCollectorWithStore(
 		ctx,
 		c.repository,
 		model.AppKindOutOfBand,
 		c.logger,
 	)
 	if err != nil {
-		if err := c.checkpointHelper.Set(ctx, task, cptypes.Failed, err.Error()); err != nil {
-			c.logger.WithFields(
-				logrus.Fields{
-					"err":      err.Error(),
-					"serverID": task.Urn.ResourceID.String(),
-				},
-			).Error("collection error")
-		}
-
+		c.checkpointTaskFailure(ctx, task, cptypes.Failed, err)
 		return
 	}
 
-	if err := c.checkpointHelper.Set(ctx, task, cptypes.Active, "querying inventory for BMC credentials"); err != nil {
-		c.logger.WithFields(
-			logrus.Fields{
-				"err":      err.Error(),
-				"serverID": task.Urn.ResourceID.String(),
-			},
-		).Error("asset setting task checkpoint")
+	err = c.checkpointTaskUpdate(ctx, task, cptypes.Active, "querying store for BMC credentials")
+	if err != nil {
+		return
 	}
 
 	// fetch asset
@@ -55,45 +112,30 @@ func (c *Controller) inventoryOutofband(ctx context.Context, task *Task) {
 				"err":      err.Error(),
 				"serverID": task.Urn.ResourceID.String(),
 			},
-		).Error("asset lookup error")
+		).Error(ErrHandlerStoreQuery)
 
-		cause := "asset lookup error: " + err.Error()
-
-		if err := c.checkpointHelper.Set(ctx, task, cptypes.Failed, cause); err != nil {
-			c.logger.WithFields(
-				logrus.Fields{
-					"err":      err.Error(),
-					"serverID": task.Urn.ResourceID.String(),
-				},
-			).Error("asset setting task checkpoint")
-		}
+		c.checkpointTaskFailure(ctx, task, cptypes.Failed, errors.Wrap(ErrHandlerStoreQuery, err.Error()))
 
 		return
 	}
 
 	task.Asset = *assetFetched
 
-	c.checkpointHelper.Set(ctx, task, cptypes.Active, "querying device BMC for inventory")
+	err = c.checkpointTaskUpdate(ctx, task, cptypes.Active, "querying device BMC for inventory, bios configuration")
+	if err != nil {
+		return
+	}
 
 	// collect inventory from asset hardware
-	if err := oobcollector.CollectOutofband(ctx, &task.Asset); err != nil {
+	if errCollect := oobcollector.CollectOutofband(ctx, &task.Asset); errCollect != nil {
 		c.logger.WithFields(
 			logrus.Fields{
 				"serverID": &task.Asset.ID,
 				"IP":       task.Asset.BMCAddress.String(),
-				"err":      err,
-			}).Warn("inventory collect error")
+				"err":      errCollect,
+			}).Warn(ErrHandlerDeviceQuery)
 
-		cause := "inventory collect error: " + err.Error()
-
-		if err := c.checkpointHelper.Set(ctx, task, cptypes.Failed, cause); err != nil {
-			c.logger.WithFields(
-				logrus.Fields{
-					"err":      err.Error(),
-					"serverID": task.Urn.ResourceID.String(),
-				},
-			).Error("asset setting task checkpoint")
-		}
+		c.checkpointTaskFailure(ctx, task, cptypes.Failed, errors.Wrap(ErrHandlerDeviceQuery, errCollect.Error()))
 
 		return
 	}
@@ -105,5 +147,8 @@ func (c *Controller) inventoryOutofband(ctx context.Context, task *Task) {
 		},
 	).Info("collection complete")
 
-	c.checkpointHelper.Set(ctx, task, cptypes.Succeeded, "completed in "+time.Since(startTS).String())
+	err = c.checkpointTaskUpdate(ctx, task, cptypes.Succeeded, "completed in "+time.Since(startTS).String())
+	if err != nil {
+		return
+	}
 }

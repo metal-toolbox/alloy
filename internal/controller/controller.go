@@ -2,13 +2,14 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	"math/rand"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/metal-toolbox/alloy/internal/app"
-	"github.com/metal-toolbox/alloy/internal/collector"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/metal-toolbox/alloy/internal/store"
 
@@ -18,8 +19,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.hollow.sh/toolbox/events"
 )
-
-
 
 var (
 	concurrency          = 10
@@ -32,14 +31,14 @@ var (
 )
 
 type Controller struct {
-	collectAllRunning bool
+	repository        store.Repository
+	streamBroker      events.StreamBroker
+	checkpointHelper  TaskCheckpointer
 	cfg               *app.Configuration
 	tasksLocker       *TasksLocker
 	syncWG            *sync.WaitGroup
 	logger            *logrus.Logger
-	repository        store.Repository
-	streamBroker      events.StreamBroker
-	checkpointHelper  TaskCheckpointer
+	iterCollectActive bool
 }
 
 func New(
@@ -104,27 +103,32 @@ func (c *Controller) Run(ctx context.Context) {
 	}
 
 	c.logger.Info("connected to event stream.")
+
 	c.loopWithEventstream(ctx, eventCh)
 }
 
 func (c *Controller) loopWithEventstream(ctx context.Context, eventCh events.MsgCh) {
-	tickerFetchEvents := time.NewTicker(fetchEventsInterval).C
+	tickerFetchEvent := time.NewTicker(fetchEventsInterval).C
 	tickerAckActive := time.NewTicker(ackActiveInterval).C
 	tickerCollectAll := time.NewTicker(c.splayInterval()).C
+
+	// to kick alloy to collect for all assets.
+	sigHupCh := make(chan os.Signal, 1)
+	signal.Notify(sigHupCh, syscall.SIGHUP)
 
 	for {
 		select {
 		case <-ctx.Done():
 			c.streamBroker.Close()
 
-		case <-tickerFetchEvents:
+		case <-tickerFetchEvent:
 			if c.maximumActive() {
 				continue
 			}
 
 			c.syncWG.Add(1)
 
-			go func() { defer c.syncWG.Done(); c.fetchEvents(ctx, eventCh) }()
+			go func() { defer c.syncWG.Done(); c.fetchEvent(ctx, eventCh) }()
 
 		case <-tickerAckActive:
 			c.syncWG.Add(1)
@@ -134,12 +138,17 @@ func (c *Controller) loopWithEventstream(ctx context.Context, eventCh events.Msg
 		case <-tickerCollectAll:
 			c.syncWG.Add(1)
 
-			go func() { defer c.syncWG.Done(); c.collectAll(ctx) }()
+			go func() { defer c.syncWG.Done(); c.iterCollectOutofband(ctx) }()
 
-		case msg := <-eventCh:
+		case <-sigHupCh:
 			c.syncWG.Add(1)
 
-			go func() { defer c.syncWG.Done(); c.processMsg(ctx, msg) }()
+			go func() { defer c.syncWG.Done(); c.iterCollectOutofband(ctx) }()
+
+		case event := <-eventCh:
+			c.syncWG.Add(1)
+
+			go func() { defer c.syncWG.Done(); c.processEvent(ctx, event) }()
 		}
 	}
 }
@@ -147,15 +156,24 @@ func (c *Controller) loopWithEventstream(ctx context.Context, eventCh events.Msg
 func (c *Controller) loopWithoutEventstream(ctx context.Context) {
 	tickerCollectAll := time.NewTicker(c.splayInterval()).C
 
+	// to kick alloy to collect for all assets.
+	sigHupCh := make(chan os.Signal, 1)
+	signal.Notify(sigHupCh, syscall.SIGHUP)
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
 
+		case <-sigHupCh:
+			c.syncWG.Add(1)
+
+			go func() { defer c.syncWG.Done(); c.iterCollectOutofband(ctx) }()
+
 		case <-tickerCollectAll:
 			c.syncWG.Add(1)
 
-			go func() { defer c.syncWG.Done(); c.collectAll(ctx) }()
+			go func() { defer c.syncWG.Done(); c.iterCollectOutofband(ctx) }()
 		}
 	}
 }
@@ -175,134 +193,11 @@ func (c *Controller) maximumActive() bool {
 
 	var found int
 
-	for _, task := range active {
-		if !cptypes.ConditionStateFinalized(task.State) {
+	for idx := range active {
+		if !cptypes.ConditionStateFinalized(active[idx].State) {
 			found++
 		}
 	}
 
 	return found >= concurrency
-}
-
-func (c *Controller) ackActive(ctx context.Context) {
-	// reset active counter on tasks in progress.
-	// cancel tasks running for a long time.
-
-	active := c.tasksLocker.List()
-
-	for _, task := range active {
-		if time.Since(task.UpdatedAt) > AckActiveTimeout {
-			if err := task.Msg.InProgress(); err != nil {
-				c.logger.WithError(err).Error("error ack msg as in-progress")
-			} else {
-				fmt.Println(task.Urn.ResourceID)
-				fmt.Println("acked msg as in progress")
-			}
-		}
-	}
-}
-
-func (c *Controller) fetchEvents(ctx context.Context, msgCh events.MsgCh) {
-	msgs, err := c.streamBroker.PullMsg(ctx, 1)
-	if err != nil {
-		c.logger.WithFields(
-			logrus.Fields{"err": err.Error()},
-		).Debug("error fetching work")
-	}
-
-	for _, msg := range msgs {
-		msgCh <- msg
-	}
-}
-
-func (c *Controller) processMsg(ctx context.Context, msg events.Message) {
-	data, err := msg.Data()
-	if err != nil {
-		c.logger.WithFields(
-			logrus.Fields{"err": err.Error(), "subject": msg.Subject()},
-		).Error("data unpack error")
-
-		return
-	}
-
-	urn, err := msg.SubjectURN(data)
-	if err != nil {
-		c.logger.WithFields(
-			logrus.Fields{"err": err.Error(), "subject": msg.Subject()},
-		).Error("error parsing subject URN in msg")
-
-		if err := msg.Ack(); err != nil {
-			c.logger.WithError(err).Warn("failed Nak msg")
-		}
-
-		return
-	}
-
-	if urn.ResourceType != cptypes.ServerResourceType {
-		c.logger.Warn("ignored msg with unknown resource type: " + urn.ResourceType)
-
-		if err := msg.Ack(); err != nil {
-			c.logger.WithError(err).Warn("failed Nak msg")
-		}
-
-		return
-	}
-
-	task, err := NewTaskFromMsg(msg, data, urn)
-	if err != nil {
-		c.logger.WithError(err).Warn("error creating task from msg")
-
-		if err := msg.Ack(); err != nil {
-			c.logger.WithError(err).Warn("failed Nak msg")
-		}
-
-		return
-	}
-
-	switch urn.Namespace {
-	case "hollow-controllers":
-		c.handleEvent(ctx, task)
-	default:
-		if err := msg.Ack(); err != nil {
-			c.logger.WithError(err).Warn("failed Nak msg")
-		}
-
-		c.logger.Warn("ignored msg with unknown subject URN namespace: " + urn.Namespace)
-	}
-}
-
-func (c *Controller) handleEvent(ctx context.Context, task *Task) {
-	switch task.Data.EventType {
-	case string(cptypes.InventoryOutofband):
-		c.inventoryOutofband(ctx, task)
-	default:
-		c.logger.Warn("ignored msg with unknown eventType: " + task.Data.EventType)
-		return
-	}
-}
-
-func (c *Controller) collectAll(ctx context.Context) {
-	if c.collectAllRunning {
-		c.logger.Warn("collectAll currently running, skipped re-run")
-		return
-	}
-
-	c.collectAllRunning = true
-	defer func() { c.collectAllRunning = false }()
-
-	iterCollector, err := collector.NewAssetIterCollectorWithStore(
-		ctx,
-		model.AppKindOutOfBand,
-		c.repository,
-		int32(c.cfg.Concurrency),
-		c.syncWG,
-		c.logger,
-	)
-	if err != nil {
-		c.logger.WithError(err).Error("collectAll asset iterator error")
-		return
-	}
-
-	c.logger.Info("collecting inventory for all assets..")
-	iterCollector.Collect(ctx)
 }

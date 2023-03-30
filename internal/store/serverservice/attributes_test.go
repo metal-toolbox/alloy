@@ -23,7 +23,7 @@ import (
 	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
 )
 
-func testStoreInstance(t *testing.T, mockURL string) *serverServiceStore {
+func testStoreInstance(t *testing.T, mockURL string) *Store {
 	t.Helper()
 
 	cr := retryablehttp.NewClient()
@@ -44,12 +44,12 @@ func testStoreInstance(t *testing.T, mockURL string) *serverServiceStore {
 
 	loggerEntry := app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher"}, logrus.New())
 
-	return &serverServiceStore{
+	return &Store{
 		logger:               loggerEntry,
 		Client:               mockClient,
 		slugs:                fixtures.ServerServiceSlugMap(),
-		attributeNS:          model.ServerComponentAttributeNS(model.AppKindOutOfBand),
-		versionedAttributeNS: model.ServerComponentVersionedAttributeNS(model.AppKindOutOfBand),
+		attributeNS:          serverComponentAttributeNS(model.AppKindOutOfBand),
+		versionedAttributeNS: serverComponentVersionedAttributeNS(model.AppKindOutOfBand),
 	}
 }
 
@@ -493,7 +493,7 @@ func Test_ServerService_CreateUpdateServerAttributes_Create(t *testing.T) {
 				}
 
 				// asset NS is as expected
-				assert.Equal(t, model.ServerVendorAttributeNS, attributes.Namespace)
+				assert.Equal(t, serverVendorAttributeNS, attributes.Namespace)
 
 				// unpack attributes data
 				data := map[string]string{}
@@ -502,9 +502,9 @@ func Test_ServerService_CreateUpdateServerAttributes_Create(t *testing.T) {
 				}
 
 				// asset attributes data matches device attributes
-				assert.Equal(t, device.Inventory.Model, data[model.ServerModelAttributeKey])
-				assert.Equal(t, device.Inventory.Serial, data[model.ServerSerialAttributeKey])
-				assert.Equal(t, device.Inventory.Vendor, data[model.ServerVendorAttributeKey])
+				assert.Equal(t, device.Inventory.Model, data[serverModelAttributeKey])
+				assert.Equal(t, device.Inventory.Serial, data[serverSerialAttributeKey])
+				assert.Equal(t, device.Inventory.Vendor, data[serverVendorAttributeKey])
 
 				w.Header().Set("Content-Type", "application/json")
 				_, _ = w.Write(fixtures.ServerServiceR6515Components_fc167440_JSON())
@@ -529,9 +529,9 @@ func Test_ServerService_CreateUpdateServerAttributes_Update(t *testing.T) {
 
 	// vendor attribute data
 	m := map[string]string{
-		model.ServerSerialAttributeKey: "unknown",
-		model.ServerVendorAttributeKey: "unknown",
-		model.ServerModelAttributeKey:  "unknown",
+		serverSerialAttributeKey: "unknown",
+		serverVendorAttributeKey: "unknown",
+		serverModelAttributeKey:  "unknown",
 	}
 
 	d, err := json.Marshal(m)
@@ -543,7 +543,7 @@ func Test_ServerService_CreateUpdateServerAttributes_Update(t *testing.T) {
 		UUID: serverID,
 		Attributes: []serverserviceapi.Attributes{
 			{
-				Namespace: model.ServerVendorAttributeNS,
+				Namespace: serverVendorAttributeNS,
 				Data:      d,
 			},
 		},
@@ -568,7 +568,7 @@ func Test_ServerService_CreateUpdateServerAttributes_Update(t *testing.T) {
 	handler := http.NewServeMux()
 	// get components query
 	handler.HandleFunc(
-		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), model.ServerVendorAttributeNS),
+		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), serverVendorAttributeNS),
 		func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodPut:
@@ -591,9 +591,9 @@ func Test_ServerService_CreateUpdateServerAttributes_Update(t *testing.T) {
 				}
 
 				// asset attributes data matches device attributes
-				assert.Equal(t, device.Inventory.Model, data[model.ServerModelAttributeKey])
-				assert.Equal(t, device.Inventory.Serial, data[model.ServerSerialAttributeKey])
-				assert.Equal(t, device.Inventory.Vendor, data[model.ServerVendorAttributeKey])
+				assert.Equal(t, device.Inventory.Model, data[serverModelAttributeKey])
+				assert.Equal(t, device.Inventory.Serial, data[serverSerialAttributeKey])
+				assert.Equal(t, device.Inventory.Vendor, data[serverVendorAttributeKey])
 
 				w.Header().Set("Content-Type", "application/json")
 				_, _ = w.Write(fixtures.ServerServiceR6515Components_fc167440_JSON())
@@ -644,7 +644,7 @@ func Test_ServerService_CreateUpdateServerMetadataAttributes_Create(t *testing.T
 				}
 
 				// asset NS is as expected
-				assert.Equal(t, model.ServerMetadataAttributeNS, attributes.Namespace)
+				assert.Equal(t, serverMetadataAttributeNS, attributes.Namespace)
 
 				// unpack attributes data
 				data := map[string]string{}
@@ -688,7 +688,7 @@ func Test_ServerService_CreateUpdateServerMetadataAttributes_Update(t *testing.T
 	handler := http.NewServeMux()
 	// get components query
 	handler.HandleFunc(
-		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), model.ServerMetadataAttributeNS),
+		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), serverMetadataAttributeNS),
 		func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodPut:
@@ -736,7 +736,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_NoErrorsNoChanges(t
 
 	// get components query
 	handler.HandleFunc(
-		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), model.ServerBMCErrorsAttributeNS),
+		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), serverBMCErrorsAttributeNS),
 		func(w http.ResponseWriter, r *http.Request) {
 			t.Fatal("expected no request, got: " + r.Method)
 		},
@@ -759,7 +759,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_HasErrorsNoChanges(
 
 	// get components query
 	handler.HandleFunc(
-		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), model.ServerBMCErrorsAttributeNS),
+		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), serverBMCErrorsAttributeNS),
 		func(w http.ResponseWriter, r *http.Request) {
 			t.Fatal("expected no request, got: " + r.Method)
 		},
@@ -788,7 +788,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_RegisteredErrorsPur
 
 	// get components query
 	handler.HandleFunc(
-		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), model.ServerBMCErrorsAttributeNS),
+		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), serverBMCErrorsAttributeNS),
 		func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodPut:
@@ -894,7 +894,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_Updated(t *testing.
 
 	// get components query
 	handler.HandleFunc(
-		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), model.ServerBMCErrorsAttributeNS),
+		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), serverBMCErrorsAttributeNS),
 		func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodPut:

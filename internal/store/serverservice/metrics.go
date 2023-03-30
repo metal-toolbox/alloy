@@ -18,7 +18,7 @@ var (
 	// metricInventorized count measures the number of assets inventorized - both successful and not.
 	metricInventorized *prometheus.GaugeVec
 
-	// metricBiosCfgCollected count measures the number of assets of which BIOS configuraton was collected - both successful and not.
+	// metricBiosCfgCollected count measures the number of assets of which BIOS configuration was collected - both successful and not.
 	metricBiosCfgCollected *prometheus.GaugeVec
 )
 
@@ -51,7 +51,7 @@ func init() {
 	metricBiosCfgCollected = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "alloy_assets_bios_cfg_collected_count",
-			Help: "A gauge metric to count measures the number of assets of which BIOS configuraton was collected - both successful and not.",
+			Help: "A gauge metric to count measures the number of assets of which BIOS configuration was collected - both successful and not.",
 		},
 		// status is one of success/failure
 		[]string{"status"},

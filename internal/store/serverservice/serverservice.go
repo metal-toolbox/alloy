@@ -4,8 +4,9 @@ import (
 	"context"
 	"os"
 	"reflect"
-	"time"
+	"strings"
 
+	"github.com/bmc-toolbox/common"
 	"github.com/google/uuid"
 	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/metrics"
@@ -23,17 +24,6 @@ import (
 	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
 )
 
-const (
-	// delay between server service requests.
-	delayBetweenRequests = 2 * time.Second
-
-	// server service attribute to look up the BMC IP Address in
-	bmcAttributeNamespace = "sh.hollow.bmc_info"
-
-	// server server service BMC address attribute key found under the bmcAttributeNamespace
-	bmcIPAddressAttributeKey = "address"
-)
-
 var (
 
 	// The serverservice asset getter tracer
@@ -44,21 +34,21 @@ func init() {
 	tracer = otel.Tracer("store.serverservice")
 }
 
-// serverServiceStore is an asset inventory store
-type serverServiceStore struct {
+// Store is an asset inventory store
+type Store struct {
 	*serverserviceapi.Client
-	appKind              model.AppKind
-	attributeNS          string
-	versionedAttributeNS string
-	facilityCode         string
 	logger               *logrus.Entry
 	config               *app.ServerserviceOptions
 	slugs                map[string]*serverserviceapi.ServerComponentType
 	firmwares            map[string][]*serverserviceapi.ComponentFirmwareVersion
+	appKind              model.AppKind
+	attributeNS          string
+	versionedAttributeNS string
+	facilityCode         string
 }
 
-// NewServerServiceStore returns a serverservice store queryor to lookup and publish assets to, from the store.
-func NewServerServiceStore(ctx context.Context, appKind model.AppKind, cfg *app.ServerserviceOptions, logger *logrus.Logger) (*serverServiceStore, error) {
+// NewStore returns a serverservice store queryor to lookup and publish assets to, from the store.
+func New(ctx context.Context, appKind model.AppKind, cfg *app.ServerserviceOptions, logger *logrus.Logger) (*Store, error) {
 	loggerEntry := app.NewLogrusEntryFromLogger(
 		logrus.Fields{"component": "store.serverservice"},
 		logger,
@@ -69,23 +59,28 @@ func NewServerServiceStore(ctx context.Context, appKind model.AppKind, cfg *app.
 		return nil, err
 	}
 
-	s := &serverServiceStore{
+	s := &Store{
 		Client:               apiclient,
 		appKind:              appKind,
 		logger:               loggerEntry,
 		config:               cfg,
 		slugs:                make(map[string]*serverserviceapi.ServerComponentType),
 		firmwares:            make(map[string][]*serverserviceapi.ComponentFirmwareVersion),
-		attributeNS:          model.ServerComponentAttributeNS(appKind),
-		versionedAttributeNS: model.ServerComponentVersionedAttributeNS(appKind),
+		attributeNS:          serverComponentAttributeNS(appKind),
+		versionedAttributeNS: serverComponentVersionedAttributeNS(appKind),
 		facilityCode:         cfg.FacilityCode,
 	}
 
-	if err := s.cacheServerComponentFirmwares(ctx); err != nil {
+	// add component types if they don't exist
+	if err := s.createServerComponentTypes(ctx); err != nil {
 		return nil, err
 	}
 
 	if err := s.cacheServerComponentTypes(ctx); err != nil {
+		return nil, err
+	}
+
+	if err := s.cacheServerComponentFirmwares(ctx); err != nil {
 		return nil, err
 	}
 
@@ -96,8 +91,13 @@ func NewServerServiceStore(ctx context.Context, appKind model.AppKind, cfg *app.
 	return s, nil
 }
 
+// Kind returns the repository store kind.
+func (r *Store) Kind() model.StoreKind {
+	return model.StoreKindServerservice
+}
+
 // assetByID queries serverService for the hardware asset by ID and returns an Asset object
-func (r *serverServiceStore) AssetByID(ctx context.Context, id string, fetchBmcCredentials bool) (*model.Asset, error) {
+func (r *Store) AssetByID(ctx context.Context, id string, fetchBmcCredentials bool) (*model.Asset, error) {
 	// attach child span
 	ctx, span := tracer.Start(ctx, "AssetByID()")
 	defer span.End()
@@ -133,9 +133,10 @@ func (r *serverServiceStore) AssetByID(ctx context.Context, id string, fetchBmcC
 }
 
 // assetByID queries serverService for the hardware asset by ID and returns an Asset object
-func (r *serverServiceStore) AssetsByOffsetLimit(ctx context.Context, offset, limit int) (assets []*model.Asset, totalAssets int, err error) {
+func (r *Store) AssetsByOffsetLimit(ctx context.Context, offset, limit int) (assets []*model.Asset, totalAssets int, err error) {
 	// attach child span
 	ctx, span := tracer.Start(ctx, "AssetsByOffsetLimit()")
+
 	span.SetAttributes(
 		attribute.Int("offset", offset),
 		attribute.Int("limit", limit),
@@ -188,7 +189,7 @@ func (r *serverServiceStore) AssetsByOffsetLimit(ctx context.Context, offset, li
 }
 
 // AssetUpdate inserts/updates the asset data in the serverservice store
-func (r *serverServiceStore) AssetUpdate(ctx context.Context, asset *model.Asset) error {
+func (r *Store) AssetUpdate(ctx context.Context, asset *model.Asset) error {
 	// attach child span
 	ctx, span := tracer.Start(ctx, "AssetUpdate()")
 	defer span.End()
@@ -232,12 +233,12 @@ func (r *serverServiceStore) AssetUpdate(ctx context.Context, asset *model.Asset
 	}
 
 	// create/update inventory.
-	if err := r.createUpdateInventory(ctx, asset, server); err != nil {
+	if errInventory := r.createUpdateInventory(ctx, asset, server); errInventory != nil {
 		r.logger.WithFields(
 			logrus.Fields{
 				"id":  id,
 				"hr":  hr,
-				"err": err.Error(),
+				"err": errInventory.Error(),
 			}).Warn("inventory asset insert/update error")
 
 		metricInventorized.With(prometheus.Labels{"status": "failed"}).Add(1)
@@ -265,17 +266,17 @@ func (r *serverServiceStore) AssetUpdate(ctx context.Context, asset *model.Asset
 	return nil
 }
 
-func (r *serverServiceStore) createUpdateInventory(ctx context.Context, device *model.Asset, server *serverserviceapi.Server) error {
+func (r *Store) createUpdateInventory(ctx context.Context, device *model.Asset, server *serverserviceapi.Server) error {
 	// create/update server bmc error attributes - for out of band data collection
 	if r.appKind == model.AppKindOutOfBand && len(device.Errors) > 0 {
-		err := r.createUpdateServerBMCErrorAttributes(
+		if err := r.createUpdateServerBMCErrorAttributes(
 			ctx,
 			server.UUID,
-			attributeByNamespace(model.ServerBMCErrorsAttributeNS, server.Attributes),
+			attributeByNamespace(serverBMCErrorsAttributeNS, server.Attributes),
 			device,
-		)
-
-		return errors.Wrap(ErrServerServiceQuery, "BMC error attribute create/update error: "+err.Error())
+		); err != nil {
+			return errors.Wrap(ErrServerServiceQuery, "BMC error attribute create/update error: "+err.Error())
+		}
 	}
 
 	// create/update server serial, vendor, model attributes
@@ -299,7 +300,7 @@ func (r *serverServiceStore) createUpdateInventory(ctx context.Context, device *
 // createUpdateServerComponents compares the current object in serverService with the device data and creates/updates server component data.
 //
 // nolint:gocyclo // the method caries out all steps to have device data compared and registered, for now its accepted as cyclomatic.
-func (r *serverServiceStore) createUpdateServerComponents(ctx context.Context, serverID uuid.UUID, device *model.Asset) error {
+func (r *Store) createUpdateServerComponents(ctx context.Context, serverID uuid.UUID, device *model.Asset) error {
 	// attach child span
 	ctx, span := tracer.Start(ctx, "createUpdateServerComponents()")
 	defer span.End()
@@ -389,7 +390,6 @@ func (r *serverServiceStore) createUpdateServerComponents(ctx context.Context, s
 
 		_, err = r.CreateComponents(ctx, serverID, add)
 		if err != nil {
-
 			// count error
 			metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
 
@@ -562,7 +562,7 @@ func serverServiceComponentsUpdated(currentObj, newObj *serverserviceapi.ServerC
 	return newObj, nil
 }
 
-func (r *serverServiceStore) cacheServerComponentFirmwares(ctx context.Context) error {
+func (r *Store) cacheServerComponentFirmwares(ctx context.Context) error {
 	// attach child span
 	ctx, span := tracer.Start(ctx, "cacheServerComponentFirmwares()")
 	defer span.End()
@@ -587,7 +587,7 @@ func (r *serverServiceStore) cacheServerComponentFirmwares(ctx context.Context) 
 	return nil
 }
 
-func (r *serverServiceStore) cacheServerComponentTypes(ctx context.Context) error {
+func (r *Store) cacheServerComponentTypes(ctx context.Context) error {
 	// attach child span
 	ctx, span := tracer.Start(ctx, "cacheServerComponentTypes()")
 	defer span.End()
@@ -605,6 +605,63 @@ func (r *serverServiceStore) cacheServerComponentTypes(ctx context.Context) erro
 
 	for _, ct := range serverComponentTypes {
 		r.slugs[ct.Slug] = ct
+	}
+
+	return nil
+}
+
+func (r *Store) createServerComponentTypes(ctx context.Context) error {
+	// attach child span
+	ctx, span := tracer.Start(ctx, "createServerComponentTypes()")
+	defer span.End()
+
+	existing, _, err := r.ListServerComponentTypes(ctx, nil)
+	if err != nil {
+		// count error
+		metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
+
+		// set span status
+		span.SetStatus(codes.Error, "ListServerComponentTypes() failed")
+
+		return err
+	}
+
+	if len(existing) > 0 {
+		return nil
+	}
+
+	componentSlugs := []string{
+		common.SlugBackplaneExpander,
+		common.SlugChassis,
+		common.SlugTPM,
+		common.SlugGPU,
+		common.SlugCPU,
+		common.SlugPhysicalMem,
+		common.SlugStorageController,
+		common.SlugBMC,
+		common.SlugBIOS,
+		common.SlugDrive,
+		common.SlugDriveTypePCIeNVMEeSSD,
+		common.SlugDriveTypeSATASSD,
+		common.SlugDriveTypeSATAHDD,
+		common.SlugNIC,
+		common.SlugPSU,
+		common.SlugCPLD,
+		common.SlugEnclosure,
+		common.SlugUnknown,
+		common.SlugMainboard,
+	}
+
+	for _, slug := range componentSlugs {
+		sct := serverserviceapi.ServerComponentType{
+			Name: slug,
+			Slug: strings.ToLower(slug),
+		}
+
+		_, err := r.CreateServerComponentType(ctx, sct)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

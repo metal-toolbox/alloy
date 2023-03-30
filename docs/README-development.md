@@ -1,21 +1,9 @@
 ### Alloy software components
 
-Alloy is internally composed of three main components,
-the `Asset getter`, `Inventory collector` and `Inventory publisher`.
+Alloy is internally composed of two main components the `Collector` and the `Controller`,
+the store is a backend repository of inventory assets.
 
 ![Alloy software components](alloy_components.png)
-
-#### Asset getter
-
-The asset getter (only) runs in the `Out of band` mode  - that is when,
-Alloy is invoked with the `outofband` command and BMC credentials are required
-for remote inventory collection.
-
-The assets getter then sends the assets it retrieved as `model.Asset`
-on the `asset channel`, for the `Inventory collector` component.
-
-Asset getters implement the `Getter` interface, at the time of writing
-Alloy comes with a `CSV` and an `EMAPI` asset getter.
 
 #### Inventory collector
 
@@ -46,12 +34,7 @@ BMC.
 
 ![Alloy software components](alloy_oob.png)
 
-#### Inventory publisher
 
-The `Inventory publisher` listens for asset devices from the inventory collector,
-and proceeds to transform the data for publishing, and then publishes the data.
-
-Inventory publishers implement the `Publisher` interface.
 
 #### Debugging/fixture dump environment variables
 

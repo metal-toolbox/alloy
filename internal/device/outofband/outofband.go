@@ -30,13 +30,10 @@ var (
 )
 
 func init() {
-	tracer = otel.Tracer("collector-outofband")
+	tracer = otel.Tracer("outofband.Queryor")
 }
 
 const (
-	// concurrency is the default number of workers to concurrently query BMCs
-	concurrency = 20
-
 	// logoutTimeout is the timeout value for each bmc logout attempt.
 	logoutTimeout = "1m"
 )
@@ -81,11 +78,16 @@ func NewQueryor(logger *logrus.Logger) *Queryor {
 // Inventory retrieves device component and firmware information
 // and updates the given asset object with the inventory
 func (o *Queryor) Inventory(ctx context.Context, asset *model.Asset) error {
+	ctx, span := tracer.Start(ctx, "Inventory()")
+	defer span.End()
+
+	setTraceSpanAssetAttributes(span, asset)
+
 	o.logger.WithFields(
 		logrus.Fields{
 			"serverID": asset.ID,
 			"IP":       asset.BMCAddress.String(),
-		}).Trace("login to BMC..")
+		}).Trace("logging into to BMC")
 
 	// login
 	bmc, err := o.bmcLogin(ctx, asset)
@@ -110,6 +112,9 @@ func (o *Queryor) Inventory(ctx context.Context, asset *model.Asset) error {
 }
 
 func (o *Queryor) BiosConfiguration(ctx context.Context, asset *model.Asset) error {
+	// attach child span
+	ctx, span := tracer.Start(ctx, "BiosConfiguration()")
+	defer span.End()
 
 	// login
 	bmc, err := o.bmcLogin(ctx, asset)
@@ -142,10 +147,6 @@ func (o *Queryor) biosConfiguration(ctx context.Context, bmc oobQueryor, asset *
 	// measure BMC biosConfiguration query
 	startTS := time.Now()
 
-	// attach child span
-	ctx, span := tracer.Start(ctx, "biosConfiguration()")
-	defer span.End()
-
 	biosConfig, err := bmc.GetBiosConfiguration(ctx)
 	if err != nil {
 		o.logger.WithFields(
@@ -155,7 +156,7 @@ func (o *Queryor) biosConfiguration(ctx context.Context, bmc oobQueryor, asset *
 				"err":      err,
 			}).Warn("error in bmc bios configuration collection")
 
-		span.SetStatus(codes.Error, " BMC GetBiosConfiguration(): "+err.Error())
+		trace.SpanFromContext(ctx).SetStatus(codes.Error, " BMC GetBiosConfiguration(): "+err.Error())
 
 		// increment get bios configuration query error count metric
 		switch {
@@ -189,10 +190,6 @@ func (o *Queryor) bmcInventory(ctx context.Context, bmc oobQueryor, asset *model
 	// measure BMC inventory query
 	startTS := time.Now()
 
-	// attach child span
-	ctx, span := tracer.Start(ctx, "bmcInventory()")
-	defer span.End()
-
 	inventory, err := bmc.Inventory(ctx)
 	if err != nil {
 		o.logger.WithFields(
@@ -202,7 +199,7 @@ func (o *Queryor) bmcInventory(ctx context.Context, bmc oobQueryor, asset *model
 				"err":      err,
 			}).Warn("error in bmc inventory collection")
 
-		span.SetStatus(codes.Error, " BMC Inventory(): "+err.Error())
+		trace.SpanFromContext(ctx).SetStatus(codes.Error, " BMC Inventory(): "+err.Error())
 
 		// increment inventory query error count metric
 		if strings.Contains(err.Error(), "no compatible System Odata IDs identified") {
@@ -264,14 +261,16 @@ func (o *Queryor) bmcLogin(ctx context.Context, asset *model.Asset) (oobQueryor,
 	if err := bmc.Open(ctx); err != nil {
 		span.SetStatus(codes.Error, " BMC login: "+err.Error())
 
-		if strings.Contains(err.Error(), "operation timed out") {
+		switch {
+		case strings.Contains(err.Error(), "operation timed out"):
 			asset.IncludeError("login_error", "operation timed out in "+time.Since(startTS).String())
 			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "conn_timeout")
-		}
-
-		if strings.Contains(err.Error(), "401: ") || strings.Contains(err.Error(), "failed to login") {
+		case strings.Contains(err.Error(), "401: "), strings.Contains(err.Error(), "failed to login"):
 			asset.IncludeError("login_error", "unauthorized")
 			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "unauthorized")
+		default:
+			asset.IncludeError("login_error", err.Error())
+			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "other")
 		}
 
 		return nil, errors.Wrap(ErrConnect, err.Error())

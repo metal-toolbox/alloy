@@ -37,7 +37,7 @@ var cmdOutofband = &cobra.Command{
 	Use:   "outofband",
 	Short: "Collect inventory data, bios configuration data through the BMC",
 	Run: func(cmd *cobra.Command, args []string) {
-		alloy, err := app.New(cmd.Context(), model.AppKindInband, model.StoreKind(storeKind), cfgFile, logLevel)
+		alloy, err := app.New(cmd.Context(), model.AppKindInband, model.StoreKind(storeKind), cfgFile, model.LogLevel(logLevel))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -94,7 +94,7 @@ func runController(ctx context.Context, alloy *app.App) {
 }
 
 func runOnAssets(ctx context.Context, alloy *app.App) {
-	c, err := collector.NewSingleDeviceCollector(
+	c, err := collector.NewDeviceCollector(
 		ctx,
 		model.StoreKind(storeKind),
 		model.AppKindOutOfBand,
@@ -116,8 +116,8 @@ func runOnAssets(ctx context.Context, alloy *app.App) {
 
 // install command flags
 func init() {
-	cmdOutofband.PersistentFlags().DurationVar(&interval, "collect-interval", 72*time.Hour, "interval sets the periodic data collection interval")
-	cmdOutofband.PersistentFlags().DurationVar(&splay, "collect-splay", 3*time.Hour, "splay adds jitter to the collection interval")
+	cmdOutofband.PersistentFlags().DurationVar(&interval, "collect-interval", app.DefaultCollectInterval, "interval sets the periodic data collection interval")
+	cmdOutofband.PersistentFlags().DurationVar(&splay, "collect-splay", app.DefaultCollectSplay, "splay adds jitter to the collection interval")
 	cmdOutofband.PersistentFlags().StringSliceVar(&assetIDs, "asset-ids", []string{}, "Collect inventory for the given comma separated list of asset IDs.")
 	cmdOutofband.PersistentFlags().BoolVarP(&controllerMode, "controller-mode", "", false, "Run Alloy in a controller loop that periodically refreshes inventory, BIOS configuration data in the store and listens for events.")
 

@@ -180,9 +180,9 @@ func toAsset(server *serverserviceapi.Server, credential *serverserviceapi.Serve
 
 	asset := &model.Asset{
 		ID:       server.UUID.String(),
-		Serial:   serverAttributes[model.ServerSerialAttributeKey],
-		Model:    serverAttributes[model.ServerModelAttributeKey],
-		Vendor:   serverAttributes[model.ServerVendorAttributeKey],
+		Serial:   serverAttributes[serverSerialAttributeKey],
+		Model:    serverAttributes[serverModelAttributeKey],
+		Vendor:   serverAttributes[serverVendorAttributeKey],
 		Metadata: serverMetadataAttributes,
 		Facility: server.FacilityCode,
 	}
