@@ -4,14 +4,34 @@ import (
 	"net"
 
 	"github.com/bmc-toolbox/common"
+
+	cptypes "github.com/metal-toolbox/conditionorc/pkg/types"
+)
+
+type (
+	AppKind   string
+	StoreKind string
+
+	// LogLevel is the logging level string.
+	LogLevel string
 )
 
 const (
-	AppKindInband      = "inband"
-	AppKindOutOfBand   = "outofband"
-	LogLevelInfo       = 0
-	LogLevelDebug      = 1
-	LogLevelTrace      = 2
+	AppName                  = "alloy"
+	AppKindInband    AppKind = "inband"
+	AppKindOutOfBand AppKind = "outofband"
+
+	// conditions reconciled by this controller
+	InventoryOutofband cptypes.ConditionKind = "inventoryOutofband"
+
+	StoreKindCsv           StoreKind = "csv"
+	StoreKindServerservice StoreKind = "serverservice"
+	StoreKindMock          StoreKind = "mock"
+
+	LogLevelInfo  LogLevel = "info"
+	LogLevelDebug LogLevel = "debug"
+	LogLevelTrace LogLevel = "trace"
+
 	ConcurrencyDefault = 5
 	ProfilingEndpoint  = "localhost:9091"
 	MetricsEndpoint    = "0.0.0.0:9090"
@@ -20,11 +40,6 @@ const (
 	// EnvVarDumpDiffers when enabled, will dump component differ data for debugging
 	// differences identified in component objects in the publish package.
 	EnvVarDumpDiffers = "DEBUG_DUMP_DIFFERS"
-)
-
-var (
-	// App logging level
-	LogLevel = 0
 )
 
 // Asset represents attributes of an asset retrieved from the asset store
@@ -60,57 +75,5 @@ type Asset struct {
 // IncludeError includes the given error key and value in the asset
 // which is then available to the publisher for reporting.
 func (a *Asset) IncludeError(key, value string) {
-	if a.Errors == nil {
-		a.Errors = map[string]string{}
-	}
-
 	a.Errors[key] = value
-}
-
-// Config holds application configuration read from a YAML or set by env variables.
-//
-// nolint:govet // prefer readability over field alignment optimization for this case.
-type Config struct {
-	// File is the configuration file path
-	File string
-	// LogLevel is the app verbose logging level.
-	LogLevel int
-	// AppKind is one of inband, outofband
-	AppKind string `mapstructure:"app_kind"`
-
-	// Out of band collector configuration
-	CollectorOutofband struct {
-		Concurrency int `mapstructure:"concurrency"`
-	} `mapstructure:"collector_outofband"`
-
-	// ServerService is the Hollow server inventory store
-	// https://github.com/metal-toolbox/hollow-serverservice
-	ServerService struct {
-		Endpoint             string   `mapstructure:"endpoint"`
-		OidcProviderEndpoint string   `mapstructure:"oidc_provider_endpoint"`
-		AudienceEndpoint     string   `mapstructure:"audience_endpoint"`
-		ClientSecret         string   `mapstructure:"client_secret"`
-		ClientID             string   `mapstructure:"client_id"`
-		ClientScopes         []string `mapstructure:"client_scopes"` // []string{"read:server", ..}
-		FacilityCode         string   `mapstructure:"facility_code"`
-		Concurrency          int      `mapstructure:"concurrency"`
-	} `mapstructure:"serverService"`
-
-	// AssetGetter is where alloy looks up assets information like BMC credentials
-	// to collect inventory.
-	AssetGetter struct {
-		// supported parameters: csv OR serverService
-		Kind string `mapstructure:"kind"`
-
-		// Csv is the CSV asset getter type configuration.
-		Csv struct {
-			File string `mapstructure:"file"`
-		} `mapstructure:"csv"`
-	} `mapstructure:"asset_getter"`
-
-	// Publisher is the inventory store where alloy writes collected inventory data
-	InventoryPublisher struct {
-		// supported parameters: stdout, serverService
-		Kind string `mapstructure:"kind"`
-	} `mapstructure:"inventory_publisher"`
 }
