@@ -1,4 +1,4 @@
-package publish
+package serverservice
 
 import (
 	"context"
@@ -9,13 +9,11 @@ import (
 
 	"github.com/bmc-toolbox/common"
 	"github.com/google/uuid"
-	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel/codes"
 
-	serverservice "go.hollow.sh/serverservice/pkg/api/v1"
+	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
 )
 
 // devel notes
@@ -26,7 +24,7 @@ import (
 //   will end up being new components added.
 
 // componentBySlugSerial returns a pointer to a component that matches the given slug, serial attributes
-func componentBySlugSerial(slug, serial string, components []*serverservice.ServerComponent) *serverservice.ServerComponent {
+func componentBySlugSerial(slug, serial string, components []*serverserviceapi.ServerComponent) *serverserviceapi.ServerComponent {
 	for _, c := range components {
 		if strings.EqualFold(slug, c.ComponentTypeSlug) && strings.EqualFold(serial, c.Serial) {
 			return c
@@ -36,38 +34,15 @@ func componentBySlugSerial(slug, serial string, components []*serverservice.Serv
 	return nil
 }
 
-func (h *serverServicePublisher) cacheServerComponentTypes(ctx context.Context) error {
-	// attach child span
-	ctx, span := tracer.Start(ctx, "cacheServerComponentTypes()")
-	defer span.End()
-
-	serverComponentTypes, _, err := h.client.ListServerComponentTypes(ctx, nil)
-	if err != nil {
-		// count error
-		metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
-
-		// set span status
-		span.SetStatus(codes.Error, "ListServerComponentTypes() failed")
-
-		return err
-	}
-
-	for _, ct := range serverComponentTypes {
-		h.slugs[ct.Slug] = ct
-	}
-
-	return nil
-}
-
-// componentPtrSlice returns a slice of pointers to serverservice.ServerComponent.
+// componentPtrSlice returns a slice of pointers to serverserviceapi.ServerComponent.
 //
 // The hollow client methods require component slice objects to be passed as values
 // these tend to be large objects.
 //
 // This helper method is to reduce the amount of copying of component objects (~240 bytes each) when passed around between methods and range loops,
 // while it seems like a minor optimization, it also keeps the linter happy.
-func componentPtrSlice(components serverservice.ServerComponentSlice) []*serverservice.ServerComponent {
-	s := make([]*serverservice.ServerComponent, 0, len(components))
+func componentPtrSlice(components serverserviceapi.ServerComponentSlice) []*serverserviceapi.ServerComponent {
+	s := make([]*serverserviceapi.ServerComponent, 0, len(components))
 
 	// nolint:gocritic // the copying has to be done somewhere
 	for _, c := range components {
@@ -79,29 +54,29 @@ func componentPtrSlice(components serverservice.ServerComponentSlice) []*servers
 }
 
 // toComponentSlice converts an model.AssetDevice object to the server service component slice object
-func (h *serverServicePublisher) toComponentSlice(serverID uuid.UUID, device *model.Asset) ([]*serverservice.ServerComponent, error) {
-	componentsTmp := []*serverservice.ServerComponent{}
+func (r *Store) toComponentSlice(serverID uuid.UUID, device *model.Asset) ([]*serverserviceapi.ServerComponent, error) {
+	componentsTmp := []*serverserviceapi.ServerComponent{}
 	componentsTmp = append(componentsTmp,
-		h.bios(device.Vendor, device.Inventory.BIOS),
-		h.bmc(device.Vendor, device.Inventory.BMC),
-		h.mainboard(device.Vendor, device.Inventory.Mainboard),
+		r.bios(device.Vendor, device.Inventory.BIOS),
+		r.bmc(device.Vendor, device.Inventory.BMC),
+		r.mainboard(device.Vendor, device.Inventory.Mainboard),
 	)
 
-	componentsTmp = append(componentsTmp, h.dimms(device.Vendor, device.Inventory.Memory)...)
-	componentsTmp = append(componentsTmp, h.nics(device.Vendor, device.Inventory.NICs)...)
-	componentsTmp = append(componentsTmp, h.drives(device.Vendor, device.Inventory.Drives)...)
-	componentsTmp = append(componentsTmp, h.psus(device.Vendor, device.Inventory.PSUs)...)
-	componentsTmp = append(componentsTmp, h.cpus(device.Vendor, device.Inventory.CPUs)...)
-	componentsTmp = append(componentsTmp, h.tpms(device.Vendor, device.Inventory.TPMs)...)
-	componentsTmp = append(componentsTmp, h.cplds(device.Vendor, device.Inventory.CPLDs)...)
-	componentsTmp = append(componentsTmp, h.gpus(device.Vendor, device.Inventory.GPUs)...)
-	componentsTmp = append(componentsTmp, h.storageControllers(device.Vendor, device.Inventory.StorageControllers)...)
-	componentsTmp = append(componentsTmp, h.enclosures(device.Vendor, device.Inventory.Enclosures)...)
+	componentsTmp = append(componentsTmp, r.dimms(device.Vendor, device.Inventory.Memory)...)
+	componentsTmp = append(componentsTmp, r.nics(device.Vendor, device.Inventory.NICs)...)
+	componentsTmp = append(componentsTmp, r.drives(device.Vendor, device.Inventory.Drives)...)
+	componentsTmp = append(componentsTmp, r.psus(device.Vendor, device.Inventory.PSUs)...)
+	componentsTmp = append(componentsTmp, r.cpus(device.Vendor, device.Inventory.CPUs)...)
+	componentsTmp = append(componentsTmp, r.tpms(device.Vendor, device.Inventory.TPMs)...)
+	componentsTmp = append(componentsTmp, r.cplds(device.Vendor, device.Inventory.CPLDs)...)
+	componentsTmp = append(componentsTmp, r.gpus(device.Vendor, device.Inventory.GPUs)...)
+	componentsTmp = append(componentsTmp, r.storageControllers(device.Vendor, device.Inventory.StorageControllers)...)
+	componentsTmp = append(componentsTmp, r.enclosures(device.Vendor, device.Inventory.Enclosures)...)
 
-	components := []*serverservice.ServerComponent{}
+	components := []*serverserviceapi.ServerComponent{}
 
 	for _, component := range componentsTmp {
-		if component == nil || h.requiredAttributesEmpty(component) {
+		if component == nil || r.requiredAttributesEmpty(component) {
 			continue
 		}
 
@@ -112,7 +87,7 @@ func (h *serverServicePublisher) toComponentSlice(serverID uuid.UUID, device *mo
 	return components, nil
 }
 
-func (h *serverServicePublisher) requiredAttributesEmpty(component *serverservice.ServerComponent) bool {
+func (r *Store) requiredAttributesEmpty(component *serverserviceapi.ServerComponent) bool {
 	return component.Serial == "0" &&
 		component.Model == "" &&
 		component.Vendor == "" &&
@@ -120,17 +95,17 @@ func (h *serverServicePublisher) requiredAttributesEmpty(component *serverservic
 		len(component.VersionedAttributes) == 0
 }
 
-func (h *serverServicePublisher) newComponent(slug, cvendor, cmodel, cserial, cproduct string) (*serverservice.ServerComponent, error) {
+func (r *Store) newComponent(slug, cvendor, cmodel, cserial, cproduct string) (*serverserviceapi.ServerComponent, error) {
 	// lower case slug to changeObj how its stored in server service
 	slug = strings.ToLower(slug)
 
 	// component slug lookup map is expected
-	if len(h.slugs) == 0 {
+	if len(r.slugs) == 0 {
 		return nil, errors.Wrap(ErrSlugs, "component slugs lookup map empty")
 	}
 
 	// component slug is part of the lookup map
-	_, exists := h.slugs[slug]
+	_, exists := r.slugs[slug]
 	if !exists {
 		return nil, errors.Wrap(ErrSlugs, "unknown component slug: "+slug)
 	}
@@ -140,37 +115,37 @@ func (h *serverServicePublisher) newComponent(slug, cvendor, cmodel, cserial, cp
 		cmodel = cproduct
 	}
 
-	return &serverservice.ServerComponent{
-		Name:              h.slugs[slug].Name,
+	return &serverserviceapi.ServerComponent{
+		Name:              r.slugs[slug].Name,
 		Vendor:            common.FormatVendorName(cvendor),
 		Model:             cmodel,
 		Serial:            cserial,
-		ComponentTypeID:   h.slugs[slug].ID,
-		ComponentTypeName: h.slugs[slug].Name,
+		ComponentTypeID:   r.slugs[slug].ID,
+		ComponentTypeName: r.slugs[slug].Name,
 		ComponentTypeSlug: slug,
 	}, nil
 }
 
-func (h *serverServicePublisher) gpus(deviceVendor string, gpus []*common.GPU) []*serverservice.ServerComponent {
+func (r *Store) gpus(deviceVendor string, gpus []*common.GPU) []*serverserviceapi.ServerComponent {
 	if gpus == nil {
 		return nil
 	}
 
-	components := make([]*serverservice.ServerComponent, 0, len(gpus))
+	components := make([]*serverserviceapi.ServerComponent, 0, len(gpus))
 
 	for idx, c := range gpus {
 		if strings.TrimSpace(c.Serial) == "" {
 			c.Serial = strconv.Itoa(idx)
 		}
 
-		sc, err := h.newComponent(common.SlugGPU, c.Vendor, c.Model, c.Serial, c.ProductName)
+		sc, err := r.newComponent(common.SlugGPU, c.Vendor, c.Model, c.Serial, c.ProductName)
 		if err != nil {
-			h.logger.Error(err)
+			r.logger.Error(err)
 
 			return nil
 		}
 
-		h.setAttributes(
+		r.setAttributes(
 			sc,
 			&attributes{
 				Description:  c.Description,
@@ -180,7 +155,7 @@ func (h *serverServicePublisher) gpus(deviceVendor string, gpus []*common.GPU) [
 			},
 		)
 
-		h.setVersionedAttributes(
+		r.setVersionedAttributes(
 			deviceVendor,
 			sc,
 			&versionedAttributes{
@@ -195,26 +170,26 @@ func (h *serverServicePublisher) gpus(deviceVendor string, gpus []*common.GPU) [
 	return components
 }
 
-func (h *serverServicePublisher) cplds(deviceVendor string, cplds []*common.CPLD) []*serverservice.ServerComponent {
+func (r *Store) cplds(deviceVendor string, cplds []*common.CPLD) []*serverserviceapi.ServerComponent {
 	if cplds == nil {
 		return nil
 	}
 
-	components := make([]*serverservice.ServerComponent, 0, len(cplds))
+	components := make([]*serverserviceapi.ServerComponent, 0, len(cplds))
 
 	for idx, c := range cplds {
 		if strings.TrimSpace(c.Serial) == "" {
 			c.Serial = strconv.Itoa(idx)
 		}
 
-		sc, err := h.newComponent(common.SlugCPLD, c.Vendor, c.Model, c.Serial, c.ProductName)
+		sc, err := r.newComponent(common.SlugCPLD, c.Vendor, c.Model, c.Serial, c.ProductName)
 		if err != nil {
-			h.logger.Error(err)
+			r.logger.Error(err)
 
 			return nil
 		}
 
-		h.setAttributes(
+		r.setAttributes(
 			sc,
 			&attributes{
 				Description:  c.Description,
@@ -224,7 +199,7 @@ func (h *serverServicePublisher) cplds(deviceVendor string, cplds []*common.CPLD
 			},
 		)
 
-		h.setVersionedAttributes(
+		r.setVersionedAttributes(
 			deviceVendor,
 			sc,
 			&versionedAttributes{
@@ -239,26 +214,26 @@ func (h *serverServicePublisher) cplds(deviceVendor string, cplds []*common.CPLD
 	return components
 }
 
-func (h *serverServicePublisher) tpms(deviceVendor string, tpms []*common.TPM) []*serverservice.ServerComponent {
+func (r *Store) tpms(deviceVendor string, tpms []*common.TPM) []*serverserviceapi.ServerComponent {
 	if tpms == nil {
 		return nil
 	}
 
-	components := make([]*serverservice.ServerComponent, 0, len(tpms))
+	components := make([]*serverserviceapi.ServerComponent, 0, len(tpms))
 
 	for idx, c := range tpms {
 		if strings.TrimSpace(c.Serial) == "" {
 			c.Serial = strconv.Itoa(idx)
 		}
 
-		sc, err := h.newComponent(common.SlugTPM, c.Vendor, c.Model, c.Serial, c.ProductName)
+		sc, err := r.newComponent(common.SlugTPM, c.Vendor, c.Model, c.Serial, c.ProductName)
 		if err != nil {
-			h.logger.Error(err)
+			r.logger.Error(err)
 
 			return nil
 		}
 
-		h.setAttributes(
+		r.setAttributes(
 			sc,
 			&attributes{
 				Description:   c.Description,
@@ -269,7 +244,7 @@ func (h *serverServicePublisher) tpms(deviceVendor string, tpms []*common.TPM) [
 			},
 		)
 
-		h.setVersionedAttributes(
+		r.setVersionedAttributes(
 			deviceVendor,
 			sc,
 			&versionedAttributes{
@@ -284,26 +259,26 @@ func (h *serverServicePublisher) tpms(deviceVendor string, tpms []*common.TPM) [
 	return components
 }
 
-func (h *serverServicePublisher) cpus(deviceVendor string, cpus []*common.CPU) []*serverservice.ServerComponent {
+func (r *Store) cpus(deviceVendor string, cpus []*common.CPU) []*serverserviceapi.ServerComponent {
 	if cpus == nil {
 		return nil
 	}
 
-	components := make([]*serverservice.ServerComponent, 0, len(cpus))
+	components := make([]*serverserviceapi.ServerComponent, 0, len(cpus))
 
 	for idx, c := range cpus {
 		if strings.TrimSpace(c.Serial) == "" {
 			c.Serial = strconv.Itoa(idx)
 		}
 
-		sc, err := h.newComponent(common.SlugCPU, c.Vendor, c.Model, c.Serial, c.ProductName)
+		sc, err := r.newComponent(common.SlugCPU, c.Vendor, c.Model, c.Serial, c.ProductName)
 		if err != nil {
-			h.logger.Error(err)
+			r.logger.Error(err)
 
 			return nil
 		}
 
-		h.setAttributes(
+		r.setAttributes(
 			sc,
 			&attributes{
 				ID:           c.ID,
@@ -319,7 +294,7 @@ func (h *serverServicePublisher) cpus(deviceVendor string, cpus []*common.CPU) [
 			},
 		)
 
-		h.setVersionedAttributes(
+		r.setVersionedAttributes(
 			deviceVendor,
 			sc,
 			&versionedAttributes{
@@ -334,12 +309,12 @@ func (h *serverServicePublisher) cpus(deviceVendor string, cpus []*common.CPU) [
 	return components
 }
 
-func (h *serverServicePublisher) storageControllers(deviceVendor string, controllers []*common.StorageController) []*serverservice.ServerComponent {
+func (r *Store) storageControllers(deviceVendor string, controllers []*common.StorageController) []*serverserviceapi.ServerComponent {
 	if controllers == nil {
 		return nil
 	}
 
-	components := make([]*serverservice.ServerComponent, 0, len(controllers))
+	components := make([]*serverserviceapi.ServerComponent, 0, len(controllers))
 
 	serials := map[string]bool{}
 
@@ -357,14 +332,14 @@ func (h *serverServicePublisher) storageControllers(deviceVendor string, control
 			serials[c.Serial] = true
 		}
 
-		sc, err := h.newComponent(common.SlugStorageController, c.Vendor, c.Model, c.Serial, c.ProductName)
+		sc, err := r.newComponent(common.SlugStorageController, c.Vendor, c.Model, c.Serial, c.ProductName)
 		if err != nil {
-			h.logger.Error(err)
+			r.logger.Error(err)
 
 			return nil
 		}
 
-		h.setAttributes(
+		r.setAttributes(
 			sc,
 			&attributes{
 				ID:                           c.ID,
@@ -382,7 +357,7 @@ func (h *serverServicePublisher) storageControllers(deviceVendor string, control
 			},
 		)
 
-		h.setVersionedAttributes(
+		r.setVersionedAttributes(
 			deviceVendor,
 			sc,
 			&versionedAttributes{
@@ -402,26 +377,26 @@ func (h *serverServicePublisher) storageControllers(deviceVendor string, control
 	return components
 }
 
-func (h *serverServicePublisher) psus(deviceVendor string, psus []*common.PSU) []*serverservice.ServerComponent {
+func (r *Store) psus(deviceVendor string, psus []*common.PSU) []*serverserviceapi.ServerComponent {
 	if psus == nil {
 		return nil
 	}
 
-	components := make([]*serverservice.ServerComponent, 0, len(psus))
+	components := make([]*serverserviceapi.ServerComponent, 0, len(psus))
 
 	for idx, c := range psus {
 		if strings.TrimSpace(c.Serial) == "" {
 			c.Serial = strconv.Itoa(idx)
 		}
 
-		sc, err := h.newComponent(common.SlugPSU, c.Vendor, c.Model, c.Serial, c.ProductName)
+		sc, err := r.newComponent(common.SlugPSU, c.Vendor, c.Model, c.Serial, c.ProductName)
 		if err != nil {
-			h.logger.Error(err)
+			r.logger.Error(err)
 
 			return nil
 		}
 
-		h.setAttributes(
+		r.setAttributes(
 			sc,
 			&attributes{
 				ID:                 c.ID,
@@ -434,7 +409,7 @@ func (h *serverServicePublisher) psus(deviceVendor string, psus []*common.PSU) [
 			},
 		)
 
-		h.setVersionedAttributes(
+		r.setVersionedAttributes(
 			deviceVendor,
 			sc,
 			&versionedAttributes{
@@ -449,26 +424,26 @@ func (h *serverServicePublisher) psus(deviceVendor string, psus []*common.PSU) [
 	return components
 }
 
-func (h *serverServicePublisher) drives(deviceVendor string, drives []*common.Drive) []*serverservice.ServerComponent {
+func (r *Store) drives(deviceVendor string, drives []*common.Drive) []*serverserviceapi.ServerComponent {
 	if drives == nil {
 		return nil
 	}
 
-	components := make([]*serverservice.ServerComponent, 0, len(drives))
+	components := make([]*serverserviceapi.ServerComponent, 0, len(drives))
 
 	for idx, c := range drives {
 		if strings.TrimSpace(c.Serial) == "" {
 			c.Serial = strconv.Itoa(idx)
 		}
 
-		sc, err := h.newComponent(common.SlugDrive, c.Vendor, c.Model, c.Serial, c.ProductName)
+		sc, err := r.newComponent(common.SlugDrive, c.Vendor, c.Model, c.Serial, c.ProductName)
 		if err != nil {
-			h.logger.Error(err)
+			r.logger.Error(err)
 
 			return nil
 		}
 
-		h.setAttributes(
+		r.setAttributes(
 			sc,
 			&attributes{
 				Description:         c.Description,
@@ -491,7 +466,7 @@ func (h *serverServicePublisher) drives(deviceVendor string, drives []*common.Dr
 			},
 		)
 
-		h.setVersionedAttributes(
+		r.setVersionedAttributes(
 			deviceVendor,
 			sc,
 			&versionedAttributes{
@@ -511,27 +486,28 @@ func (h *serverServicePublisher) drives(deviceVendor string, drives []*common.Dr
 	return components
 }
 
-func (h *serverServicePublisher) nics(deviceVendor string, nics []*common.NIC) []*serverservice.ServerComponent {
+func (r *Store) nics(deviceVendor string, nics []*common.NIC) []*serverserviceapi.ServerComponent {
 	if nics == nil {
 		return nil
 	}
 
-	components := make([]*serverservice.ServerComponent, 0, len(nics))
+	components := make([]*serverserviceapi.ServerComponent, 0, len(nics))
 
 	for idx, c := range nics {
 		if strings.TrimSpace(c.Serial) == "" {
 			c.Serial = strconv.Itoa(idx)
 		}
 
-		sc, err := h.newComponent(common.SlugNIC, c.Vendor, c.Model, c.Serial, c.ProductName)
+		sc, err := r.newComponent(common.SlugNIC, c.Vendor, c.Model, c.Serial, c.ProductName)
 		if err != nil {
-			h.logger.Error(err)
+			r.logger.Error(err)
 
 			return nil
 		}
 
+		// TODO: fix up duplicate NIC attribute being dropped
 		for _, p := range c.NICPorts {
-			h.setAttributes(
+			r.setAttributes(
 				sc,
 				&attributes{
 					Description:  c.Description,
@@ -547,7 +523,7 @@ func (h *serverServicePublisher) nics(deviceVendor string, nics []*common.NIC) [
 			)
 		}
 
-		h.setVersionedAttributes(
+		r.setVersionedAttributes(
 			deviceVendor,
 			sc,
 			&versionedAttributes{
@@ -562,12 +538,12 @@ func (h *serverServicePublisher) nics(deviceVendor string, nics []*common.NIC) [
 	return components
 }
 
-func (h *serverServicePublisher) dimms(deviceVendor string, dimms []*common.Memory) []*serverservice.ServerComponent {
+func (r *Store) dimms(deviceVendor string, dimms []*common.Memory) []*serverserviceapi.ServerComponent {
 	if dimms == nil {
 		return nil
 	}
 
-	components := make([]*serverservice.ServerComponent, 0, len(dimms))
+	components := make([]*serverserviceapi.ServerComponent, 0, len(dimms))
 
 	for idx, c := range dimms {
 		// skip empty dimm slots
@@ -583,14 +559,14 @@ func (h *serverServicePublisher) dimms(deviceVendor string, dimms []*common.Memo
 		// trim redundant prefix
 		c.Slot = strings.TrimPrefix(c.Slot, "DIMM.Socket.")
 
-		sc, err := h.newComponent(common.SlugPhysicalMem, c.Vendor, c.Model, c.Serial, c.ProductName)
+		sc, err := r.newComponent(common.SlugPhysicalMem, c.Vendor, c.Model, c.Serial, c.ProductName)
 		if err != nil {
-			h.logger.Error(err)
+			r.logger.Error(err)
 
 			return nil
 		}
 
-		h.setAttributes(
+		r.setAttributes(
 			sc,
 			&attributes{
 				Description:  c.Description,
@@ -606,7 +582,7 @@ func (h *serverServicePublisher) dimms(deviceVendor string, dimms []*common.Memo
 			},
 		)
 
-		h.setVersionedAttributes(
+		r.setVersionedAttributes(
 			deviceVendor,
 			sc,
 			&versionedAttributes{
@@ -621,7 +597,7 @@ func (h *serverServicePublisher) dimms(deviceVendor string, dimms []*common.Memo
 	return components
 }
 
-func (h *serverServicePublisher) mainboard(deviceVendor string, c *common.Mainboard) *serverservice.ServerComponent {
+func (r *Store) mainboard(deviceVendor string, c *common.Mainboard) *serverserviceapi.ServerComponent {
 	if c == nil {
 		return nil
 	}
@@ -630,14 +606,14 @@ func (h *serverServicePublisher) mainboard(deviceVendor string, c *common.Mainbo
 		c.Serial = "0"
 	}
 
-	sc, err := h.newComponent(common.SlugMainboard, c.Vendor, c.Model, c.Serial, c.ProductName)
+	sc, err := r.newComponent(common.SlugMainboard, c.Vendor, c.Model, c.Serial, c.ProductName)
 	if err != nil {
-		h.logger.Error(err)
+		r.logger.Error(err)
 
 		return nil
 	}
 
-	h.setAttributes(
+	r.setAttributes(
 		sc,
 		&attributes{
 			Description:  c.Description,
@@ -649,7 +625,7 @@ func (h *serverServicePublisher) mainboard(deviceVendor string, c *common.Mainbo
 		},
 	)
 
-	h.setVersionedAttributes(
+	r.setVersionedAttributes(
 		deviceVendor,
 		sc,
 		&versionedAttributes{
@@ -661,26 +637,26 @@ func (h *serverServicePublisher) mainboard(deviceVendor string, c *common.Mainbo
 	return sc
 }
 
-func (h *serverServicePublisher) enclosures(deviceVendor string, enclosures []*common.Enclosure) []*serverservice.ServerComponent {
+func (r *Store) enclosures(deviceVendor string, enclosures []*common.Enclosure) []*serverserviceapi.ServerComponent {
 	if enclosures == nil {
 		return nil
 	}
 
-	components := make([]*serverservice.ServerComponent, 0, len(enclosures))
+	components := make([]*serverserviceapi.ServerComponent, 0, len(enclosures))
 
 	for idx, c := range enclosures {
 		if strings.TrimSpace(c.Serial) == "" {
 			c.Serial = strconv.Itoa(idx)
 		}
 
-		sc, err := h.newComponent(common.SlugEnclosure, c.Vendor, c.Model, c.Serial, c.ProductName)
+		sc, err := r.newComponent(common.SlugEnclosure, c.Vendor, c.Model, c.Serial, c.ProductName)
 		if err != nil {
-			h.logger.Error(err)
+			r.logger.Error(err)
 
 			return nil
 		}
 
-		h.setAttributes(
+		r.setAttributes(
 			sc,
 			&attributes{
 				ID:           c.ID,
@@ -693,7 +669,7 @@ func (h *serverServicePublisher) enclosures(deviceVendor string, enclosures []*c
 			},
 		)
 
-		h.setVersionedAttributes(
+		r.setVersionedAttributes(
 			deviceVendor,
 			sc,
 			&versionedAttributes{
@@ -708,7 +684,7 @@ func (h *serverServicePublisher) enclosures(deviceVendor string, enclosures []*c
 	return components
 }
 
-func (h *serverServicePublisher) bmc(deviceVendor string, c *common.BMC) *serverservice.ServerComponent {
+func (r *Store) bmc(deviceVendor string, c *common.BMC) *serverserviceapi.ServerComponent {
 	if c == nil {
 		return nil
 	}
@@ -717,14 +693,14 @@ func (h *serverServicePublisher) bmc(deviceVendor string, c *common.BMC) *server
 		c.Serial = "0"
 	}
 
-	sc, err := h.newComponent(common.SlugBMC, c.Vendor, c.Model, c.Serial, c.ProductName)
+	sc, err := r.newComponent(common.SlugBMC, c.Vendor, c.Model, c.Serial, c.ProductName)
 	if err != nil {
-		h.logger.Error(err)
+		r.logger.Error(err)
 
 		return nil
 	}
 
-	h.setAttributes(
+	r.setAttributes(
 		sc,
 		&attributes{
 			Description:  c.Description,
@@ -735,7 +711,7 @@ func (h *serverServicePublisher) bmc(deviceVendor string, c *common.BMC) *server
 		},
 	)
 
-	h.setVersionedAttributes(
+	r.setVersionedAttributes(
 		deviceVendor,
 		sc,
 		&versionedAttributes{
@@ -747,7 +723,7 @@ func (h *serverServicePublisher) bmc(deviceVendor string, c *common.BMC) *server
 	return sc
 }
 
-func (h *serverServicePublisher) bios(deviceVendor string, c *common.BIOS) *serverservice.ServerComponent {
+func (r *Store) bios(deviceVendor string, c *common.BIOS) *serverserviceapi.ServerComponent {
 	if c == nil {
 		return nil
 	}
@@ -756,14 +732,14 @@ func (h *serverServicePublisher) bios(deviceVendor string, c *common.BIOS) *serv
 		c.Serial = "0"
 	}
 
-	sc, err := h.newComponent(common.SlugBIOS, c.Vendor, c.Model, c.Serial, c.ProductName)
+	sc, err := r.newComponent(common.SlugBIOS, c.Vendor, c.Model, c.Serial, c.ProductName)
 	if err != nil {
-		h.logger.Error(err)
+		r.logger.Error(err)
 
 		return nil
 	}
 
-	h.setAttributes(
+	r.setAttributes(
 		sc,
 		&attributes{
 			Description:   c.Description,
@@ -776,7 +752,7 @@ func (h *serverServicePublisher) bios(deviceVendor string, c *common.BIOS) *serv
 		},
 	)
 
-	h.setVersionedAttributes(
+	r.setVersionedAttributes(
 		deviceVendor,
 		sc,
 		&versionedAttributes{
@@ -837,11 +813,12 @@ type versionedAttributes struct {
 	Vendor      string           `json:"vendor,omitempty"`
 }
 
-func (h *serverServicePublisher) setAttributes(component *serverservice.ServerComponent, attr *attributes) {
+// setAttributes updates the serverservice API component object with the given attributes
+func (r *Store) setAttributes(component *serverserviceapi.ServerComponent, attr *attributes) {
 	// convert attributes to raw json
 	data, err := json.Marshal(attr)
 	if err != nil {
-		h.logger.WithFields(
+		r.logger.WithFields(
 			logrus.Fields{
 				"slug": component.ComponentTypeSlug,
 				"kind": fmt.Sprintf("%T", data),
@@ -856,28 +833,46 @@ func (h *serverServicePublisher) setAttributes(component *serverservice.ServerCo
 	}
 
 	if component.Attributes == nil {
-		component.Attributes = []serverservice.Attributes{}
+		component.Attributes = []serverserviceapi.Attributes{}
+	} else {
+		for _, existingA := range component.Attributes {
+			if existingA.Namespace != r.attributeNS {
+				continue
+			}
+
+			r.logger.WithFields(
+				logrus.Fields{
+					"slug":      component.ComponentTypeSlug,
+					"kind":      fmt.Sprintf("%T", data),
+					"namespace": r.attributeNS,
+				}).Warn("duplicate attribute on component dropped.")
+
+			return
+		}
 	}
 
 	component.Attributes = append(
 		component.Attributes,
-		serverservice.Attributes{
-			Namespace: h.attributeNS,
+		serverserviceapi.Attributes{
+			Namespace: r.attributeNS,
 			Data:      data,
 		},
 	)
 }
 
-func (h *serverServicePublisher) setVersionedAttributes(deviceVendor string, component *serverservice.ServerComponent, vattr *versionedAttributes) {
+// setVersionedAttributes sets the given attributes on the serverservice server component.
+//
+// note: versioned attributes has a constraint on the server_component_id, namespace
+func (r *Store) setVersionedAttributes(deviceVendor string, component *serverserviceapi.ServerComponent, vattr *versionedAttributes) {
 	ctx := context.TODO()
 
 	// add FirmwareData
 	if vattr.Firmware != nil {
 		var err error
 
-		vattr, err = h.addFirmwareData(ctx, deviceVendor, component, vattr)
+		vattr, err = r.addFirmwareData(ctx, deviceVendor, component, vattr)
 		if err != nil {
-			h.logger.WithFields(
+			r.logger.WithFields(
 				logrus.Fields{
 					"err": err,
 				}).Warn("error adding firmware data to versioned attribute")
@@ -887,7 +882,7 @@ func (h *serverServicePublisher) setVersionedAttributes(deviceVendor string, com
 	// convert versioned attributes to raw json
 	data, err := json.Marshal(vattr)
 	if err != nil {
-		h.logger.WithFields(
+		r.logger.WithFields(
 			logrus.Fields{
 				"slug": component.ComponentTypeSlug,
 				"kind": fmt.Sprintf("%T", data),
@@ -902,22 +897,37 @@ func (h *serverServicePublisher) setVersionedAttributes(deviceVendor string, com
 	}
 
 	if component.VersionedAttributes == nil {
-		component.VersionedAttributes = []serverservice.VersionedAttributes{}
+		component.VersionedAttributes = []serverserviceapi.VersionedAttributes{}
+	} else {
+		for _, existingVA := range component.VersionedAttributes {
+			if existingVA.Namespace != r.versionedAttributeNS {
+				continue
+			}
+
+			r.logger.WithFields(
+				logrus.Fields{
+					"slug":      component.ComponentTypeSlug,
+					"kind":      fmt.Sprintf("%T", data),
+					"namespace": r.versionedAttributeNS,
+				}).Warn("duplicate versioned attribute on component dropped.")
+
+			return
+		}
 	}
 
 	component.VersionedAttributes = append(
 		component.VersionedAttributes,
-		serverservice.VersionedAttributes{
-			Namespace: h.versionedAttributeNS,
+		serverserviceapi.VersionedAttributes{
+			Namespace: r.versionedAttributeNS,
 			Data:      data,
 		},
 	)
 }
 
-// addFirmwareData queries ServerService for the firmware version and try to find a match.
-func (h *serverServicePublisher) addFirmwareData(ctx context.Context, deviceVendor string, component *serverservice.ServerComponent, vattr *versionedAttributes) (vatrr *versionedAttributes, err error) {
+// addFirmwareData queries ServerService for the firmware version and try to find a matcr.
+func (r *Store) addFirmwareData(ctx context.Context, deviceVendor string, component *serverserviceapi.ServerComponent, vattr *versionedAttributes) (vatrr *versionedAttributes, err error) {
 	// Check in the cache if we have a match by vendor + version
-	for _, fw := range h.firmwares[component.Vendor] {
+	for _, fw := range r.firmwares[component.Vendor] {
 		if strings.EqualFold(fw.Version, vattr.Firmware.Installed) {
 			vattr.Vendor = fw.Vendor
 			vattr.UUID = &fw.UUID
@@ -926,7 +936,7 @@ func (h *serverServicePublisher) addFirmwareData(ctx context.Context, deviceVend
 		}
 	}
 
-	for _, fw := range h.firmwares[deviceVendor] {
+	for _, fw := range r.firmwares[deviceVendor] {
 		if strings.EqualFold(fw.Version, vattr.Firmware.Installed) {
 			vattr.Vendor = fw.Vendor
 			vattr.UUID = &fw.UUID

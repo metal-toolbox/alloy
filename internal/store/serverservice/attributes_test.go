@@ -1,4 +1,4 @@
-package publish
+package serverservice
 
 import (
 	"context"
@@ -20,10 +20,10 @@ import (
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	serverservice "go.hollow.sh/serverservice/pkg/api/v1"
+	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
 )
 
-func testPublisherInstance(t *testing.T, mockURL string) *serverServicePublisher {
+func testStoreInstance(t *testing.T, mockURL string) *Store {
 	t.Helper()
 
 	cr := retryablehttp.NewClient()
@@ -32,7 +32,7 @@ func testPublisherInstance(t *testing.T, mockURL string) *serverServicePublisher
 	// comment out to enable debug logs
 	cr.Logger = nil
 
-	c, err := serverservice.NewClientWithToken(
+	mockClient, err := serverserviceapi.NewClientWithToken(
 		"hunter2",
 		mockURL,
 		cr.StandardClient(),
@@ -42,12 +42,14 @@ func testPublisherInstance(t *testing.T, mockURL string) *serverServicePublisher
 		t.Fatal(err)
 	}
 
-	return &serverServicePublisher{
-		logger:               app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher"}, logrus.New()),
+	loggerEntry := app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher"}, logrus.New())
+
+	return &Store{
+		logger:               loggerEntry,
+		Client:               mockClient,
 		slugs:                fixtures.ServerServiceSlugMap(),
-		client:               c,
-		attributeNS:          model.ServerComponentAttributeNS(model.AppKindOutOfBand),
-		versionedAttributeNS: model.ServerComponentVersionedAttributeNS(model.AppKindOutOfBand),
+		attributeNS:          serverComponentAttributeNS(model.AppKindOutOfBand),
+		versionedAttributeNS: serverComponentVersionedAttributeNS(model.AppKindOutOfBand),
 	}
 }
 
@@ -55,7 +57,7 @@ func Test_DiffVersionedAttributes(t *testing.T) {
 	now := time.Now()
 
 	// current versioned attributes fixture for data read from serverService
-	fixtureCurrentVA := []serverservice.VersionedAttributes{
+	fixtureCurrentVA := []serverserviceapi.VersionedAttributes{
 		{
 			Namespace: "server.components",
 			Data:      []byte(`{"firmware":{"installed":"2.2.5","software_id":"159"}`),
@@ -69,7 +71,7 @@ func Test_DiffVersionedAttributes(t *testing.T) {
 	}
 
 	// new versioned attributes fixture for data read from the BMC
-	fixtureNewVA := []serverservice.VersionedAttributes{
+	fixtureNewVA := []serverserviceapi.VersionedAttributes{
 		{
 			Namespace: "server.components",
 			Data:      []byte(`{"firmware":{"installed":"2.2.6","software_id":"159"}`),
@@ -78,7 +80,7 @@ func Test_DiffVersionedAttributes(t *testing.T) {
 	}
 
 	// current versioned attribute fixture which includes data from newer, unsorted
-	fixtureCurrentWithNewerVA := []serverservice.VersionedAttributes{
+	fixtureCurrentWithNewerVA := []serverserviceapi.VersionedAttributes{
 		fixtureCurrentVA[0],
 		fixtureCurrentVA[1],
 		fixtureNewVA[0],
@@ -87,29 +89,29 @@ func Test_DiffVersionedAttributes(t *testing.T) {
 	testcases := []struct {
 		name        string
 		expectedErr error
-		expectedObj *serverservice.VersionedAttributes
-		currentObjs []serverservice.VersionedAttributes
-		newObjs     []serverservice.VersionedAttributes
+		expectedObj *serverserviceapi.VersionedAttributes
+		currentObjs []serverserviceapi.VersionedAttributes
+		newObjs     []serverserviceapi.VersionedAttributes
 	}{
 		{
 			"with no new versioned objects, the method returns nil",
 			nil,
 			nil,
 			fixtureCurrentVA,
-			[]serverservice.VersionedAttributes{},
+			[]serverserviceapi.VersionedAttributes{},
 		},
 		{
 			"with no new versioned objects, and no current versioned objects the method returns nil",
 			nil,
 			nil,
-			[]serverservice.VersionedAttributes{},
-			[]serverservice.VersionedAttributes{},
+			[]serverserviceapi.VersionedAttributes{},
+			[]serverserviceapi.VersionedAttributes{},
 		},
 		{
 			"with an empty current versioned attribute object, the method returns the newer object",
 			nil,
 			&fixtureNewVA[0],
-			[]serverservice.VersionedAttributes{},
+			[]serverserviceapi.VersionedAttributes{},
 			fixtureNewVA,
 		},
 		{
@@ -143,7 +145,7 @@ func Test_DiffVersionedAttributes(t *testing.T) {
 }
 
 // addVA
-func addcomponent(sc []*serverservice.ServerComponent, t *testing.T, slug string, va *versionedAttributes) []*serverservice.ServerComponent {
+func addcomponent(sc []*serverserviceapi.ServerComponent, t *testing.T, slug string, va *versionedAttributes) []*serverserviceapi.ServerComponent {
 	t.Helper()
 
 	data, err := json.Marshal(va)
@@ -151,11 +153,11 @@ func addcomponent(sc []*serverservice.ServerComponent, t *testing.T, slug string
 		t.Error(err)
 	}
 
-	component := &serverservice.ServerComponent{
+	component := &serverserviceapi.ServerComponent{
 		UUID:   uuid.New(),
 		Name:   slug,
 		Vendor: "",
-		VersionedAttributes: []serverservice.VersionedAttributes{
+		VersionedAttributes: []serverserviceapi.VersionedAttributes{
 			{
 				Data:      data,
 				Namespace: "foo.bar",
@@ -168,10 +170,10 @@ func addcomponent(sc []*serverservice.ServerComponent, t *testing.T, slug string
 	return sc
 }
 
-func updateComponentVA(sc []*serverservice.ServerComponent, t *testing.T, slug string, va *versionedAttributes) []*serverservice.ServerComponent {
+func updateComponentVA(sc []*serverserviceapi.ServerComponent, t *testing.T, slug string, va *versionedAttributes) []*serverserviceapi.ServerComponent {
 	t.Helper()
 
-	var component *serverservice.ServerComponent
+	var component *serverserviceapi.ServerComponent
 
 	for _, c := range sc {
 		if strings.EqualFold(c.ComponentTypeSlug, strings.ToLower(slug)) {
@@ -231,7 +233,7 @@ func Test_filterByAttributeNamespace(t *testing.T) {
 	components[0].VersionedAttributes[0].Namespace = "some.ns"
 
 	// init publisher
-	p := testPublisherInstance(t, "foobar")
+	p := testStoreInstance(t, "foobar")
 
 	// run method under test
 	p.filterByAttributeNamespace(components)
@@ -279,7 +281,7 @@ func Test_ServerService_CreateUpdateServerComponents_ObjectsEqual(t *testing.T) 
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 
 	device := &model.Asset{ID: serverID.String(), Vendor: "dell", Inventory: fixtures.CopyDevice(fixtures.R6515_fc167440)}
 
@@ -315,7 +317,7 @@ func Test_ServerService_CreateUpdateServerComponents_ObjectsUpdated(t *testing.T
 					t.Fatal(err)
 				}
 
-				gotUpdate := []*serverservice.ServerComponent{}
+				gotUpdate := []*serverserviceapi.ServerComponent{}
 				if err := json.Unmarshal(b, &gotUpdate); err != nil {
 					t.Fatal(err)
 				}
@@ -351,7 +353,7 @@ func Test_ServerService_CreateUpdateServerComponents_ObjectsUpdated(t *testing.T
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 
 	// asset device fixture returned by the inventory collector
 	device := &model.Asset{
@@ -390,7 +392,7 @@ func Test_ServerService_CreateUpdateServerComponents_ObjectsAdded(t *testing.T) 
 					t.Fatal(err)
 				}
 
-				gotAdded := []*serverservice.ServerComponent{}
+				gotAdded := []*serverserviceapi.ServerComponent{}
 				if err := json.Unmarshal(b, &gotAdded); err != nil {
 					t.Fatal(err)
 				}
@@ -443,7 +445,7 @@ func Test_ServerService_CreateUpdateServerComponents_ObjectsAdded(t *testing.T) 
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 
 	err := p.createUpdateServerComponents(context.TODO(), serverID, device)
 	if err != nil {
@@ -455,7 +457,7 @@ func Test_ServerService_CreateUpdateServerAttributes_Create(t *testing.T) {
 	// test: createUpdateServerAttributes creates server attributes when its undefined in server service
 	serverID, _ := uuid.Parse(fixtures.TestserverID_Dell_fc167440)
 
-	server := &serverservice.Server{UUID: serverID}
+	server := &serverserviceapi.Server{UUID: serverID}
 	// the device with model, vendor, serial as unknown in server service
 	// with inventory from the device with the actual model, vendor, serial attributes
 	device := &model.Asset{
@@ -485,13 +487,13 @@ func Test_ServerService_CreateUpdateServerAttributes_Create(t *testing.T) {
 				}
 
 				// unpack attributes posted by method
-				attributes := &serverservice.Attributes{}
+				attributes := &serverserviceapi.Attributes{}
 				if err = json.Unmarshal(b, attributes); err != nil {
 					t.Fatal(err)
 				}
 
 				// asset NS is as expected
-				assert.Equal(t, model.ServerVendorAttributeNS, attributes.Namespace)
+				assert.Equal(t, serverVendorAttributeNS, attributes.Namespace)
 
 				// unpack attributes data
 				data := map[string]string{}
@@ -500,9 +502,9 @@ func Test_ServerService_CreateUpdateServerAttributes_Create(t *testing.T) {
 				}
 
 				// asset attributes data matches device attributes
-				assert.Equal(t, device.Inventory.Model, data[model.ServerModelAttributeKey])
-				assert.Equal(t, device.Inventory.Serial, data[model.ServerSerialAttributeKey])
-				assert.Equal(t, device.Inventory.Vendor, data[model.ServerVendorAttributeKey])
+				assert.Equal(t, device.Inventory.Model, data[serverModelAttributeKey])
+				assert.Equal(t, device.Inventory.Serial, data[serverSerialAttributeKey])
+				assert.Equal(t, device.Inventory.Vendor, data[serverVendorAttributeKey])
 
 				w.Header().Set("Content-Type", "application/json")
 				_, _ = w.Write(fixtures.ServerServiceR6515Components_fc167440_JSON())
@@ -513,7 +515,7 @@ func Test_ServerService_CreateUpdateServerAttributes_Create(t *testing.T) {
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 
 	err := p.createUpdateServerAttributes(context.TODO(), server, device)
 	if err != nil {
@@ -527,9 +529,9 @@ func Test_ServerService_CreateUpdateServerAttributes_Update(t *testing.T) {
 
 	// vendor attribute data
 	m := map[string]string{
-		model.ServerSerialAttributeKey: "unknown",
-		model.ServerVendorAttributeKey: "unknown",
-		model.ServerModelAttributeKey:  "unknown",
+		serverSerialAttributeKey: "unknown",
+		serverVendorAttributeKey: "unknown",
+		serverModelAttributeKey:  "unknown",
 	}
 
 	d, err := json.Marshal(m)
@@ -537,11 +539,11 @@ func Test_ServerService_CreateUpdateServerAttributes_Update(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	server := &serverservice.Server{
+	server := &serverserviceapi.Server{
 		UUID: serverID,
-		Attributes: []serverservice.Attributes{
+		Attributes: []serverserviceapi.Attributes{
 			{
-				Namespace: model.ServerVendorAttributeNS,
+				Namespace: serverVendorAttributeNS,
 				Data:      d,
 			},
 		},
@@ -566,7 +568,7 @@ func Test_ServerService_CreateUpdateServerAttributes_Update(t *testing.T) {
 	handler := http.NewServeMux()
 	// get components query
 	handler.HandleFunc(
-		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), model.ServerVendorAttributeNS),
+		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), serverVendorAttributeNS),
 		func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodPut:
@@ -577,7 +579,7 @@ func Test_ServerService_CreateUpdateServerAttributes_Update(t *testing.T) {
 				}
 
 				// unpack attributes posted by method
-				attributes := &serverservice.Attributes{}
+				attributes := &serverserviceapi.Attributes{}
 				if err = json.Unmarshal(b, attributes); err != nil {
 					t.Fatal(err)
 				}
@@ -589,9 +591,9 @@ func Test_ServerService_CreateUpdateServerAttributes_Update(t *testing.T) {
 				}
 
 				// asset attributes data matches device attributes
-				assert.Equal(t, device.Inventory.Model, data[model.ServerModelAttributeKey])
-				assert.Equal(t, device.Inventory.Serial, data[model.ServerSerialAttributeKey])
-				assert.Equal(t, device.Inventory.Vendor, data[model.ServerVendorAttributeKey])
+				assert.Equal(t, device.Inventory.Model, data[serverModelAttributeKey])
+				assert.Equal(t, device.Inventory.Serial, data[serverSerialAttributeKey])
+				assert.Equal(t, device.Inventory.Vendor, data[serverVendorAttributeKey])
 
 				w.Header().Set("Content-Type", "application/json")
 				_, _ = w.Write(fixtures.ServerServiceR6515Components_fc167440_JSON())
@@ -602,7 +604,7 @@ func Test_ServerService_CreateUpdateServerAttributes_Update(t *testing.T) {
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 
 	if err = p.createUpdateServerAttributes(context.TODO(), server, device); err != nil {
 		t.Fatal(err)
@@ -636,13 +638,13 @@ func Test_ServerService_CreateUpdateServerMetadataAttributes_Create(t *testing.T
 				}
 
 				// unpack attributes posted by method
-				attributes := &serverservice.Attributes{}
+				attributes := &serverserviceapi.Attributes{}
 				if err = json.Unmarshal(b, attributes); err != nil {
 					t.Fatal(err)
 				}
 
 				// asset NS is as expected
-				assert.Equal(t, model.ServerMetadataAttributeNS, attributes.Namespace)
+				assert.Equal(t, serverMetadataAttributeNS, attributes.Namespace)
 
 				// unpack attributes data
 				data := map[string]string{}
@@ -661,7 +663,7 @@ func Test_ServerService_CreateUpdateServerMetadataAttributes_Create(t *testing.T
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 
 	err := p.createUpdateServerMetadataAttributes(context.TODO(), serverID, device)
 	if err != nil {
@@ -686,7 +688,7 @@ func Test_ServerService_CreateUpdateServerMetadataAttributes_Update(t *testing.T
 	handler := http.NewServeMux()
 	// get components query
 	handler.HandleFunc(
-		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), model.ServerMetadataAttributeNS),
+		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), serverMetadataAttributeNS),
 		func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodPut:
@@ -696,7 +698,7 @@ func Test_ServerService_CreateUpdateServerMetadataAttributes_Update(t *testing.T
 				}
 
 				// unpack attributes posted by method
-				attributes := &serverservice.Attributes{}
+				attributes := &serverserviceapi.Attributes{}
 				if err = json.Unmarshal(b, attributes); err != nil {
 					t.Fatal(err)
 				}
@@ -718,7 +720,7 @@ func Test_ServerService_CreateUpdateServerMetadataAttributes_Update(t *testing.T
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 
 	err := p.createUpdateServerMetadataAttributes(context.TODO(), serverID, device)
 	if err != nil {
@@ -734,14 +736,14 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_NoErrorsNoChanges(t
 
 	// get components query
 	handler.HandleFunc(
-		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), model.ServerBMCErrorsAttributeNS),
+		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), serverBMCErrorsAttributeNS),
 		func(w http.ResponseWriter, r *http.Request) {
 			t.Fatal("expected no request, got: " + r.Method)
 		},
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 
 	err := p.createUpdateServerBMCErrorAttributes(context.TODO(), serverID, nil, &model.Asset{})
 	if err != nil {
@@ -757,17 +759,17 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_HasErrorsNoChanges(
 
 	// get components query
 	handler.HandleFunc(
-		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), model.ServerBMCErrorsAttributeNS),
+		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), serverBMCErrorsAttributeNS),
 		func(w http.ResponseWriter, r *http.Request) {
 			t.Fatal("expected no request, got: " + r.Method)
 		},
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 
 	errs := []byte(`{"login_error": "bmc gave up"}`)
-	errAttribs := &serverservice.Attributes{Data: errs}
+	errAttribs := &serverserviceapi.Attributes{Data: errs}
 
 	asset := &model.Asset{Errors: map[string]string{"login_error": "bmc gave up"}}
 
@@ -786,7 +788,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_RegisteredErrorsPur
 
 	// get components query
 	handler.HandleFunc(
-		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), model.ServerBMCErrorsAttributeNS),
+		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), serverBMCErrorsAttributeNS),
 		func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodPut:
@@ -796,7 +798,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_RegisteredErrorsPur
 				}
 
 				// unpack attributes posted by method
-				attributes := &serverservice.Attributes{}
+				attributes := &serverserviceapi.Attributes{}
 				if err = json.Unmarshal(b, attributes); err != nil {
 					t.Fatal(err)
 				}
@@ -818,9 +820,9 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_RegisteredErrorsPur
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 
-	errAttribs := &serverservice.Attributes{Data: []byte(`{"login_error": "bmc gave up"}`)}
+	errAttribs := &serverserviceapi.Attributes{Data: []byte(`{"login_error": "bmc gave up"}`)}
 
 	err := p.createUpdateServerBMCErrorAttributes(context.TODO(), serverID, errAttribs, &model.Asset{})
 	if err != nil {
@@ -843,7 +845,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_Create(t *testing.T
 			switch r.Method {
 			case http.MethodPost:
 				// the response here is
-				resp, err := os.ReadFile("../fixtures/serverservice_server_fc167440.json")
+				resp, err := os.ReadFile("../../fixtures/serverservice_server_fc167440.json")
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -854,7 +856,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_Create(t *testing.T
 				}
 
 				// unpack attributes posted by method
-				attributes := &serverservice.Attributes{}
+				attributes := &serverserviceapi.Attributes{}
 				if err = json.Unmarshal(b, attributes); err != nil {
 					t.Fatal(err)
 				}
@@ -876,7 +878,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_Create(t *testing.T
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 
 	err := p.createUpdateServerBMCErrorAttributes(context.TODO(), serverID, nil, device)
 	if err != nil {
@@ -892,7 +894,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_Updated(t *testing.
 
 	// get components query
 	handler.HandleFunc(
-		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), model.ServerBMCErrorsAttributeNS),
+		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), serverBMCErrorsAttributeNS),
 		func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodPut:
@@ -902,7 +904,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_Updated(t *testing.
 				}
 
 				// unpack attributes posted by method
-				attributes := &serverservice.Attributes{}
+				attributes := &serverserviceapi.Attributes{}
 				if err = json.Unmarshal(b, attributes); err != nil {
 					t.Fatal(err)
 				}
@@ -924,141 +926,15 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_Updated(t *testing.
 	)
 
 	mock := httptest.NewServer(handler)
-	p := testPublisherInstance(t, mock.URL)
+	p := testStoreInstance(t, mock.URL)
 
 	errs := []byte(`{"login_error": "bmc gave up"}`)
-	errAttribs := &serverservice.Attributes{Data: errs}
+	errAttribs := &serverserviceapi.Attributes{Data: errs}
 
 	asset := &model.Asset{Errors: map[string]string{"login_error": "bmc on vacation"}}
 
 	err := p.createUpdateServerBMCErrorAttributes(context.TODO(), serverID, errAttribs, asset)
 	if err != nil {
 		t.Fatal(err)
-	}
-}
-
-func Test_vendorDataUpdate(t *testing.T) {
-	type args struct {
-		new     map[string]string
-		current map[string]string
-	}
-
-	// nolint:govet // test code is test code - disable struct fieldalignment error
-	tests := []struct {
-		name string
-		args args
-		want map[string]string
-	}{
-		{
-			"current is nil",
-			args{
-				new: map[string]string{
-					model.ServerSerialAttributeKey: "01234",
-					model.ServerVendorAttributeKey: "foo",
-					model.ServerModelAttributeKey:  "bar",
-				},
-				current: nil,
-			},
-			map[string]string{
-				model.ServerSerialAttributeKey: "01234",
-				model.ServerVendorAttributeKey: "foo",
-				model.ServerModelAttributeKey:  "bar",
-			},
-		},
-		{
-			"current and new data is equal",
-			args{
-				new: map[string]string{
-					model.ServerSerialAttributeKey: "01234",
-					model.ServerVendorAttributeKey: "foo",
-					model.ServerModelAttributeKey:  "bar",
-				},
-				current: map[string]string{
-					model.ServerSerialAttributeKey: "01234",
-					model.ServerVendorAttributeKey: "foo",
-					model.ServerModelAttributeKey:  "bar",
-				},
-			},
-			nil,
-		},
-		{
-			"current empty attribute is updated",
-			args{
-				new: map[string]string{
-					model.ServerSerialAttributeKey: "01234",
-					model.ServerVendorAttributeKey: "foo",
-					model.ServerModelAttributeKey:  "bar",
-				},
-				current: map[string]string{
-					model.ServerSerialAttributeKey: "01234",
-					model.ServerVendorAttributeKey: "",
-					model.ServerModelAttributeKey:  "bar",
-				},
-			},
-			map[string]string{
-				model.ServerSerialAttributeKey: "01234",
-				model.ServerVendorAttributeKey: "foo",
-				model.ServerModelAttributeKey:  "bar",
-			},
-		},
-		{
-			"current unknown and empty attributes are updated",
-			args{
-				new: map[string]string{
-					model.ServerSerialAttributeKey: "01234",
-					model.ServerVendorAttributeKey: "foo",
-					model.ServerModelAttributeKey:  "bar",
-				},
-				current: map[string]string{
-					model.ServerSerialAttributeKey: "unknown",
-					model.ServerVendorAttributeKey: "",
-					model.ServerModelAttributeKey:  "bar",
-				},
-			},
-			map[string]string{
-				model.ServerSerialAttributeKey: "01234",
-				model.ServerVendorAttributeKey: "foo",
-				model.ServerModelAttributeKey:  "bar",
-			},
-		},
-		{
-			"current attributes are not updated",
-			args{
-				new: map[string]string{
-					model.ServerSerialAttributeKey: "01234LLL",
-					model.ServerVendorAttributeKey: "foo",
-					model.ServerModelAttributeKey:  "bar",
-				},
-				current: map[string]string{
-					model.ServerSerialAttributeKey: "01234",
-					model.ServerVendorAttributeKey: "foo",
-					model.ServerModelAttributeKey:  "bar",
-				},
-			},
-			nil,
-		},
-		{
-			"current attributes are not updated - with unknown value",
-			args{
-				new: map[string]string{
-					model.ServerSerialAttributeKey: "01234",
-					model.ServerVendorAttributeKey: "unknown",
-					model.ServerModelAttributeKey:  "bar",
-				},
-				current: map[string]string{
-					model.ServerSerialAttributeKey: "01234",
-					model.ServerVendorAttributeKey: "foo",
-					model.ServerModelAttributeKey:  "bar",
-				},
-			},
-			nil,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := vendorDataUpdate(tt.args.new, tt.args.current)
-			assert.Equal(t, tt.want, got)
-		})
 	}
 }
