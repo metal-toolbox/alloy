@@ -127,7 +127,7 @@ func (c *Controller) collectOutofbandForTask(ctx context.Context, task *Task) {
 	}
 
 	// collect inventory from asset hardware
-	if errCollect := oobcollector.CollectOutofband(ctx, &task.Asset); errCollect != nil {
+	if errCollect := oobcollector.CollectOutofband(ctx, &task.Asset, false); errCollect != nil {
 		c.logger.WithFields(
 			logrus.Fields{
 				"serverID": &task.Asset.ID,

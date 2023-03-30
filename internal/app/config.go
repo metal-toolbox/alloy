@@ -116,7 +116,7 @@ func (a *App) LoadConfiguration(cfgFile string, storeKind model.StoreKind) error
 		return errors.Wrap(ErrConfig, "Unmarshal error: "+err.Error())
 	}
 
-	a.appOverrides()
+	a.envVarAppOverrides()
 
 	if a.Config.EventsBorkerKind == "nats" {
 		if err := a.envVarNatsOverrides(); err != nil {
@@ -133,7 +133,7 @@ func (a *App) LoadConfiguration(cfgFile string, storeKind model.StoreKind) error
 	return nil
 }
 
-func (a *App) appOverrides() {
+func (a *App) envVarAppOverrides() {
 	if a.v.GetString("log.level") != "" {
 		a.Config.LogLevel = a.v.GetString("log.level")
 	}
@@ -144,6 +144,10 @@ func (a *App) appOverrides() {
 
 	if a.v.GetDuration("collect.interval.splay") != 0 {
 		a.Config.CollectIntervalSplay = a.v.GetDuration("collect.interval.splay")
+	}
+
+	if a.v.GetString("csv.file") != "" {
+		a.Config.CsvFile = a.v.GetString("csv.file")
 	}
 }
 

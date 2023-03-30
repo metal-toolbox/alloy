@@ -27,6 +27,9 @@ var (
 	// assetIDs is the list of asset IDs to lookup out of band inventory for.
 	assetIDs []string
 
+	// csvfile holds the path to the csv file
+	csvFile string
+
 	// controllerMode when enabled runs alloy in controller mode to periodically fetch data for all assets in the
 	// configured store.
 	controllerMode bool
@@ -41,6 +44,8 @@ var cmdOutofband = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		alloy.Config.CsvFile = csvFile
 
 		// profiling endpoint
 		if enableProfiling {
@@ -58,10 +63,6 @@ var cmdOutofband = &cobra.Command{
 			<-alloy.TermCh
 			cancelFunc()
 		}()
-
-		if outputStdout {
-			storeKind = string(model.StoreKindMock)
-		}
 
 		if len(assetIDs) > 0 {
 			runOnAssets(ctx, alloy)
@@ -108,7 +109,7 @@ func runOnAssets(ctx context.Context, alloy *app.App) {
 
 	for _, assetID := range assetIDs {
 		asset := &model.Asset{ID: assetID}
-		if err := c.CollectOutofband(ctx, asset); err != nil {
+		if err := c.CollectOutofband(ctx, asset, outputStdout); err != nil {
 			alloy.Logger.Warn(err)
 		}
 	}
@@ -119,6 +120,7 @@ func init() {
 	cmdOutofband.PersistentFlags().DurationVar(&interval, "collect-interval", app.DefaultCollectInterval, "interval sets the periodic data collection interval")
 	cmdOutofband.PersistentFlags().DurationVar(&splay, "collect-splay", app.DefaultCollectSplay, "splay adds jitter to the collection interval")
 	cmdOutofband.PersistentFlags().StringSliceVar(&assetIDs, "asset-ids", []string{}, "Collect inventory for the given comma separated list of asset IDs.")
+	cmdOutofband.PersistentFlags().StringVar(&csvFile, "csv-file", "assets.csv", "CSV file containing BMC credentials for assets.")
 	cmdOutofband.PersistentFlags().BoolVarP(&controllerMode, "controller-mode", "", false, "Run Alloy in a controller loop that periodically refreshes inventory, BIOS configuration data in the store and listens for events.")
 
 	rootCmd.AddCommand(cmdOutofband)

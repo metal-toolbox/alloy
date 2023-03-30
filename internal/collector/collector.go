@@ -2,6 +2,8 @@ package collector
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -68,7 +70,7 @@ func NewDeviceCollectorWithStore(ctx context.Context, repository store.Repositor
 }
 
 // CollectOutofband querys inventory and bios configuration data for a device through its BMC.
-func (c *DeviceCollector) CollectOutofband(ctx context.Context, asset *model.Asset) error {
+func (c *DeviceCollector) CollectOutofband(ctx context.Context, asset *model.Asset, outputStdout bool) error {
 	var errs error
 
 	// fetch existing asset information from inventory
@@ -114,6 +116,14 @@ func (c *DeviceCollector) CollectOutofband(ctx context.Context, asset *model.Ass
 		asset.Serial = existing.Serial
 	}
 
+	if outputStdout {
+		if err != nil {
+			return err
+		}
+
+		return c.prettyPrintJSON(asset)
+	}
+
 	if err := c.repository.AssetUpdate(ctx, asset); err != nil {
 		errs = multierror.Append(errs, err)
 
@@ -125,7 +135,7 @@ func (c *DeviceCollector) CollectOutofband(ctx context.Context, asset *model.Ass
 
 // CollectInband querys inventory and bios configuration data for a device through the host OS
 // this expects Alloy is running within the alloy-inband docker image based on ironlib.
-func (c *DeviceCollector) CollectInband(ctx context.Context, asset *model.Asset) error {
+func (c *DeviceCollector) CollectInband(ctx context.Context, asset *model.Asset, outputStdout bool) error {
 	var errs error
 
 	// fetch existing asset information from inventory
@@ -162,11 +172,30 @@ func (c *DeviceCollector) CollectInband(ctx context.Context, asset *model.Asset)
 
 	asset.Errors = make(map[string]string)
 
+	if outputStdout {
+		if err != nil {
+			return err
+		}
+
+		return c.prettyPrintJSON(asset)
+	}
+
 	if err := c.repository.AssetUpdate(ctx, asset); err != nil {
 		errs = multierror.Append(errs, err)
 
 		return errs
 	}
+
+	return nil
+}
+
+func (c *DeviceCollector) prettyPrintJSON(asset *model.Asset) error {
+	b, err := json.MarshalIndent(asset, "", " ")
+	if err != nil {
+		return err
+	}
+
+	fmt.Print(string(b))
 
 	return nil
 }
@@ -342,7 +371,7 @@ func (d *AssetIterCollector) collect(ctx context.Context, asset *model.Asset) {
 		},
 	).Debug("collecting data for asset")
 
-	if err := collector.CollectOutofband(ctx, asset); err != nil {
+	if err := collector.CollectOutofband(ctx, asset, false); err != nil {
 		d.logger.WithFields(logrus.Fields{
 			"assetID": asset.ID,
 			"err":     err.Error(),

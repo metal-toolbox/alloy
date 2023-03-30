@@ -89,7 +89,7 @@ func collectInband(ctx context.Context, cfg *app.Configuration, logger *logrus.L
 		return
 	}
 
-	if err := c.CollectInband(ctx, &model.Asset{ID: assetID}); err != nil {
+	if err := c.CollectInband(ctx, &model.Asset{ID: assetID}, outputStdout); err != nil {
 		logger.Error(err)
 		return
 	}

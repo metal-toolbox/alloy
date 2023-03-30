@@ -1,6 +1,6 @@
-### Alloy - hardware inventory collector.
+## Alloy
 
-Alloy collects and publishes server hardware inventory.
+Alloy collects and stores server hardware inventory and bios configuration data.
 
 Hardware inventory includes information on the hardware components present on a server,
 the firmware versions installed and the component health status.
@@ -9,16 +9,8 @@ Inventory collection with Alloy can be executed in two modes,
  - `In band` - the alloy command is executed on the target host OS.
  - `Out of band` - the alloy command is executed on a remote system that can reach the target BMC.
 
-The `outofband` command will cause Alloy to collect inventory from the server BMC.
 
-Assets are fetched from a store, this is defined by the by the `-store` flag,
-see [examples](examples/assets.csv). Accepted `-store` parameters are `csv`, `serverservice`, `mock`.
-
-When running with `--output-stdout` the collected data is printed to stdoud.
-
-For Alloy internals see [README-development.md](docs/README-development.md)
-
-##### build Alloy
+### Build
 
 a. build linux executable
 `make build-linux`
@@ -26,87 +18,63 @@ a. build linux executable
 b. build osx executable
 `make build-osx`
 
-##### sample commands
+#### Run - `outofband`
 
-###### Collect inventory out of band - through the host BMC
+Assets are fetched from a store, this is defined by the by the `-store` flag,
+the accepted `-store` flag parameters are `csv`, `serverservice`, `mock`.
 
-1. CSV file asset source with inventory published to `stdout`
-```
-./alloy outofband  --store csv \
-                   --csv-file examples/assets.csv \
-                   --output-stdout
-```
+for see [examples](examples/assets.csv).
 
-2. CSV file asset source with inventory published to `serverservice`
-```
-export ALLOY_SERVERSERVICE_AUTH_TOKEN="hunter2"
-export ALLOY_SERVERSERVICE_ENDPOINT="http://127.0.0.1:8000"
+##### `Serverservice` store
 
-./alloy outofband   csv \
-                   -csv-file examples/assets.csv \
-                   --store serverService
+```mermaid
+graph TD
+  a((Alloy))-- 1. read BMC creds -->ss[(Serverservice)]
+  a((Alloy))-- 3. store/update data -->ss[(Serverservice)]
+  a((Alloy))-- 2. collect data -->sa(ServerA BMC)
+  a((Alloy))-- 2. collect data -->sb(ServerB BMC)
 ```
 
+For this store, Alloy expects `serverservice` credentials and configuration,
+this can be set through env vars, for an example see [serverservice.env](./examples/serverservice.env)
 
-3. ServerService as an asset source with inventory published to `stdout`.
-
-In this case the asset id is passed to the `-asset-ids` flag.
-```
-export SERVERSERVICE_FACILITY_CODE="ld7"
-export SERVERSERVICE_AUTH_TOKEN="asd"
-export SERVERSERVICE_ENDPOINT="http://localhost:8000"
-
-alloy outofband -asset-source serverService \
-                -asset-ids fc167440-18d3-4455-b5ee-1c8e347b3f36
-                -publish-target stdout
-```
-
-3. ServerService as an asset source and target.
-
+1. Collect data for asset in `serverservice` inventory store, dump collected data to stdout.
 
 ```
-export SERVERSERVICE_FACILITY_CODE="ld7"
-export SERVERSERVICE_AUTH_TOKEN="asd"
-export SERVERSERVICE_ENDPOINT="http://localhost:8000"
-
-alloy outofband -asset-source serverService \
-                -publish-target serverService
+alloy outofband --store serverservice --asset-ids <Serverservice asset ID>  --output-stdout
 ```
 
-4. ServerService as an asset source and target, collect inventory at the given interval.
-
+2. Collect data for asset in `serverservice` inventory store, update `serverservice` with the collected information.
 ```
-SERVERSERVICE_FACILITY_CODE="ld7"
-SERVERSERVICE_AUTH_TOKEN="asd"
-SERVERSERVICE_ENDPOINT="http://localhost:8000"
-
-alloy outofband -asset-source serverService \
-                -publish-target serverService \
-                -asset-ids 023bd72d-f032-41fc-b7ca-3ef044cd33d5 \
-                -collect-interval 1h -trace
+alloy outofband --store serverservice --asset-ids <Serverservice asset ID>
 ```
 
-Sending a `SIGHUP` to the alloy process will force the collection to run at that instant.
+##### `CSV` store
 
-###### Collect inventory in band - through the host OS
+The CSV store is an sample inventory store implementation, that can be used to collect data on assets
+listed in the csv, without having to run `serverservice`.
 
-Inband inventory collection requires various OS based utilites provided by the `ghcr.io/metal-toolbox/alloy-inband` docker image.
+Note: this store is only supported for `outofband` commands.
 
-
-collect and publish to server service.
-
-The `-timeout` parameter ensures that the alloy utility will terminate if it exceeds
-the given timeout value. The default timeout is `10m`.
 ```
-docker run -e ALLOY_SERVERSERVICE_FACILITY_CODE="dc13" \
-           -e ALLOY_SERVERSERVICE_AUTH_TOKEN="asd"    \
-           -e ALLOY_SERVERSERVICE_ENDPOINT="http://localhost:8000"
-           -v /dev:/dev \
-           -v /proc:/proc \
-           -v /sys:/sys  --network host \
-           --privileged \
-           -ti ghcr.io/metal-toolbox/alloy-inband \
-           "alloy inband --timeout 600s  --asset-id f0c8e4ac-5cce-4370-93ff-bd3196fd3b9e --store serverService"
+alloy outofband --store csv --csv-file ./examples/assets.csv  --asset-ids 6b8a090c-39f0-4c45-89e1-041044d27402 --log-level trace --output-stdout
+```
+
+#### Run - `inband`
+
+Inband inventory collection requires various OS based utilites provided by [ironlib](https://github.com/metal-toolbox/ironlib) docker image.
+
+
+```mermaid
+graph TD
+  a((Alloy))-- 1. Lookup asset -->ss[(Serverservice)]
+  a((Alloy))-- 3. store/update data -->ss[(Serverservice)]
+  a((Alloy))-- 2. collect through host OS utils -->s(Server host OS)
+```
+
+
+```
+alloy inband --store serverservice --asset-id <serverservice server ID> --log-level trace
 ```
 
 ### Metrics and traces
@@ -125,33 +93,29 @@ export OTEL_EXPORTER_OTLP_INSECURE=true
 
 ```
 ❯ ./alloy
-USAGE
-  alloy [inband|outofband] [flags]
+server inventory and bios configuration collector
 
-SUBCOMMANDS
-  outofband  outofband command collects asset inventory out of band
-  inband     inband command runs on target hardware to collect inventory inband
+Usage:
+  alloy [command]
 
-FLAGS
-  -config-file ...     Alloy config file
-  -debug=false         Set logging to debug level.
-  -profile=false       Enable performance profile endpoint.
-  -publish-target ...  Publish collected inventory to [serverService|stdout]
-  -trace=false         Set logging to trace level.
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  inband      Collect inventory data, bios configuration data on the host
+  outofband   Collect inventory data, bios configuration data through the BMC
+  version     Print Alloy version along with dependency - ironlib, bmclib version information.
 
-flag: help requested
+Flags:
+      --config string      configuration file
+      --enable-pprof       Enable profiling endpoint at: localhost:9091
+  -h, --help               help for alloy
+      --log-level string   set logging level - debug, trace (default "info")
+      --output-stdout      Output collected data to STDOUT instead of the store
+      --store string       The inventory store kind (serverservice, csv) (default "mock")
+
+Use "alloy [command] --help" for more information about a command.
 ```
 
-##### Developing Alloy
+### Development
 
-Alloy now requires signed commits which are attested via [sigstore](https://www.sigstore.dev/).
-To enable that in your development machine, you need to install [gitsign](https://github.com/sigstore/gitsign)
-and enable commit signing with it for this repository:
-
-```bash
-cd /path/to/this/repository
-git config --local commit.gpgsign true  # Sign all commits
-git config --local tag.gpgsign true  # Sign all tags
-git config --local gpg.x509.program gitsign  # Use gitsign for signing
-git config --local gpg.format x509  # gitsign expects x509 args
-```
+For Alloy internals and development, checkout the [README-development.md](docs/README-development.md)
