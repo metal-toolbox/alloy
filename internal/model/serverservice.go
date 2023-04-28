@@ -49,8 +49,13 @@ func ServerComponentAttributeNS(appKind string) string {
 	return fmt.Sprintf("%s.%s.metadata", ServerServiceNSPrefix, appKind)
 }
 
-// ServerComponentVersionedAttributeNS returns the namespace server component versioned attributes are stored in.
-func ServerComponentVersionedAttributeNS(appKind string) string {
+// ServerComponentFirmwareNS returns the namespace server component firmware attributes are stored in.
+func ServerComponentFirmwareNS(appKind string) string {
+	return fmt.Sprintf("%s.%s.firmware", ServerServiceNSPrefix, appKind)
+}
+
+// ServerComponentStatusNS returns the namespace server component statuses are stored in.
+func ServerComponentStatusNS(appKind string) string {
 	return fmt.Sprintf("%s.%s.status", ServerServiceNSPrefix, appKind)
 }
 

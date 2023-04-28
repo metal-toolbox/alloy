@@ -12,6 +12,7 @@ import (
 	"github.com/metal-toolbox/alloy/internal/model"
 	r3diff "github.com/r3labs/diff/v3"
 	serverservice "go.hollow.sh/serverservice/pkg/api/v1"
+	"golang.org/x/exp/slices"
 )
 
 // createUpdateServerAttributes creates/updates the server serial, vendor, model attributes
@@ -351,7 +352,7 @@ func (h *serverServicePublisher) filterByAttributeNamespace(components []*server
 		components[cIdx].Attributes = attributes
 
 		for idx, versionedAttribute := range component.VersionedAttributes {
-			if versionedAttribute.Namespace == h.versionedAttributeNS {
+			if slices.Contains([]string{h.firmwareVersionedAttributeNS, h.statusVersionedAttributeNS}, versionedAttribute.Namespace) {
 				versionedAttributes = append(versionedAttributes, component.VersionedAttributes[idx])
 			}
 		}
