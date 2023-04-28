@@ -26,7 +26,7 @@ func assertComponentAttributes(t *testing.T, obj *serverservice.ServerComponent,
 func rawVersionAttributeFirmwareEquals(t *testing.T, expectedVersion string, rawVA []byte) bool {
 	t.Helper()
 
-	va := &versionedAttributes{}
+	va := &firmwareVersionedAttribute{}
 
 	err := json.Unmarshal(rawVA, va)
 	if err != nil {
@@ -47,7 +47,7 @@ func Test_ServerServiceChangeList(t *testing.T) {
 		expectedAdd     int
 		expectedRemove  int
 		slug            string // the component slug
-		vaUpdates       *versionedAttributes
+		vaUpdates       *firmwareVersionedAttribute
 		aUpdates        *attributes
 		addComponent    bool // adds a new component into the new slice before comparison
 		removeComponent bool // removes a component from the new slice
@@ -71,7 +71,7 @@ func Test_ServerServiceChangeList(t *testing.T) {
 			0,
 			0,
 			common.SlugBIOS,
-			&versionedAttributes{Firmware: &common.Firmware{Installed: "2.2.6"}},
+			&firmwareVersionedAttribute{Firmware: &common.Firmware{Installed: "2.2.6"}},
 			nil,
 			false,
 			false,
@@ -83,7 +83,7 @@ func Test_ServerServiceChangeList(t *testing.T) {
 			1,
 			0,
 			common.SlugNIC,
-			&versionedAttributes{Firmware: &common.Firmware{Installed: "1.3.3"}},
+			&firmwareVersionedAttribute{Firmware: &common.Firmware{Installed: "1.3.3"}},
 			nil,
 			true,
 			false,

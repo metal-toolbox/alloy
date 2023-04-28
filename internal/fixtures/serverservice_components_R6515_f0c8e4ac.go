@@ -79,7 +79,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "sh.hollow.alloy.outofband.status",
+					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -260,7 +260,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "sh.hollow.alloy.outofband.status",
+					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -447,7 +447,15 @@ var (
 						34,
 						125,
 						125,
-						44,
+						125,
+					},
+					Tally: 0,
+				},
+				serverservice.VersionedAttributes{
+					Namespace: "sh.hollow.alloy.outofband.status",
+					Data: json.RawMessage{
+						91,
+						123,
 						34,
 						115,
 						116,
@@ -491,6 +499,7 @@ var (
 						34,
 						125,
 						125,
+						93,
 					},
 					Tally: 0,
 				},
@@ -625,6 +634,7 @@ var (
 				serverservice.VersionedAttributes{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
+						91,
 						123,
 						34,
 						115,
@@ -669,6 +679,7 @@ var (
 						34,
 						125,
 						125,
+						93,
 					},
 					Tally: 0,
 				},
@@ -803,6 +814,7 @@ var (
 				serverservice.VersionedAttributes{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
+						91,
 						123,
 						34,
 						115,
@@ -847,6 +859,7 @@ var (
 						34,
 						125,
 						125,
+						93,
 					},
 					Tally: 0,
 				},
@@ -981,6 +994,7 @@ var (
 				serverservice.VersionedAttributes{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
+						91,
 						123,
 						34,
 						115,
@@ -1025,6 +1039,7 @@ var (
 						34,
 						125,
 						125,
+						93,
 					},
 					Tally: 0,
 				},
@@ -1159,6 +1174,7 @@ var (
 				serverservice.VersionedAttributes{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
+						91,
 						123,
 						34,
 						115,
@@ -1203,6 +1219,7 @@ var (
 						34,
 						125,
 						125,
+						93,
 					},
 					Tally: 0,
 				},
@@ -1337,6 +1354,7 @@ var (
 				serverservice.VersionedAttributes{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
+						91,
 						123,
 						34,
 						115,
@@ -1381,6 +1399,7 @@ var (
 						34,
 						125,
 						125,
+						93,
 					},
 					Tally: 0,
 				},
@@ -1515,6 +1534,7 @@ var (
 				serverservice.VersionedAttributes{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
+						91,
 						123,
 						34,
 						115,
@@ -1559,6 +1579,7 @@ var (
 						34,
 						125,
 						125,
+						93,
 					},
 					Tally: 0,
 				},
@@ -1693,6 +1714,7 @@ var (
 				serverservice.VersionedAttributes{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
+						91,
 						123,
 						34,
 						115,
@@ -1737,6 +1759,7 @@ var (
 						34,
 						125,
 						125,
+						93,
 					},
 					Tally: 0,
 				},
@@ -1871,6 +1894,7 @@ var (
 				serverservice.VersionedAttributes{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
+						91,
 						123,
 						34,
 						115,
@@ -1915,6 +1939,7 @@ var (
 						34,
 						125,
 						125,
+						93,
 					},
 					Tally: 0,
 				},
@@ -2005,9 +2030,8 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "sh.hollow.alloy.outofband.status",
+					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
-						91,
 						123,
 						34,
 						102,
@@ -2042,7 +2066,15 @@ var (
 						50,
 						34,
 						125,
-						44,
+						125,
+					},
+					Tally: 0,
+				},
+				serverservice.VersionedAttributes{
+					Namespace: "sh.hollow.alloy.outofband.status",
+					Data: json.RawMessage{
+						91,
+						123,
 						34,
 						115,
 						116,
@@ -2214,9 +2246,8 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "sh.hollow.alloy.outofband.status",
+					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
-						91,
 						123,
 						34,
 						102,
@@ -2366,7 +2397,15 @@ var (
 						34,
 						125,
 						125,
-						44,
+						125,
+					},
+					Tally: 0,
+				},
+				serverservice.VersionedAttributes{
+					Namespace: "sh.hollow.alloy.outofband.status",
+					Data: json.RawMessage{
+						91,
+						123,
 						34,
 						115,
 						116,
@@ -2723,7 +2762,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "sh.hollow.alloy.outofband.status",
+					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -2859,7 +2898,15 @@ var (
 						34,
 						125,
 						125,
-						44,
+						125,
+					},
+					Tally: 0,
+				},
+				serverservice.VersionedAttributes{
+					Namespace: "sh.hollow.alloy.outofband.status",
+					Data: json.RawMessage{
+						91,
+						123,
 						34,
 						115,
 						116,
@@ -2903,6 +2950,7 @@ var (
 						34,
 						125,
 						125,
+						93,
 					},
 					Tally: 0,
 				},
@@ -3215,7 +3263,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "sh.hollow.alloy.outofband.status",
+					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -3351,7 +3399,15 @@ var (
 						34,
 						125,
 						125,
-						44,
+						125,
+					},
+					Tally: 0,
+				},
+				serverservice.VersionedAttributes{
+					Namespace: "sh.hollow.alloy.outofband.status",
+					Data: json.RawMessage{
+						91,
+						123,
 						34,
 						115,
 						116,
@@ -3395,6 +3451,7 @@ var (
 						34,
 						125,
 						125,
+						93,
 					},
 					Tally: 0,
 				},
@@ -3678,7 +3735,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "sh.hollow.alloy.outofband.status",
+					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -3793,7 +3850,15 @@ var (
 						34,
 						125,
 						125,
-						44,
+						125,
+					},
+					Tally: 0,
+				},
+				serverservice.VersionedAttributes{
+					Namespace: "sh.hollow.alloy.outofband.status",
+					Data: json.RawMessage{
+						91,
+						123,
 						34,
 						115,
 						116,
@@ -3837,6 +3902,7 @@ var (
 						34,
 						125,
 						125,
+						93,
 					},
 					Tally: 0,
 				},
@@ -4120,7 +4186,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "sh.hollow.alloy.outofband.status",
+					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -4235,7 +4301,15 @@ var (
 						34,
 						125,
 						125,
-						44,
+						125,
+					},
+					Tally: 0,
+				},
+				serverservice.VersionedAttributes{
+					Namespace: "sh.hollow.alloy.outofband.status",
+					Data: json.RawMessage{
+						91,
+						123,
 						34,
 						115,
 						116,
@@ -4279,6 +4353,7 @@ var (
 						34,
 						125,
 						125,
+						93,
 					},
 					Tally: 0,
 				},
@@ -4356,7 +4431,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "sh.hollow.alloy.outofband.status",
+					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -4394,7 +4469,15 @@ var (
 						68,
 						34,
 						125,
-						44,
+						125,
+					},
+					Tally: 0,
+				},
+				serverservice.VersionedAttributes{
+					Namespace: "sh.hollow.alloy.outofband.status",
+					Data: json.RawMessage{
+						91,
+						123,
 						34,
 						115,
 						116,
@@ -4438,6 +4521,7 @@ var (
 						34,
 						125,
 						125,
+						93,
 					},
 					Tally: 0,
 				},
@@ -4515,7 +4599,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "sh.hollow.alloy.outofband.status",
+					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -4553,7 +4637,15 @@ var (
 						68,
 						34,
 						125,
-						44,
+						125,
+					},
+					Tally: 0,
+				},
+				serverservice.VersionedAttributes{
+					Namespace: "sh.hollow.alloy.outofband.status",
+					Data: json.RawMessage{
+						91,
+						123,
 						34,
 						115,
 						116,
@@ -4597,6 +4689,7 @@ var (
 						34,
 						125,
 						125,
+						93,
 					},
 					Tally: 0,
 				},
@@ -4810,7 +4903,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "sh.hollow.alloy.outofband.status",
+					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -4849,7 +4942,15 @@ var (
 						50,
 						34,
 						125,
-						44,
+						125,
+					},
+					Tally: 0,
+				},
+				serverservice.VersionedAttributes{
+					Namespace: "sh.hollow.alloy.outofband.status",
+					Data: json.RawMessage{
+						91,
+						123,
 						34,
 						115,
 						116,
@@ -4893,6 +4994,7 @@ var (
 						34,
 						125,
 						125,
+						93,
 					},
 					Tally: 0,
 				},
@@ -4942,7 +5044,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "sh.hollow.alloy.outofband.status",
+					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -5028,7 +5130,15 @@ var (
 						34,
 						125,
 						125,
-						44,
+						125,
+					},
+					Tally: 0,
+				},
+				serverservice.VersionedAttributes{
+					Namespace: "sh.hollow.alloy.outofband.status",
+					Data: json.RawMessage{
+						91,
+						123,
 						34,
 						115,
 						116,
@@ -5070,6 +5180,7 @@ var (
 						34,
 						125,
 						125,
+						93,
 					},
 					Tally: 0,
 				},
@@ -5121,7 +5232,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "sh.hollow.alloy.outofband.status",
+					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -5285,7 +5396,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "sh.hollow.alloy.outofband.status",
+					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -5388,7 +5499,15 @@ var (
 						34,
 						125,
 						125,
-						44,
+						125,
+					},
+					Tally: 0,
+				},
+				serverservice.VersionedAttributes{
+					Namespace: "sh.hollow.alloy.outofband.status",
+					Data: json.RawMessage{
+						91,
+						123,
 						34,
 						115,
 						116,
@@ -5432,6 +5551,7 @@ var (
 						34,
 						125,
 						125,
+						93,
 					},
 					Tally: 0,
 				},
@@ -5494,7 +5614,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "sh.hollow.alloy.outofband.status",
+					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -5583,7 +5703,15 @@ var (
 						34,
 						125,
 						125,
-						44,
+						125,
+					},
+					Tally: 0,
+				},
+				serverservice.VersionedAttributes{
+					Namespace: "sh.hollow.alloy.outofband.status",
+					Data: json.RawMessage{
+						91,
+						123,
 						34,
 						115,
 						116,
@@ -5627,6 +5755,7 @@ var (
 						34,
 						125,
 						125,
+						93,
 					},
 					Tally: 0,
 				},
@@ -5698,7 +5827,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "sh.hollow.alloy.outofband.status",
+					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -5714,7 +5843,15 @@ var (
 						58,
 						123,
 						125,
-						44,
+						125,
+					},
+					Tally: 0,
+				},
+				serverservice.VersionedAttributes{
+					Namespace: "sh.hollow.alloy.outofband.status",
+					Data: json.RawMessage{
+						91,
+						123,
 						34,
 						115,
 						116,
@@ -5756,6 +5893,7 @@ var (
 						34,
 						125,
 						125,
+						93,
 					},
 					Tally: 0,
 				},
@@ -5827,7 +5965,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "sh.hollow.alloy.outofband.status",
+					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -5843,7 +5981,15 @@ var (
 						58,
 						123,
 						125,
-						44,
+						125,
+					},
+					Tally: 0,
+				},
+				serverservice.VersionedAttributes{
+					Namespace: "sh.hollow.alloy.outofband.status",
+					Data: json.RawMessage{
+						91,
+						123,
 						34,
 						115,
 						116,
@@ -5885,6 +6031,7 @@ var (
 						34,
 						125,
 						125,
+						93,
 					},
 					Tally: 0,
 				},
@@ -6275,6 +6422,7 @@ var (
 				serverservice.VersionedAttributes{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
+						91,
 						123,
 						34,
 						115,
@@ -6319,6 +6467,7 @@ var (
 						34,
 						125,
 						125,
+						93,
 					},
 					Tally: 0,
 				},
@@ -6509,6 +6658,7 @@ var (
 				serverservice.VersionedAttributes{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
+						91,
 						123,
 						34,
 						115,
@@ -6553,6 +6703,7 @@ var (
 						34,
 						125,
 						125,
+						93,
 					},
 					Tally: 0,
 				},
@@ -6679,6 +6830,7 @@ var (
 				serverservice.VersionedAttributes{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
+						91,
 						123,
 						34,
 						115,
@@ -6723,6 +6875,7 @@ var (
 						34,
 						125,
 						125,
+						93,
 					},
 					Tally: 0,
 				},
