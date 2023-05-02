@@ -2,6 +2,7 @@ package serverservice
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/metal-toolbox/alloy/internal/model"
 )
@@ -39,6 +40,10 @@ const (
 
 // serverBIOSConfigNS returns the namespace server bios configuration are stored in.
 func serverBIOSConfigNS(appKind model.AppKind) string {
+	if biosConfigNS := os.Getenv("ALLOY_SERVERSERVICE_BIOS_CONFIG_NS"); biosConfigNS != "" {
+		return biosConfigNS
+	}
+
 	return fmt.Sprintf("%s.%s.bios_configuration", serverServiceNSPrefix, appKind)
 }
 
@@ -47,7 +52,12 @@ func serverComponentAttributeNS(appKind model.AppKind) string {
 	return fmt.Sprintf("%s.%s.metadata", serverServiceNSPrefix, appKind)
 }
 
-// serverComponentVersionedAttributeNS returns the namespace server component versioned attributes are stored in.
-func serverComponentVersionedAttributeNS(appKind model.AppKind) string {
+// serverComponentFirmwareNS returns the namespace server component firmware attributes are stored in.
+func serverComponentFirmwareNS(appKind model.AppKind) string {
+	return fmt.Sprintf("%s.%s.firmware", serverServiceNSPrefix, appKind)
+}
+
+// serverComponentStatusNS returns the namespace server component statuses are stored in.
+func serverComponentStatusNS(appKind model.AppKind) string {
 	return fmt.Sprintf("%s.%s.status", serverServiceNSPrefix, appKind)
 }

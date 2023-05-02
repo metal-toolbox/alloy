@@ -255,7 +255,6 @@ func (o *Queryor) bmcLogin(ctx context.Context, asset *model.Asset) (BMCQueryor,
 
 	if o.mockClient == nil {
 		bmc = newBMCClient(
-			ctx,
 			asset,
 			o.logger.Logger,
 		)
@@ -328,7 +327,7 @@ func (o *Queryor) bmcLogout(bmc BMCQueryor, asset *model.Asset) {
 }
 
 // newBMCClient initializes a bmclib client with the given credentials
-func newBMCClient(ctx context.Context, asset *model.Asset, l *logrus.Logger) *bmclibv2.Client {
+func newBMCClient(asset *model.Asset, l *logrus.Logger) *bmclibv2.Client {
 	logger := logrus.New()
 	logger.Formatter = l.Formatter
 

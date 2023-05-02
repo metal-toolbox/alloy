@@ -22,12 +22,12 @@ func (m *Mock) Kind() model.StoreKind {
 }
 
 // AssetByID returns one asset from the inventory identified by its identifier.
-func (m *Mock) AssetByID(ctx context.Context, assetID string, fetchBmcCredentials bool) (*model.Asset, error) {
+func (m *Mock) AssetByID(_ context.Context, assetID string, _ bool) (*model.Asset, error) {
 	return &model.Asset{ID: assetID}, nil
 }
 
 // AssetByOffsetLimit queries the inventory for the asset(s) at the given offset, limit values.
-func (m *Mock) AssetsByOffsetLimit(ctx context.Context, offset, limit int) (assets []*model.Asset, totalAssets int, err error) {
+func (m *Mock) AssetsByOffsetLimit(_ context.Context, offset, limit int) (assets []*model.Asset, totalAssets int, err error) {
 	var count int
 
 	if m.TotalAssets == 0 {
@@ -47,7 +47,7 @@ func (m *Mock) AssetsByOffsetLimit(ctx context.Context, offset, limit int) (asse
 }
 
 // AssetUpdate inserts and updates collected data for the asset in the store.
-func (m *Mock) AssetUpdate(ctx context.Context, asset *model.Asset) error {
+func (m *Mock) AssetUpdate(_ context.Context, _ *model.Asset) error {
 	m.UpdatedAssets++
 
 	return nil

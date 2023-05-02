@@ -157,7 +157,7 @@ func (a *App) envVarAppOverrides() {
 //
 // This can be replaced by the solution in https://github.com/spf13/viper/pull/1429
 // once that PR is merged.
-func (a *App) envBindVars(cfg *Configuration) error {
+func (a *App) envBindVars(_ *Configuration) error {
 	envKeysMap := map[string]interface{}{}
 	if err := mapstructure.Decode(a.Config, &envKeysMap); err != nil {
 		return err

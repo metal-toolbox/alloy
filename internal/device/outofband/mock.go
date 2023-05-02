@@ -20,21 +20,21 @@ func NewMockBmclibClient() *MockBmclib {
 	return &MockBmclib{}
 }
 
-func (m *MockBmclib) Open(ctx context.Context) error {
+func (m *MockBmclib) Open(_ context.Context) error {
 	m.connOpened = true
 	return nil
 }
 
-func (m *MockBmclib) Close(ctx context.Context) error {
+func (m *MockBmclib) Close(_ context.Context) error {
 	m.connClosed = true
 	return nil
 }
 
-func (m *MockBmclib) Inventory(ctx context.Context) (*common.Device, error) {
+func (m *MockBmclib) Inventory(_ context.Context) (*common.Device, error) {
 	return &common.Device{Common: common.Common{Vendor: "foo", Model: "bar"}}, nil
 }
 
-func (m *MockBmclib) GetBiosConfiguration(ctx context.Context) (biosConfig map[string]string, err error) {
+func (m *MockBmclib) GetBiosConfiguration(_ context.Context) (biosConfig map[string]string, err error) {
 	biosConfig = make(map[string]string)
 	biosConfig["foo"] = "bar"
 

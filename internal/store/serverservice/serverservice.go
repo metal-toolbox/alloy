@@ -37,14 +37,15 @@ func init() {
 // Store is an asset inventory store
 type Store struct {
 	*serverserviceapi.Client
-	logger               *logrus.Entry
-	config               *app.ServerserviceOptions
-	slugs                map[string]*serverserviceapi.ServerComponentType
-	firmwares            map[string][]*serverserviceapi.ComponentFirmwareVersion
-	appKind              model.AppKind
-	attributeNS          string
-	versionedAttributeNS string
-	facilityCode         string
+	logger                       *logrus.Entry
+	config                       *app.ServerserviceOptions
+	slugs                        map[string]*serverserviceapi.ServerComponentType
+	firmwares                    map[string][]*serverserviceapi.ComponentFirmwareVersion
+	appKind                      model.AppKind
+	attributeNS                  string
+	firmwareVersionedAttributeNS string
+	statusVersionedAttributeNS   string
+	facilityCode                 string
 }
 
 // NewStore returns a serverservice store queryor to lookup and publish assets to, from the store.
@@ -60,15 +61,16 @@ func New(ctx context.Context, appKind model.AppKind, cfg *app.ServerserviceOptio
 	}
 
 	s := &Store{
-		Client:               apiclient,
-		appKind:              appKind,
-		logger:               loggerEntry,
-		config:               cfg,
-		slugs:                make(map[string]*serverserviceapi.ServerComponentType),
-		firmwares:            make(map[string][]*serverserviceapi.ComponentFirmwareVersion),
-		attributeNS:          serverComponentAttributeNS(appKind),
-		versionedAttributeNS: serverComponentVersionedAttributeNS(appKind),
-		facilityCode:         cfg.FacilityCode,
+		Client:                       apiclient,
+		appKind:                      appKind,
+		logger:                       loggerEntry,
+		config:                       cfg,
+		slugs:                        make(map[string]*serverserviceapi.ServerComponentType),
+		firmwares:                    make(map[string][]*serverserviceapi.ComponentFirmwareVersion),
+		attributeNS:                  serverComponentAttributeNS(appKind),
+		firmwareVersionedAttributeNS: serverComponentFirmwareNS(appKind),
+		statusVersionedAttributeNS:   serverComponentStatusNS(appKind),
+		facilityCode:                 cfg.FacilityCode,
 	}
 
 	// add component types if they don't exist
@@ -458,7 +460,7 @@ func (r *Store) createUpdateServerComponents(ctx context.Context, serverID uuid.
 // diffFilter is a filter passed to the r3 diff filter method for comparing structs
 //
 // nolint:gocritic // r3diff requires the field attribute to be passed by value
-func diffFilter(path []string, parent reflect.Type, field reflect.StructField) bool {
+func diffFilter(_ []string, _ reflect.Type, field reflect.StructField) bool {
 	switch field.Name {
 	case "CreatedAt", "UpdatedAt", "LastReportedAt":
 		return false

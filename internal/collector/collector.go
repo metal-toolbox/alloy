@@ -56,7 +56,7 @@ func NewDeviceCollector(ctx context.Context, storeKind model.StoreKind, appKind 
 }
 
 // NewDeviceCollectorWithStore is a constructor method that accepts an initialized store repository - to return a inventory, bios configuration data collector.
-func NewDeviceCollectorWithStore(ctx context.Context, repository store.Repository, appKind model.AppKind, logger *logrus.Logger) (*DeviceCollector, error) {
+func NewDeviceCollectorWithStore(repository store.Repository, appKind model.AppKind, logger *logrus.Logger) (*DeviceCollector, error) {
 	queryor, err := device.NewQueryor(appKind, logger)
 	if err != nil {
 		return nil, err
@@ -244,7 +244,6 @@ func NewAssetIterCollector(
 
 // NewAssetIterCollectorWithStore is a constructor method that accepts an initialized store to return an AssetIterCollector.
 func NewAssetIterCollectorWithStore(
-	ctx context.Context,
 	appKind model.AppKind,
 	repository store.Repository,
 	concurrency int32,
@@ -388,7 +387,7 @@ func (d *AssetIterCollector) collect(ctx context.Context, asset *model.Asset) {
 
 // throttle allows this collector to to 'push back' on the asset iterator
 // to throttle assets being sent based on the routines dispatched and the configured concurrency value.
-func (d *AssetIterCollector) throttle(span trace.Span, pauser *Pauser, dispatched int32) {
+func (d *AssetIterCollector) throttle(_ trace.Span, pauser *Pauser, dispatched int32) {
 	// measure tasks waiting queue size
 	metrics.TaskQueueSize.With(metrics.StageLabelCollector).Set(float64(dispatched))
 

@@ -30,7 +30,7 @@ type Store struct {
 }
 
 // New returns a new csv asset getter to retrieve asset information from a CSV file for inventory collection.
-func New(ctx context.Context, csvFile string, logger *logrus.Logger) (*Store, error) {
+func New(_ context.Context, csvFile string, logger *logrus.Logger) (*Store, error) {
 	fh, err := os.Open(csvFile)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func (c *Store) Kind() model.StoreKind {
 }
 
 // AssetByID returns one asset from the inventory identified by its identifier.
-func (c *Store) AssetByID(ctx context.Context, assetID string, fetchBmcCredentials bool) (*model.Asset, error) {
+func (c *Store) AssetByID(ctx context.Context, assetID string, _ bool) (*model.Asset, error) {
 	assets, err := c.loadAssets(ctx, c.csvReader)
 	if err != nil {
 		return nil, err
@@ -63,16 +63,16 @@ func (c *Store) AssetByID(ctx context.Context, assetID string, fetchBmcCredentia
 	return nil, errors.Wrap(ErrAssetNotFound, assetID)
 }
 
-func (c *Store) AssetsByOffsetLimit(ctx context.Context, offset, limit int) (assets []*model.Asset, totalAssets int, err error) {
+func (c *Store) AssetsByOffsetLimit(_ context.Context, _, _ int) (assets []*model.Asset, totalAssets int, err error) {
 	return nil, 0, nil
 }
 
-func (c *Store) AssetUpdate(ctx context.Context, asset *model.Asset) error {
+func (c *Store) AssetUpdate(_ context.Context, _ *model.Asset) error {
 	return nil
 }
 
 // loadAssets returns a slice of assets from the given csv io.Reader
-func (c *Store) loadAssets(ctx context.Context, csvReader io.ReadCloser) ([]*model.Asset, error) {
+func (c *Store) loadAssets(_ context.Context, csvReader io.ReadCloser) ([]*model.Asset, error) {
 	records, err := csv.NewReader(csvReader).ReadAll()
 	if err != nil {
 		return nil, err

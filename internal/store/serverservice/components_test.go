@@ -44,7 +44,8 @@ func Test_ToComponentSlice(t *testing.T) {
 	p.logger = logrus.NewEntry(logrus.New())
 	p.slugs = fixtures.ServerServiceSlugMap()
 	p.attributeNS = serverComponentAttributeNS(model.AppKindOutOfBand)
-	p.versionedAttributeNS = serverComponentVersionedAttributeNS(model.AppKindOutOfBand)
+	p.firmwareVersionedAttributeNS = serverComponentFirmwareNS(model.AppKindOutOfBand)
+	p.statusVersionedAttributeNS = serverComponentStatusNS(model.AppKindOutOfBand)
 
 	testcases := []struct {
 		name     string
