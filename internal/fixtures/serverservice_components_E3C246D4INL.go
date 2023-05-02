@@ -92,7 +92,7 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "sh.hollow.alloy.outofband.status",
+					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
 						34,
@@ -894,9 +894,8 @@ var (
 			},
 			VersionedAttributes: []serverservice.VersionedAttributes{
 				serverservice.VersionedAttributes{
-					Namespace: "sh.hollow.alloy.outofband.status",
+					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
-						91,
 						123,
 						34,
 						102,
@@ -934,7 +933,6 @@ var (
 						34,
 						125,
 						125,
-						93,
 					},
 					Tally: 0,
 				},

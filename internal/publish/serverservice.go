@@ -48,17 +48,18 @@ func init() {
 
 // serverServicePublisher publishes asset inventory to serverService
 type serverServicePublisher struct {
-	logger               *logrus.Entry
-	config               *model.Config
-	syncWg               *sync.WaitGroup
-	collectorCh          <-chan *model.Asset
-	termCh               <-chan os.Signal
-	workers              *workerpool.WorkerPool
-	client               *serverservice.Client
-	slugs                map[string]*serverservice.ServerComponentType
-	firmwares            map[string][]*serverservice.ComponentFirmwareVersion
-	attributeNS          string
-	versionedAttributeNS string
+	logger                       *logrus.Entry
+	config                       *model.Config
+	syncWg                       *sync.WaitGroup
+	collectorCh                  <-chan *model.Asset
+	termCh                       <-chan os.Signal
+	workers                      *workerpool.WorkerPool
+	client                       *serverservice.Client
+	slugs                        map[string]*serverservice.ServerComponentType
+	firmwares                    map[string][]*serverservice.ComponentFirmwareVersion
+	attributeNS                  string
+	firmwareVersionedAttributeNS string
+	statusVersionedAttributeNS   string
 }
 
 // NewServerServicePublisher returns a serverService publisher to submit inventory data.
@@ -71,17 +72,18 @@ func NewServerServicePublisher(ctx context.Context, alloy *app.App) (Publisher, 
 	}
 
 	p := &serverServicePublisher{
-		logger:               logger,
-		config:               alloy.Config,
-		syncWg:               alloy.SyncWg,
-		collectorCh:          alloy.CollectorCh,
-		termCh:               alloy.TermCh,
-		workers:              workerpool.New(concurrency),
-		client:               client,
-		slugs:                make(map[string]*serverservice.ServerComponentType),
-		firmwares:            make(map[string][]*serverservice.ComponentFirmwareVersion),
-		attributeNS:          model.ServerComponentAttributeNS(alloy.Config.AppKind),
-		versionedAttributeNS: model.ServerComponentVersionedAttributeNS(alloy.Config.AppKind),
+		logger:                       logger,
+		config:                       alloy.Config,
+		syncWg:                       alloy.SyncWg,
+		collectorCh:                  alloy.CollectorCh,
+		termCh:                       alloy.TermCh,
+		workers:                      workerpool.New(concurrency),
+		client:                       client,
+		slugs:                        make(map[string]*serverservice.ServerComponentType),
+		firmwares:                    make(map[string][]*serverservice.ComponentFirmwareVersion),
+		attributeNS:                  model.ServerComponentAttributeNS(alloy.Config.AppKind),
+		firmwareVersionedAttributeNS: model.ServerComponentFirmwareNS(alloy.Config.AppKind),
+		statusVersionedAttributeNS:   model.ServerComponentStatusNS(alloy.Config.AppKind),
 	}
 
 	return p, nil
