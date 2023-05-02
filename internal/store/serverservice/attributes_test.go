@@ -42,14 +42,13 @@ func testStoreInstance(t *testing.T, mockURL string) *Store {
 		t.Fatal(err)
 	}
 
-	loggerEntry := app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher"}, logrus.New())
-
 	return &Store{
-		logger:               loggerEntry,
-		Client:               mockClient,
-		slugs:                fixtures.ServerServiceSlugMap(),
-		attributeNS:          serverComponentAttributeNS(model.AppKindOutOfBand),
-		versionedAttributeNS: serverComponentVersionedAttributeNS(model.AppKindOutOfBand),
+		logger:                       app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher"}, logrus.New()),
+		slugs:                        fixtures.ServerServiceSlugMap(),
+		Client:                       mockClient,
+		attributeNS:                  serverComponentAttributeNS(model.AppKindOutOfBand),
+		firmwareVersionedAttributeNS: serverComponentFirmwareNS(model.AppKindOutOfBand),
+		statusVersionedAttributeNS:   serverComponentStatusNS(model.AppKindOutOfBand),
 	}
 }
 
@@ -145,7 +144,7 @@ func Test_DiffVersionedAttributes(t *testing.T) {
 }
 
 // addVA
-func addcomponent(sc []*serverserviceapi.ServerComponent, t *testing.T, slug string, va *versionedAttributes) []*serverserviceapi.ServerComponent {
+func addcomponent(sc []*serverserviceapi.ServerComponent, t *testing.T, slug string, va *firmwareVersionedAttribute) []*serverserviceapi.ServerComponent {
 	t.Helper()
 
 	data, err := json.Marshal(va)
@@ -170,7 +169,7 @@ func addcomponent(sc []*serverserviceapi.ServerComponent, t *testing.T, slug str
 	return sc
 }
 
-func updateComponentVA(sc []*serverserviceapi.ServerComponent, t *testing.T, slug string, va *versionedAttributes) []*serverserviceapi.ServerComponent {
+func updateComponentVA(sc []*serverserviceapi.ServerComponent, t *testing.T, slug string, va *firmwareVersionedAttribute) []*serverserviceapi.ServerComponent {
 	t.Helper()
 
 	var component *serverserviceapi.ServerComponent
@@ -186,7 +185,7 @@ func updateComponentVA(sc []*serverserviceapi.ServerComponent, t *testing.T, slu
 		t.Fatal("component with slug not found:" + slug)
 	}
 
-	newVA := newVersionAttributes(t, component.VersionedAttributes[0].Data, va.Firmware.Installed)
+	newVA := newFirmwareVA(t, component.VersionedAttributes[0].Data, va.Firmware.Installed)
 
 	newVAData, err := json.Marshal(newVA)
 	if err != nil {
@@ -198,10 +197,10 @@ func updateComponentVA(sc []*serverserviceapi.ServerComponent, t *testing.T, slu
 	return sc
 }
 
-func newVersionAttributes(t *testing.T, data json.RawMessage, value string) *versionedAttributes {
+func newFirmwareVA(t *testing.T, data json.RawMessage, value string) *firmwareVersionedAttribute {
 	t.Helper()
 
-	va := &versionedAttributes{}
+	va := &firmwareVersionedAttribute{}
 
 	err := json.Unmarshal(data, va)
 	if err != nil {
@@ -220,16 +219,16 @@ func Test_filterByAttributeNamespace(t *testing.T) {
 		),
 	)
 
-	// the fixture is expected to contain atleast 2 components with a attribute and versioned attribute
+	// the fixture is expected to contain atleast 2 components with 1 attribute and 2 versioned attributes (status and firmware)
 	assert.Equal(t, 1, len(components[0].Attributes))
 	assert.Equal(t, 1, len(components[0].VersionedAttributes))
 	assert.Equal(t, 1, len(components[1].Attributes))
-	assert.Equal(t, 1, len(components[1].VersionedAttributes))
+	assert.Equal(t, 2, len(components[1].VersionedAttributes))
 
 	// change namespace on component[1] (bios) attributes so the component is filtered
 	components[1].Attributes[0].Namespace = "some.ns"
 
-	// change namespace on component[1] (bmc) versioned attributes so the component is filtered
+	// change namespace on component[0] (bmc) versioned attributes so the component is filtered
 	components[0].VersionedAttributes[0].Namespace = "some.ns"
 
 	// init publisher
@@ -240,7 +239,7 @@ func Test_filterByAttributeNamespace(t *testing.T) {
 
 	// expect component with set namepace to be included
 	assert.Equal(t, 1, len(components[0].Attributes))
-	assert.Equal(t, 1, len(components[1].VersionedAttributes))
+	assert.Equal(t, 2, len(components[1].VersionedAttributes))
 
 	// components with unexpected namespaces are excluded
 	assert.Equal(t, 0, len(components[1].Attributes))

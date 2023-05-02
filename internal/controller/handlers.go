@@ -28,7 +28,6 @@ func (c *Controller) iterCollectOutofband(ctx context.Context) {
 	defer func() { c.iterCollectActive = false }()
 
 	iterCollector, err := collector.NewAssetIterCollectorWithStore(
-		ctx,
 		model.AppKindOutOfBand,
 		c.repository,
 		// int32(c.cfg.Concurrency),TODO (joel): revert after testing
@@ -89,7 +88,6 @@ func (c *Controller) collectOutofbandForTask(ctx context.Context, task *Task) {
 	startTS := time.Now()
 	// init OOB collector
 	oobcollector, err := collector.NewDeviceCollectorWithStore(
-		ctx,
 		c.repository,
 		model.AppKindOutOfBand,
 		c.logger,

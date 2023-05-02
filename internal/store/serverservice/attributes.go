@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 	r3diff "github.com/r3labs/diff/v3"
 	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
+	"golang.org/x/exp/slices"
 )
 
 // createUpdateServerAttributes creates/updates the server serial, vendor, model attributes
@@ -341,7 +342,7 @@ func (r *Store) filterByAttributeNamespace(components []*serverserviceapi.Server
 		components[cIdx].Attributes = attributes
 
 		for idx, versionedAttribute := range component.VersionedAttributes {
-			if versionedAttribute.Namespace == r.versionedAttributeNS {
+			if slices.Contains([]string{r.firmwareVersionedAttributeNS, r.statusVersionedAttributeNS}, versionedAttribute.Namespace) {
 				versionedAttributes = append(versionedAttributes, component.VersionedAttributes[idx])
 			}
 		}

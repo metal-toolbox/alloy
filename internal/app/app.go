@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"os"
 	"os/signal"
 	"sync"
@@ -39,7 +38,7 @@ type App struct {
 }
 
 // New returns a new alloy application object with the configuration loaded
-func New(ctx context.Context, appKind model.AppKind, storeKind model.StoreKind, cfgFile string, loglevel model.LogLevel) (app *App, err error) {
+func New(appKind model.AppKind, storeKind model.StoreKind, cfgFile string, loglevel model.LogLevel) (app *App, err error) {
 	switch appKind {
 	case model.AppKindInband, model.AppKindOutOfBand:
 	default:

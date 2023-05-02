@@ -154,12 +154,20 @@ func (r *Store) gpus(deviceVendor string, gpus []*common.GPU) []*serverserviceap
 			},
 		)
 
-		r.setVersionedAttributes(
+		r.setFirmwareVA(
 			deviceVendor,
 			sc,
-			&versionedAttributes{
+			&firmwareVersionedAttribute{
 				Firmware: c.Firmware,
-				Status:   c.Status,
+			},
+		)
+
+		r.setStatusVA(
+			sc,
+			[]*statusVersionedAttribute{
+				{
+					Status: c.Status,
+				},
 			},
 		)
 
@@ -198,12 +206,20 @@ func (r *Store) cplds(deviceVendor string, cplds []*common.CPLD) []*serverservic
 			},
 		)
 
-		r.setVersionedAttributes(
+		r.setFirmwareVA(
 			deviceVendor,
 			sc,
-			&versionedAttributes{
+			&firmwareVersionedAttribute{
 				Firmware: c.Firmware,
-				Status:   c.Status,
+			},
+		)
+
+		r.setStatusVA(
+			sc,
+			[]*statusVersionedAttribute{
+				{
+					Status: c.Status,
+				},
 			},
 		)
 
@@ -243,12 +259,20 @@ func (r *Store) tpms(deviceVendor string, tpms []*common.TPM) []*serverserviceap
 			},
 		)
 
-		r.setVersionedAttributes(
+		r.setFirmwareVA(
 			deviceVendor,
 			sc,
-			&versionedAttributes{
+			&firmwareVersionedAttribute{
 				Firmware: c.Firmware,
-				Status:   c.Status,
+			},
+		)
+
+		r.setStatusVA(
+			sc,
+			[]*statusVersionedAttribute{
+				{
+					Status: c.Status,
+				},
 			},
 		)
 
@@ -293,12 +317,20 @@ func (r *Store) cpus(deviceVendor string, cpus []*common.CPU) []*serverserviceap
 			},
 		)
 
-		r.setVersionedAttributes(
+		r.setFirmwareVA(
 			deviceVendor,
 			sc,
-			&versionedAttributes{
+			&firmwareVersionedAttribute{
 				Firmware: c.Firmware,
-				Status:   c.Status,
+			},
+		)
+
+		r.setStatusVA(
+			sc,
+			[]*statusVersionedAttribute{
+				{
+					Status: c.Status,
+				},
 			},
 		)
 
@@ -356,12 +388,20 @@ func (r *Store) storageControllers(deviceVendor string, controllers []*common.St
 			},
 		)
 
-		r.setVersionedAttributes(
+		r.setFirmwareVA(
 			deviceVendor,
 			sc,
-			&versionedAttributes{
+			&firmwareVersionedAttribute{
 				Firmware: c.Firmware,
-				Status:   c.Status,
+			},
+		)
+
+		r.setStatusVA(
+			sc,
+			[]*statusVersionedAttribute{
+				{
+					Status: c.Status,
+				},
 			},
 		)
 
@@ -408,12 +448,20 @@ func (r *Store) psus(deviceVendor string, psus []*common.PSU) []*serverserviceap
 			},
 		)
 
-		r.setVersionedAttributes(
+		r.setFirmwareVA(
 			deviceVendor,
 			sc,
-			&versionedAttributes{
+			&firmwareVersionedAttribute{
 				Firmware: c.Firmware,
-				Status:   c.Status,
+			},
+		)
+
+		r.setStatusVA(
+			sc,
+			[]*statusVersionedAttribute{
+				{
+					Status: c.Status,
+				},
 			},
 		)
 
@@ -465,12 +513,20 @@ func (r *Store) drives(deviceVendor string, drives []*common.Drive) []*serverser
 			},
 		)
 
-		r.setVersionedAttributes(
+		r.setFirmwareVA(
 			deviceVendor,
 			sc,
-			&versionedAttributes{
+			&firmwareVersionedAttribute{
 				Firmware: c.Firmware,
-				Status:   c.Status,
+			},
+		)
+
+		r.setStatusVA(
+			sc,
+			[]*statusVersionedAttribute{
+				{
+					Status: c.Status,
+				},
 			},
 		)
 
@@ -508,12 +564,18 @@ func (r *Store) nics(deviceVendor string, nics []*common.NIC) []*serverserviceap
 		nicPortAttrs := []*attributes{}
 
 		// include NIC firmware attributes
-		//
-		// NIC port attributes are populated below.
-		versionedAttrs := []*versionedAttributes{
-			{
+		r.setFirmwareVA(
+			deviceVendor,
+			sc,
+			&firmwareVersionedAttribute{
 				Firmware: c.Firmware,
-				Status:   c.Status,
+			},
+		)
+
+		// NIC port attributes are populated below.
+		statusesVA := []*statusVersionedAttribute{
+			{
+				Status: c.Status,
 			},
 		}
 
@@ -536,7 +598,7 @@ func (r *Store) nics(deviceVendor string, nics []*common.NIC) []*serverserviceap
 				continue
 			}
 			// Store the NIC Port status
-			versionedAttrs = append(versionedAttrs, &versionedAttributes{
+			statusesVA = append(statusesVA, &statusVersionedAttribute{
 				NicPortStatus: &nicPortStatus{
 					ID:                   p.ID,
 					MTUSize:              p.MTUSize,
@@ -550,7 +612,7 @@ func (r *Store) nics(deviceVendor string, nics []*common.NIC) []*serverserviceap
 		}
 
 		r.setAttributesList(sc, nicPortAttrs)
-		r.setVersionedAttributesList(deviceVendor, sc, versionedAttrs)
+		r.setStatusVA(sc, statusesVA)
 
 		components = append(components, sc)
 	}
@@ -602,12 +664,20 @@ func (r *Store) dimms(deviceVendor string, dimms []*common.Memory) []*serverserv
 			},
 		)
 
-		r.setVersionedAttributes(
+		r.setFirmwareVA(
 			deviceVendor,
 			sc,
-			&versionedAttributes{
+			&firmwareVersionedAttribute{
 				Firmware: c.Firmware,
-				Status:   c.Status,
+			},
+		)
+
+		r.setStatusVA(
+			sc,
+			[]*statusVersionedAttribute{
+				{
+					Status: c.Status,
+				},
 			},
 		)
 
@@ -645,12 +715,20 @@ func (r *Store) mainboard(deviceVendor string, c *common.Mainboard) *serverservi
 		},
 	)
 
-	r.setVersionedAttributes(
+	r.setFirmwareVA(
 		deviceVendor,
 		sc,
-		&versionedAttributes{
+		&firmwareVersionedAttribute{
 			Firmware: c.Firmware,
-			Status:   c.Status,
+		},
+	)
+
+	r.setStatusVA(
+		sc,
+		[]*statusVersionedAttribute{
+			{
+				Status: c.Status,
+			},
 		},
 	)
 
@@ -689,12 +767,20 @@ func (r *Store) enclosures(deviceVendor string, enclosures []*common.Enclosure) 
 			},
 		)
 
-		r.setVersionedAttributes(
+		r.setFirmwareVA(
 			deviceVendor,
 			sc,
-			&versionedAttributes{
+			&firmwareVersionedAttribute{
 				Firmware: c.Firmware,
-				Status:   c.Status,
+			},
+		)
+
+		r.setStatusVA(
+			sc,
+			[]*statusVersionedAttribute{
+				{
+					Status: c.Status,
+				},
 			},
 		)
 
@@ -731,12 +817,20 @@ func (r *Store) bmc(deviceVendor string, c *common.BMC) *serverserviceapi.Server
 		},
 	)
 
-	r.setVersionedAttributes(
+	r.setFirmwareVA(
 		deviceVendor,
 		sc,
-		&versionedAttributes{
+		&firmwareVersionedAttribute{
 			Firmware: c.Firmware,
-			Status:   c.Status,
+		},
+	)
+
+	r.setStatusVA(
+		sc,
+		[]*statusVersionedAttribute{
+			{
+				Status: c.Status,
+			},
 		},
 	)
 
@@ -772,12 +866,20 @@ func (r *Store) bios(deviceVendor string, c *common.BIOS) *serverserviceapi.Serv
 		},
 	)
 
-	r.setVersionedAttributes(
+	r.setFirmwareVA(
 		deviceVendor,
 		sc,
-		&versionedAttributes{
+		&firmwareVersionedAttribute{
 			Firmware: c.Firmware,
-			Status:   c.Status,
+		},
+	)
+
+	r.setStatusVA(
+		sc,
+		[]*statusVersionedAttribute{
+			{
+				Status: c.Status,
+			},
 		},
 	)
 
@@ -835,14 +937,18 @@ type nicPortStatus struct {
 	AutoSpeedNegotiation bool   `json:"autospeednegotiation,omitempty"`
 }
 
-// versionedAttributes are component attributes to be versioned in server service
-type versionedAttributes struct {
-	Firmware      *common.Firmware `json:"firmware,omitempty"`
-	Status        *common.Status   `json:"status,omitempty"`
-	NicPortStatus *nicPortStatus   `json:"nic_port_status,omitempty"`
-	UUID          *uuid.UUID       `json:"uuid,omitempty"` // UUID references firmware UUID identified in serverservice based on component/device attributes.
-	SmartStatus   string           `json:"smart_status,omitempty"`
-	Vendor        string           `json:"vendor,omitempty"`
+// firmwareVersionedAttribute holds component firmware information.
+type firmwareVersionedAttribute struct {
+	Firmware *common.Firmware `json:"firmware,omitempty"`
+	UUID     *uuid.UUID       `json:"uuid,omitempty"` // UUID references firmware UUID identified in serverservice based on component/device attributes.
+	Vendor   string           `json:"vendor,omitempty"`
+}
+
+// statusVersionedAttribute holds component status information.
+type statusVersionedAttribute struct {
+	Status        *common.Status `json:"status,omitempty"`
+	NicPortStatus *nicPortStatus `json:"nic_port_status,omitempty"`
+	SmartStatus   string         `json:"smart_status,omitempty"`
 }
 
 // setAttributesList updates the given component with the given list of attributes.
@@ -941,27 +1047,19 @@ func (r *Store) setAttributes(component *serverserviceapi.ServerComponent, attr 
 	)
 }
 
-// setVersionedAttributesList updates the given component with given list of versioned attributes.
+// setStatusVA updates the given component with given list of statusVersionedAttributes.
 //
 // versioned attributes per component in serverservice have a unique constraint on
-// the component ID, namespace, created_at values.
-// If this method is called twice for the same component, namespace, that versioned attribute will be ignored.
-func (r *Store) setVersionedAttributesList(deviceVendor string, component *serverserviceapi.ServerComponent, vattrs []*versionedAttributes) {
-	if len(vattrs) == 0 {
+// the component ID, namespace values.
+//
+// so if this method is called twice for the same component, namespace, that statusVersionedAttribute will be ignored.
+func (r *Store) setStatusVA(component *serverserviceapi.ServerComponent, statusesVA []*statusVersionedAttribute) {
+	if len(statusesVA) == 0 {
 		return
 	}
 
-	// enrich firmware data
-	for _, vattr := range vattrs {
-		if vattr.Firmware == nil {
-			continue
-		}
-
-		r.enrichFirmwareData(deviceVendor, component.Vendor, vattr)
-	}
-
 	// convert versioned attributes to raw json
-	data, err := json.Marshal(vattrs)
+	data, err := json.Marshal(statusesVA)
 	if err != nil {
 		r.logger.WithFields(
 			logrus.Fields{
@@ -971,70 +1069,8 @@ func (r *Store) setVersionedAttributesList(deviceVendor string, component *serve
 			}).Warn("error in conversion of versioned attributes to raw data")
 	}
 
-	// skip empty json data containing just the braces `{}`
-	min := 2
-	if len(data) == min {
-		return
-	}
-
-	if component.VersionedAttributes == nil {
-		component.VersionedAttributes = []serverserviceapi.VersionedAttributes{}
-	} else {
-		// versioned attributes per component in serverservice have a unique constraint on
-		// the component ID, namespace, created_at values.
-		//
-		// so here we ignore the new attribute with the same namespace, if one already exists.
-		for _, existingVA := range component.VersionedAttributes {
-			if existingVA.Namespace != r.versionedAttributeNS {
-				continue
-			}
-
-			r.logger.WithFields(
-				logrus.Fields{
-					"slug":      component.ComponentTypeSlug,
-					"kind":      fmt.Sprintf("%T", data),
-					"namespace": r.versionedAttributeNS,
-				}).Warn("duplicate versioned attribute on component dropped - this was unexpected.")
-
-			return
-		}
-	}
-
-	component.VersionedAttributes = append(
-		component.VersionedAttributes,
-		serverserviceapi.VersionedAttributes{
-			Namespace: r.versionedAttributeNS,
-			Data:      data,
-		},
-	)
-}
-
-// setVersionedAttributes updates a component with single versioned attribute.
-//
-// versioned attributes per component in serverservice have a unique constraint on
-// the component ID, namespace, created_at values.
-//
-// so if this method is called twice for the same component, namespace, that versioned attribute will be ignored,
-// the caller should invoke setVersionedAttributesList() instead.
-func (r *Store) setVersionedAttributes(deviceVendor string, component *serverserviceapi.ServerComponent, vattr *versionedAttributes) {
-	// add FirmwareData
-	if vattr.Firmware != nil {
-		r.enrichFirmwareData(deviceVendor, component.Vendor, vattr)
-	}
-
-	// convert versioned attributes to raw json
-	data, err := json.Marshal(vattr)
-	if err != nil {
-		r.logger.WithFields(
-			logrus.Fields{
-				"slug": component.ComponentTypeSlug,
-				"kind": fmt.Sprintf("%T", data),
-				"err":  err,
-			}).Warn("error in conversion of versioned attributes to raw data")
-	}
-
-	// skip empty json data containing just the braces `{}`
-	min := 2
+	// skip empty json data containing just the braces `[{}]`
+	min := 4
 	if len(data) == min {
 		return
 	}
@@ -1043,7 +1079,7 @@ func (r *Store) setVersionedAttributes(deviceVendor string, component *serverser
 		component.VersionedAttributes = []serverserviceapi.VersionedAttributes{}
 	} else {
 		for _, existingVA := range component.VersionedAttributes {
-			if existingVA.Namespace != r.versionedAttributeNS {
+			if existingVA.Namespace != r.statusVersionedAttributeNS {
 				continue
 			}
 
@@ -1051,7 +1087,7 @@ func (r *Store) setVersionedAttributes(deviceVendor string, component *serverser
 				logrus.Fields{
 					"slug":      component.ComponentTypeSlug,
 					"kind":      fmt.Sprintf("%T", data),
-					"namespace": r.versionedAttributeNS,
+					"namespace": r.statusVersionedAttributeNS,
 				}).Warn("duplicate versioned attribute on component dropped.")
 
 			return
@@ -1061,7 +1097,64 @@ func (r *Store) setVersionedAttributes(deviceVendor string, component *serverser
 	component.VersionedAttributes = append(
 		component.VersionedAttributes,
 		serverserviceapi.VersionedAttributes{
-			Namespace: r.versionedAttributeNS,
+			Namespace: r.statusVersionedAttributeNS,
+			Data:      data,
+		},
+	)
+}
+
+// setFirmwareVA updates a component with single firmwareVersionedAttribute.
+//
+// versioned attributes per component in serverservice have a unique constraint on
+// the component ID, namespace values.
+//
+// so if this method is called twice for the same component, namespace, that versioned attribute will be ignored.
+func (r *Store) setFirmwareVA(deviceVendor string, component *serverserviceapi.ServerComponent, fwVA *firmwareVersionedAttribute) {
+	// add FirmwareData
+	if fwVA.Firmware != nil {
+		r.enrichFirmwareData(deviceVendor, component.Vendor, fwVA)
+	}
+
+	// convert versioned attributes to raw json
+	data, err := json.Marshal(fwVA)
+	if err != nil {
+		r.logger.WithFields(
+			logrus.Fields{
+				"slug": component.ComponentTypeSlug,
+				"kind": fmt.Sprintf("%T", data),
+				"err":  err,
+			}).Warn("error in conversion of versioned attributes to raw data")
+	}
+
+	// skip empty json data containing just the braces `{}`
+	min := 2
+	if len(data) == min {
+		return
+	}
+
+	if component.VersionedAttributes == nil {
+		component.VersionedAttributes = []serverserviceapi.VersionedAttributes{}
+	} else {
+		for _, existingVA := range component.VersionedAttributes {
+			if existingVA.Namespace != r.firmwareVersionedAttributeNS {
+				continue
+			}
+
+			r.logger.WithFields(
+				logrus.Fields{
+					"slug":      component.ComponentTypeSlug,
+					"kind":      fmt.Sprintf("%T", data),
+					"namespace": r.firmwareVersionedAttributeNS,
+				}).Warn("duplicate versioned attribute on component dropped.")
+
+			return
+		}
+	}
+
+	component.VersionedAttributes = append(
+		component.VersionedAttributes,
+		serverserviceapi.VersionedAttributes{
+			Namespace: r.firmwareVersionedAttributeNS,
 			Data:      data,
 		},
 	)
@@ -1070,7 +1163,7 @@ func (r *Store) setVersionedAttributes(deviceVendor string, component *serverser
 // enrichFirmwareData queries ServerService for the firmware version and try to find a match.
 //
 // the given versionedAttribute object is updated to include the firmware vendor and the serverservice firmware UUID.
-func (r *Store) enrichFirmwareData(deviceVendor, componentVendor string, vattr *versionedAttributes) {
+func (r *Store) enrichFirmwareData(deviceVendor, componentVendor string, vattr *firmwareVersionedAttribute) {
 	// Check in the cache if we have a match by vendor + version
 	for _, fw := range r.firmwares[componentVendor] {
 		if strings.EqualFold(fw.Version, vattr.Firmware.Installed) {

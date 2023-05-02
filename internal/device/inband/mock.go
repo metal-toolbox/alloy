@@ -17,10 +17,10 @@ func NewMockIronlibClient() *MockIronlib {
 	return &MockIronlib{}
 }
 
-func (m *MockIronlib) GetInventory(ctx context.Context, opts ...actions.Option) (*common.Device, error) {
+func (m *MockIronlib) GetInventory(_ context.Context, _ ...actions.Option) (*common.Device, error) {
 	return &common.Device{Common: common.Common{Vendor: "foo", Model: "bar"}}, nil
 }
 
-func (m *MockIronlib) GetBIOSConfiguration(ctx context.Context) (map[string]string, error) {
+func (m *MockIronlib) GetBIOSConfiguration(_ context.Context) (map[string]string, error) {
 	return map[string]string{"foo": "bar"}, nil
 }
