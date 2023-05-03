@@ -17,7 +17,7 @@ require (
 	github.com/metal-toolbox/ironlib v0.2.10
 	github.com/peterbourgon/ff/v3 v3.3.0
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.14.0
+	github.com/prometheus/client_golang v1.15.0
 	github.com/r3labs/diff/v3 v3.0.1
 	github.com/sanity-io/litter v1.5.5
 	github.com/sirupsen/logrus v1.9.0
@@ -90,7 +90,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/pquerna/cachecontrol v0.1.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
-	github.com/prometheus/common v0.39.0 // indirect
+	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/r3labs/diff/v2 v2.15.1 // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect
