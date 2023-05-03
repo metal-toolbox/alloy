@@ -14,7 +14,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/jacobweinstock/registrar v0.4.6
 	github.com/jinzhu/copier v0.3.5
-	github.com/metal-toolbox/ironlib v0.2.6
+	github.com/metal-toolbox/ironlib v0.2.9
 	github.com/peterbourgon/ff/v3 v3.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.14.0
@@ -27,6 +27,7 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.40.0
 	go.opentelemetry.io/otel v1.14.0
 	go.opentelemetry.io/otel/trace v1.14.0
+	golang.org/x/exp v0.0.0-20230127130021-4ca2cb1a16b7
 	golang.org/x/net v0.8.0
 	golang.org/x/oauth2 v0.6.0
 )
@@ -124,7 +125,6 @@ require (
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	gocloud.dev v0.27.0 // indirect
 	golang.org/x/crypto v0.4.0 // indirect
-	golang.org/x/exp v0.0.0-20230127130021-4ca2cb1a16b7 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
