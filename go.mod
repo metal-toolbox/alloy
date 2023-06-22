@@ -12,7 +12,7 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-retryablehttp v0.7.2
-	github.com/jacobweinstock/registrar v0.4.6
+	github.com/jacobweinstock/registrar v0.4.7
 	github.com/jinzhu/copier v0.3.5
 	github.com/metal-toolbox/ironlib v0.2.10
 	github.com/peterbourgon/ff/v3 v3.3.0
