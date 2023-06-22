@@ -75,9 +75,9 @@ build-image-inband-nocache: build-linux
 
 ## build devel docker image
 build-image-devel: build-image
-	docker tag ${DOCKER_IMAGE}:latest localhost:5000/alloy:latest
-	docker push localhost:5000/alloy:latest
-	kind load docker-image localhost:5000/alloy:latest
+	docker tag ${DOCKER_IMAGE}:latest localhost:5001/alloy:latest
+	docker push localhost:5001/alloy:latest
+	kind load docker-image localhost:5001/alloy:latest
 
 ## push docker image
 push-image:
