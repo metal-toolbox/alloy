@@ -20,7 +20,7 @@ require (
 	github.com/prometheus/client_golang v1.15.0
 	github.com/r3labs/diff/v3 v3.0.1
 	github.com/sanity-io/litter v1.5.5
-	github.com/sirupsen/logrus v1.9.0
+	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.15.0
 	github.com/stretchr/testify v1.8.2
 	go.hollow.sh/serverservice v0.15.2
