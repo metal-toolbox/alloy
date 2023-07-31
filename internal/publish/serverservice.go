@@ -230,29 +230,6 @@ func (h *serverServicePublisher) publish(ctx context.Context, device *model.Asse
 		return
 	}
 
-	// create/update server bmc error attributes - for out of band data collection
-	if h.config.AppKind == model.AppKindOutOfBand && len(device.Errors) > 0 {
-		err = h.createUpdateServerBMCErrorAttributes(
-			ctx,
-			server.UUID,
-			attributeByNamespace(model.ServerBMCErrorsAttributeNS, server.Attributes),
-			device,
-		)
-
-		if err != nil {
-			h.logger.WithFields(
-				logrus.Fields{
-					"id":  id,
-					"err": err,
-				}).Warn("error in server bmc error attributes update")
-		}
-
-		// count devices with errors
-		metricInventorized.With(prometheus.Labels{"status": "failed"}).Add(1)
-
-		return
-	}
-
 	// count devices with no errors
 	metricInventorized.With(prometheus.Labels{"status": "success"}).Add(1)
 
