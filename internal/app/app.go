@@ -38,7 +38,7 @@ type App struct {
 }
 
 // New returns a new alloy application object with the configuration loaded
-func New(ctx context.Context, kind, cfgFile string, loglevel int) (app *App, err error) {
+func New(_ context.Context, kind, cfgFile string, loglevel int) (app *App, err error) {
 	switch kind {
 	case model.AppKindInband, model.AppKindOutOfBand:
 	default:

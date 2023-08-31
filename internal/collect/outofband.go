@@ -110,7 +110,7 @@ func (o *OutOfBandCollector) SetMockGetter(getter interface{}) {
 }
 
 // InventoryLocal implements the Collector interface just to satisfy it.
-func (o *OutOfBandCollector) InventoryLocal(ctx context.Context) (*model.Asset, error) {
+func (o *OutOfBandCollector) InventoryLocal(_ context.Context) (*model.Asset, error) {
 	return nil, nil
 }
 
@@ -213,7 +213,7 @@ Loop:
 // based on the the number of tasks waiting in the worker queue.
 //
 // The asset getter pause flag is unset once the count of tasks waiting in the worker queue is below threshold levels.
-func (o *OutOfBandCollector) taskQueueWait(span trace.Span) {
+func (o *OutOfBandCollector) taskQueueWait(_ trace.Span) {
 	// measure tasks waiting queue size
 	metrics.TaskQueueSize.With(stageLabel).Set(float64(o.workers.WaitingQueueSize()))
 
@@ -504,7 +504,7 @@ func (o *OutOfBandCollector) bmcLogout(bmc oobGetter, asset *model.Asset) {
 }
 
 // newBMCClient initializes a bmclib client with the given credentials
-func newBMCClient(ctx context.Context, asset *model.Asset, l *logrus.Logger) *bmclibv2.Client {
+func newBMCClient(_ context.Context, asset *model.Asset, l *logrus.Logger) *bmclibv2.Client {
 	logger := logrus.New()
 	logger.Formatter = l.Formatter
 

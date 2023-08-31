@@ -23,7 +23,7 @@ func newVersionCmd(rootCmd *rootCmd) *ffcli.Command {
 	}
 }
 
-func (c *versionCmd) Exec(ctx context.Context, _ []string) error {
+func (c *versionCmd) Exec(_ context.Context, _ []string) error {
 	fmt.Printf(
 		"commit: %s\nbranch: %s\ngit summary: %s\nbuildDate: %s\nversion: %s\nGo version: %s\nironlib version: %s\nbmclib version: %s\nserverservice version: %s",
 		version.GitCommit, version.GitBranch, version.GitSummary, version.BuildDate, version.AppVersion, version.GoVersion, version.IronlibVersion, version.BmclibVersion, version.ServerserviceVersion)
