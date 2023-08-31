@@ -66,7 +66,7 @@ func NewServerServiceClient(ctx context.Context, cfg *model.Config, logger *logr
 }
 
 // returns a serverservice retryable client with Otel
-func newServerserviceClientWithOtel(cfg *model.Config, endpoint string, logger *logrus.Entry) (*serverservice.Client, error) {
+func newServerserviceClientWithOtel(_ *model.Config, endpoint string, logger *logrus.Entry) (*serverservice.Client, error) {
 	// init retryable http client
 	retryableClient := retryablehttp.NewClient()
 

@@ -192,11 +192,7 @@ func (c *outOfBandCmd) validateFlags() error {
 		return err
 	}
 
-	if err := c.validateFlagPublish(); err != nil {
-		return err
-	}
-
-	return nil
+	return c.validateFlagPublish()
 }
 
 // validateFlagSource checks the -asset-source flag parameter values are as expected.

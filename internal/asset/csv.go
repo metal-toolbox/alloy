@@ -33,7 +33,7 @@ type csvee struct {
 }
 
 // NewCSVGetter returns a new csv asset getter to retrieve asset information from a CSV file for inventory collection.
-func NewCSVGetter(ctx context.Context, alloy *app.App, csvReader io.ReadCloser) (Getter, error) {
+func NewCSVGetter(_ context.Context, alloy *app.App, csvReader io.ReadCloser) (Getter, error) {
 	return &csvee{
 		logger:    alloy.Logger.WithField("component", "getter-csv"),
 		syncWg:    alloy.SyncWg,
@@ -44,11 +44,11 @@ func NewCSVGetter(ctx context.Context, alloy *app.App, csvReader io.ReadCloser) 
 }
 
 // SetClient satisfies the Getter interface
-func (c *csvee) SetClient(client interface{}) {
+func (c *csvee) SetClient(_ interface{}) {
 }
 
 // AssetByID returns one asset from the inventory identified by its identifier.
-func (c *csvee) AssetByID(ctx context.Context, assetID string, fetchBmcCredentials bool) (*model.Asset, error) {
+func (c *csvee) AssetByID(ctx context.Context, assetID string, _ bool) (*model.Asset, error) {
 	// attach child span
 	ctx, span := tracer.Start(ctx, "AssetByID()")
 	defer span.End()
@@ -118,7 +118,7 @@ func sliceContains(sl []string, str string) bool {
 }
 
 // loadAssets returns a slice of assets from the given csv io.Reader
-func (c *csvee) loadAssets(ctx context.Context, csvReader io.ReadCloser) ([]*model.Asset, error) {
+func (c *csvee) loadAssets(_ context.Context, csvReader io.ReadCloser) ([]*model.Asset, error) {
 	records, err := csv.NewReader(csvReader).ReadAll()
 	if err != nil {
 		return nil, err

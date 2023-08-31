@@ -468,7 +468,7 @@ func (h *serverServicePublisher) createUpdateServerComponents(ctx context.Contex
 // diffFilter is a filter passed to the r3 diff filter method for comparing structs
 //
 // nolint:gocritic // r3diff requires the field attribute to be passed by value
-func diffFilter(path []string, parent reflect.Type, field reflect.StructField) bool {
+func diffFilter(_ []string, _ reflect.Type, field reflect.StructField) bool {
 	switch field.Name {
 	case "CreatedAt", "UpdatedAt", "LastReportedAt":
 		return false

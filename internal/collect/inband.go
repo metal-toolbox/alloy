@@ -69,6 +69,6 @@ func (i *InbandCollector) InventoryLocal(ctx context.Context) (*model.Asset, err
 }
 
 // InventoryRemote implements is present here to satisfy the Collector interface.
-func (i *InbandCollector) InventoryRemote(ctx context.Context) error {
+func (i *InbandCollector) InventoryRemote(_ context.Context) error {
 	return nil
 }
