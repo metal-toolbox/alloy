@@ -72,13 +72,9 @@ func (a *Asset) AppendError(key CollectorError, value string) {
 }
 
 func (a *Asset) HasError(cErr CollectorError) bool {
-	for k := range a.Errors {
-		if k == string(cErr) {
-			return true
-		}
-	}
+	_, exists := a.Errors[string(cErr)]
 
-	return false
+	return exists
 }
 
 // Config holds application configuration read from a YAML or set by env variables.
