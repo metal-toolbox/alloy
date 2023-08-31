@@ -9,6 +9,7 @@ import (
 	"github.com/gammazero/workerpool"
 	"github.com/google/uuid"
 	"github.com/metal-toolbox/alloy/internal/app"
+	"github.com/metal-toolbox/alloy/internal/collect"
 	"github.com/metal-toolbox/alloy/internal/helpers"
 	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/metal-toolbox/alloy/internal/model"
@@ -247,17 +248,40 @@ func (h *serverServicePublisher) publish(ctx context.Context, device *model.Asse
 				}).Warn("error in server bmc error attributes update")
 		}
 
-		// count devices with errors
-		metricInventorized.With(prometheus.Labels{"status": "failed"}).Add(1)
-
-		return
+		// both inventory and BIOS configuration collection failed on a login failure
+		if device.HasError(collect.OutofbandLoginError) {
+			// count devices with errors
+			metricInventorized.With(prometheus.Labels{"status": "failed"}).Add(1)
+			return
+		}
 	}
 
 	// count devices with no errors
+	// TODO: metric label has to be updated to status-inventory, status-bioscfgcollection
 	metricInventorized.With(prometheus.Labels{"status": "success"}).Add(1)
 
+	if !device.HasError(collect.OutofbandInventoryError) {
+		h.publishServerInventory(ctx, server, device)
+	}
+
+	// Don't publish bios config if there's no data or theres was an error in collection
+	if len(device.BiosConfig) == 0 || device.HasError(collect.OutofbandGetBiosConfigError) {
+		return
+	}
+
+	err = h.createUpdateServerBIOSConfiguration(ctx, server.UUID, device.BiosConfig)
+	if err != nil {
+		h.logger.WithFields(
+			logrus.Fields{
+				"id":  server.UUID.String(),
+				"err": err,
+			}).Warn("error in server bios configuration versioned attribute update")
+	}
+}
+
+func (h *serverServicePublisher) publishServerInventory(ctx context.Context, server *serverservice.Server, device *model.Asset) {
 	// create/update server serial, vendor, model attributes
-	err = h.createUpdateServerAttributes(ctx, server, device)
+	err := h.createUpdateServerAttributes(ctx, server, device)
 	if err != nil {
 		h.logger.WithFields(
 			logrus.Fields{
@@ -284,18 +308,6 @@ func (h *serverServicePublisher) publish(ctx context.Context, device *model.Asse
 				"id":  server.UUID.String(),
 				"err": err,
 			}).Warn("error converting device object")
-	}
-
-	// Don't publish bios config if there's no data
-	if len(device.BiosConfig) != 0 {
-		err = h.createUpdateServerBIOSConfiguration(ctx, server.UUID, device.BiosConfig)
-		if err != nil {
-			h.logger.WithFields(
-				logrus.Fields{
-					"id":  server.UUID.String(),
-					"err": err,
-				}).Warn("error in server bios configuration versioned attribute update")
-		}
 	}
 }
 

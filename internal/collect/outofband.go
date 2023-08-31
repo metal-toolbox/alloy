@@ -46,6 +46,10 @@ const (
 
 	// logoutTimeout is the timeout value for each bmc logout attempt.
 	logoutTimeout = "1m"
+
+	OutofbandLoginError         model.CollectorError = "OutofbandLoginError"
+	OutofbandInventoryError     model.CollectorError = "OutofbandInventoryError"
+	OutofbandGetBiosConfigError model.CollectorError = "OutofbandGetBiosConfigError"
 )
 
 // OutOfBand collector collects hardware, firmware inventory out of band
@@ -339,14 +343,15 @@ func (o *OutOfBandCollector) bmcGetBiosConfiguration(ctx context.Context, bmc oo
 		// increment get bios configuration query error count metric
 		switch {
 		case strings.Contains(err.Error(), "no compatible System Odata IDs identified"):
-			asset.IncludeError("GetBiosConfigurationError", "redfish_incompatible: no compatible System Odata IDs identified")
+			asset.AppendError(OutofbandGetBiosConfigError, "redfish_incompatible: no compatible System Odata IDs identified")
 			metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "redfish_incompatible")
+
 		case strings.Contains(err.Error(), "no BiosConfigurationGetter implementations found"):
-			// If the asset doesn't implement a BiosConfigurationGetter, skip asset.IncludeError() which allows
-			// inventory to be published later on
+			asset.AppendError(OutofbandGetBiosConfigError, "redfish_incompatible: no compatible System Odata IDs identified")
 			metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "NoBiosConfigurationGetter")
+
 		default:
-			asset.IncludeError("GetBiosConfigurationError", err.Error())
+			asset.AppendError(OutofbandGetBiosConfigError, err.Error())
 			metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "GetBiosConfigurationError")
 		}
 
@@ -386,10 +391,10 @@ func (o *OutOfBandCollector) bmcInventory(ctx context.Context, bmc oobGetter, as
 
 		// increment inventory query error count metric
 		if strings.Contains(err.Error(), "no compatible System Odata IDs identified") {
-			asset.IncludeError("inventory_error", "redfish_incompatible: no compatible System Odata IDs identified")
+			asset.AppendError(OutofbandInventoryError, "redfish_incompatible: no compatible System Odata IDs identified")
 			metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "redfish_incompatible")
 		} else {
-			asset.IncludeError("inventory_error", err.Error())
+			asset.AppendError(OutofbandInventoryError, err.Error())
 			metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "inventory")
 		}
 
@@ -445,12 +450,12 @@ func (o *OutOfBandCollector) bmcLogin(ctx context.Context, asset *model.Asset) (
 		span.SetStatus(codes.Error, " BMC login: "+err.Error())
 
 		if strings.Contains(err.Error(), "operation timed out") {
-			asset.IncludeError("login_error", "operation timed out in "+time.Since(startTS).String())
+			asset.AppendError(OutofbandLoginError, "operation timed out in "+time.Since(startTS).String())
 			metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "conn_timeout")
 		}
 
 		if strings.Contains(err.Error(), "401: ") || strings.Contains(err.Error(), "failed to login") {
-			asset.IncludeError("login_error", "unauthorized")
+			asset.AppendError(OutofbandLoginError, "unauthorized")
 			metricIncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "unauthorized")
 		}
 
