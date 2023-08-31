@@ -6,6 +6,10 @@ import (
 	"github.com/bmc-toolbox/common"
 )
 
+type (
+	CollectorError string
+)
+
 const (
 	AppKindInband      = "inband"
 	AppKindOutOfBand   = "outofband"
@@ -57,14 +61,24 @@ type Asset struct {
 	BMCAddress net.IP
 }
 
-// IncludeError includes the given error key and value in the asset
+// AppendError includes the given error key and value in the asset
 // which is then available to the publisher for reporting.
-func (a *Asset) IncludeError(key, value string) {
+func (a *Asset) AppendError(key CollectorError, value string) {
 	if a.Errors == nil {
 		a.Errors = map[string]string{}
 	}
 
-	a.Errors[key] = value
+	a.Errors[string(key)] = value
+}
+
+func (a *Asset) HasError(cErr CollectorError) bool {
+	for k := range a.Errors {
+		if k == string(cErr) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Config holds application configuration read from a YAML or set by env variables.
