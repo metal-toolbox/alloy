@@ -347,7 +347,6 @@ func newBMCClient(asset *model.Asset, l *logrus.Logger) *bmclibv2.Client {
 
 	bmcClient := bmclibv2.NewClient(
 		asset.BMCAddress.String(),
-		"", // port unset
 		asset.BMCUsername,
 		asset.BMCPassword,
 		bmclibv2.WithLogger(logruslogr),
