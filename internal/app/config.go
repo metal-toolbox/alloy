@@ -39,6 +39,9 @@ type Configuration struct {
 	// CSV file path when StoreKind is set to csv.
 	CsvFile string `mapstructure:"csv_file"`
 
+	// FacilityCode limits this alloy to events in a facility.
+	FacilityCode string `mapstructure:"facility_code"`
+
 	// ServerserviceOptions defines the serverservice client configuration parameters
 	//
 	// This parameter is required when StoreKind is set to serverservice.
@@ -197,6 +200,14 @@ func (a *App) envVarNatsOverrides() error {
 		return errors.New("missing parameter: nats.url")
 	}
 
+	if a.v.GetString("nats.publisherSubjectPrefix") != "" {
+		a.Config.NatsOptions.PublisherSubjectPrefix = a.v.GetString("nats.publisherSubjectPrefix")
+	}
+
+	if a.Config.NatsOptions.PublisherSubjectPrefix == "" {
+		return errors.New("missing parameter: nats.publisherSubjectPrefix")
+	}
+
 	if a.v.GetString("nats.stream.user") != "" {
 		a.Config.NatsOptions.StreamUser = a.v.GetString("nats.stream.user")
 	}
@@ -227,6 +238,34 @@ func (a *App) envVarNatsOverrides() error {
 		}
 
 		a.Config.NatsOptions.Consumer.Name = a.v.GetString("nats.consumer.name")
+	}
+
+	if a.v.GetInt("nats.kv.replicaCount") != 0 {
+		if a.Config.NatsOptions.KV == nil {
+			a.Config.NatsOptions.KV = &events.NatsKVOptions{}
+		}
+
+		a.Config.NatsOptions.KV.ReplicaCount = a.v.GetInt("nats.kv.replicaCount")
+	}
+
+	if len(a.v.GetStringSlice("nats.consumer.subscribeSubjects")) != 0 {
+		a.Config.NatsOptions.Consumer.SubscribeSubjects = a.v.GetStringSlice("nats.consumer.subscribeSubjects")
+	}
+
+	if len(a.Config.NatsOptions.Consumer.SubscribeSubjects) == 0 {
+		return errors.New("missing parameter: nats.consumer.subscribeSubjects")
+	}
+
+	if a.v.GetString("nats.consumer.filterSubject") != "" {
+		a.Config.NatsOptions.Consumer.FilterSubject = a.v.GetString("nats.consumer.filterSubject")
+	}
+
+	if a.Config.NatsOptions.Consumer.FilterSubject == "" {
+		return errors.New("missing parameter: nats.consumer.filterSubject")
+	}
+
+	if a.v.GetDuration("nats.connect.timeout") != 0 {
+		a.Config.NatsOptions.ConnectTimeout = a.v.GetDuration("nats.connect.timeout")
 	}
 
 	if a.Config.NatsOptions.ConnectTimeout == 0 {
