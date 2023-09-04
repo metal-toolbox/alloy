@@ -3,12 +3,17 @@ package metrics
 import (
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+
+	rctypes "github.com/metal-toolbox/rivets/condition"
 )
 
 // s shared across packages are defined and initialized here.
@@ -43,6 +48,12 @@ var (
 
 	// OOBCollectionActive indicates when inventory collection is active.
 	OOBCollectionActive prometheus.Gauge
+
+	NATSErrors *prometheus.CounterVec
+
+	EventsCounter *prometheus.CounterVec
+
+	ConditionRunTimeSummary *prometheus.SummaryVec
 )
 
 func init() {
@@ -126,6 +137,34 @@ func init() {
 			Help: "A gauge metric that indicates OOB BMC based inventory collection is active.",
 		},
 	)
+
+	NATSErrors = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "flasher_nats_errors",
+			Help: "A count of errors while trying to use NATS.",
+		},
+		[]string{"operation"},
+	)
+
+	ConditionRunTimeSummary = promauto.NewSummaryVec(
+		prometheus.SummaryOpts{
+			Name: "alloy_condition_duration_seconds",
+			Help: "A summary metric to measure the total time spent in completing each condition",
+		},
+		[]string{"condition", "state"},
+	)
+
+	EventsCounter = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "alloy_events_received",
+			Help: "A counter metric to measure the total count of events received",
+		},
+		[]string{"valid", "response"}, // valid is true/false, response is ack/nack
+	)
+}
+
+func NATSError(op string) {
+	NATSErrors.WithLabelValues(op).Inc()
 }
 
 // ListenAndServeMetrics exposes prometheus metrics as /metrics
@@ -157,4 +196,35 @@ func AddLabels(current, add prometheus.Labels) prometheus.Labels {
 	}
 
 	return returned
+}
+
+// RegisterSpanEvent adds a span event along with the given attributes.
+//
+// event here is arbitrary and can be in the form of strings like - publishCondition, updateCondition etc
+func RegisterSpanEvent(span trace.Span, condition *rctypes.Condition, workerID, serverID, event string) {
+	span.AddEvent(event, trace.WithAttributes(
+		attribute.String("workerID", workerID),
+		attribute.String("serverID", serverID),
+		attribute.String("conditionID", condition.ID.String()),
+		attribute.String("conditionKind", string(condition.Kind)),
+	))
+}
+
+// RegisterEventCounter increments the counter for NATS events, response is one of ack/nack
+func RegisterEventCounter(valid bool, response string) {
+	EventsCounter.With(
+		prometheus.Labels{
+			"valid":    strconv.FormatBool(valid),
+			"response": response,
+		}).Inc()
+}
+
+// RegisterConditionMetrics records the time summary for a condition being fulfilled.
+func RegisterConditionMetrics(startTS time.Time, state string) {
+	ConditionRunTimeSummary.With(
+		prometheus.Labels{
+			"condition": string(model.Inventory),
+			"state":     state,
+		},
+	).Observe(time.Since(startTS).Seconds())
 }
