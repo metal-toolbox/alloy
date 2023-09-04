@@ -4,13 +4,14 @@ import (
 	"net"
 
 	"github.com/bmc-toolbox/common"
-
-	cptypes "github.com/metal-toolbox/conditionorc/pkg/types"
+	rctypes "github.com/metal-toolbox/rivets/condition"
 )
 
 type (
 	AppKind   string
 	StoreKind string
+
+	InventoryMethod string
 
 	// LogLevel is the logging level string.
 	LogLevel string
@@ -21,8 +22,10 @@ const (
 	AppKindInband    AppKind = "inband"
 	AppKindOutOfBand AppKind = "outofband"
 
-	// conditions reconciled by this controller
-	InventoryOutofband cptypes.ConditionKind = "inventoryOutofband"
+	// conditions fulfilled by this worker
+	Inventory rctypes.Kind = "inventory"
+
+
 
 	StoreKindCsv           StoreKind = "csv"
 	StoreKindServerservice StoreKind = "serverservice"
