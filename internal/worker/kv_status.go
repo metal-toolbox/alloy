@@ -46,9 +46,9 @@ func createOrBindKVBucketWithOpts(s events.Stream, opts *events.NatsKVOptions) (
 
 // statusKVPublisher updates the kv with task status information
 type statusKVPublisher struct {
-	workerID string
 	kv       nats.KeyValue
 	log      *logrus.Logger
+	workerID string
 }
 
 func newStatusKVPublisher(s events.Stream, log *logrus.Logger, workerID string, opts *events.NatsKVOptions) (*statusKVPublisher, error) {

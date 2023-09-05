@@ -67,6 +67,7 @@ func (w *Worker) checkinRoutine(ctx context.Context) {
 					WithField("id", w.id.String()).
 					Warn("worker checkin failed")
 				metrics.NATSError("liveness checkin")
+
 				if err = refreshWorkerToken(w.id); err != nil {
 					w.logger.WithError(err).
 						WithField("id", w.id.String()).
@@ -75,6 +76,7 @@ func (w *Worker) checkinRoutine(ctx context.Context) {
 			}
 		case <-ctx.Done():
 			w.logger.Info("liveness check-in stopping on done context")
+
 			stop = true
 		}
 	}

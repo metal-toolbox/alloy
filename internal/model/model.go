@@ -4,6 +4,7 @@ import (
 	"net"
 
 	"github.com/bmc-toolbox/common"
+
 	rctypes "github.com/metal-toolbox/rivets/condition"
 )
 
@@ -24,8 +25,6 @@ const (
 
 	// conditions fulfilled by this worker
 	Inventory rctypes.Kind = "inventory"
-
-
 
 	StoreKindCsv           StoreKind = "csv"
 	StoreKindServerservice StoreKind = "serverservice"
