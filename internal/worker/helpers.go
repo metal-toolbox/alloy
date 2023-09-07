@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/pkg/errors"
 	"go.hollow.sh/toolbox/events"
@@ -38,7 +37,7 @@ func newTaskFromCondition(condition *rctypes.Condition) (*Task, error) {
 	}
 
 	return &Task{
-		ID:         uuid.New(),
+		ID:         condition.ID,
 		state:      rctypes.Pending,
 		Request:    condition,
 		Parameters: *parameters,

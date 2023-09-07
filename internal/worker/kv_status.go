@@ -49,16 +49,23 @@ type statusKVPublisher struct {
 	kv       nats.KeyValue
 	log      *logrus.Logger
 	workerID string
+	facility string
 }
 
-func newStatusKVPublisher(s events.Stream, log *logrus.Logger, workerID string, opts *events.NatsKVOptions) (*statusKVPublisher, error) {
+func newStatusKVPublisher(s events.Stream, log *logrus.Logger, workerID, facility string, opts *events.NatsKVOptions) (*statusKVPublisher, error) {
 	statusKV, err := createOrBindKVBucketWithOpts(s, opts)
 	if err != nil {
 		return nil, err
 	}
 
+	defaultFacility := "facility"
+	if facility == "" {
+		facility = defaultFacility
+	}
+
 	return &statusKVPublisher{
 		workerID: workerID,
+		facility: facility,
 		kv:       statusKV,
 		log:      log,
 	}, nil
@@ -73,16 +80,11 @@ func (s *statusKVPublisher) Publish(ctx context.Context, task *Task) {
 	)
 	defer span.End()
 
-	facility := "facility"
-	if task.Asset.Facility != "" {
-		facility = task.Asset.Facility
-	}
-
-	key := fmt.Sprintf("%s.%s", facility, task.ID.String())
+	key := fmt.Sprintf("%s.%s", s.facility, task.ID.String())
 
 	payload := rkv.StatusValue{
 		WorkerID: s.workerID,
-		Target:   task.Asset.ID,
+		Target:   task.Parameters.AssetID.String(),
 		TraceID:  trace.SpanFromContext(ctx).SpanContext().TraceID().String(),
 		SpanID:   trace.SpanFromContext(ctx).SpanContext().SpanID().String(),
 		State:    string(task.State()),
@@ -107,29 +109,29 @@ func (s *statusKVPublisher) Publish(ctx context.Context, task *Task) {
 		span.AddEvent("status publish failure",
 			trace.WithAttributes(
 				attribute.String("workerID", s.workerID),
-				attribute.String("serverID", task.Asset.ID),
+				attribute.String("serverID", task.Parameters.AssetID.String()),
 				attribute.String("conditionID", task.ID.String()),
 				attribute.String("error", err.Error()),
 			),
 		)
 		s.log.WithError(err).WithFields(logrus.Fields{
-			"assetID":           task.Asset.ID,
-			"assetFacilityCode": task.Asset.Facility,
-			"taskID":            task.ID.String(),
-			"lastRev":           task.Revision,
-			"key":               key,
+			"serverID": task.Parameters.AssetID.String(),
+			"facility": s.facility,
+			"taskID":   task.ID.String(),
+			"lastRev":  task.Revision,
+			"key":      key,
 		}).Warn("unable to write task status")
 
 		return
 	}
 
 	s.log.WithFields(logrus.Fields{
-		"assetID":           task.Asset.ID,
-		"assetFacilityCode": task.Asset.Facility,
-		"taskID":            task.ID.String(),
-		"lastRev":           task.Revision,
-		"currentRev":        rev,
-		"key":               key,
+		"serverID":   task.Parameters.AssetID.String(),
+		"facility":   s.facility,
+		"taskID":     task.ID.String(),
+		"lastRev":    task.Revision,
+		"currentRev": rev,
+		"key":        key,
 	}).Trace("published task status")
 
 	task.Revision = rev
