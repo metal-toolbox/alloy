@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/equinix-labs/otel-init-go/otelinit"
 	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/collector"
 	"github.com/metal-toolbox/alloy/internal/helpers"
@@ -33,7 +34,7 @@ var (
 	// facilityCode to limit Alloy to when running as a worker.
 	facilityCode string
 
-	// asWorker when true runs Alloy as a worker listening on the NATS JS for Conditions to reconcile.
+	// asWorker when true runs Alloy as a worker listening on the NATS JS for Conditions to act on.
 	asWorker bool
 )
 
@@ -57,8 +58,11 @@ var cmdOutofband = &cobra.Command{
 		// serve metrics endpoint
 		metrics.ListenAndServe()
 
+		ctx, otelShutdown := otelinit.InitOpenTelemetry(cmd.Context(), "alloy")
+		defer otelShutdown(ctx)
+
 		// setup cancel context with cancel func
-		ctx, cancelFunc := context.WithCancel(cmd.Context())
+		ctx, cancelFunc := context.WithCancel(ctx)
 
 		// routine listens for termination signal and cancels the context
 		go func() {

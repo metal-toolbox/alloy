@@ -231,32 +231,32 @@ func (w *Worker) processSingleEvent(ctx context.Context, e events.Message) {
 	case rkv.InProgress:
 		w.logger.WithField("conditionID", condition.ID.String()).Info("condition is already in progress")
 		w.eventAckInProgress(e)
-		metrics.RegisterSpanEvent(span, condition, w.id.String(), "", "ackInProgress")
+		metrics.RegisterSpanEvent(span, condition, w.id.String(), "", "ackInProgress", err)
 
 		return
 
 	case rkv.Complete:
 		w.logger.WithField("conditionID", condition.ID.String()).Info("condition is complete")
 		w.eventAckComplete(e)
-		metrics.RegisterSpanEvent(span, condition, w.id.String(), "", "ackComplete")
+		metrics.RegisterSpanEvent(span, condition, w.id.String(), "", "ackComplete", err)
 
 		return
 
+	// we need to restart this event
 	case rkv.Orphaned:
 		w.logger.WithField("conditionID", condition.ID.String()).Warn("restarting this condition")
-		metrics.RegisterSpanEvent(span, condition, w.id.String(), "", "restarting condition")
-
-	// we need to restart this event
-	case rkv.NotStarted:
-		w.logger.WithField("conditionID", condition.ID.String()).Info("starting new condition")
-		metrics.RegisterSpanEvent(span, condition, w.id.String(), "", "start new condition")
+		metrics.RegisterSpanEvent(span, condition, w.id.String(), "", "restarting condition", err)
 
 	// break out here, this is a new event
+	case rkv.NotStarted:
+		w.logger.WithField("conditionID", condition.ID.String()).Info("starting new condition")
+		metrics.RegisterSpanEvent(span, condition, w.id.String(), "", "start new condition", err)
+
 	case rkv.Indeterminate:
 		w.logger.WithField("conditionID", condition.ID.String()).Warn("unable to determine state of this condition")
 		// send it back to NATS to try again
 		w.eventNak(e)
-		metrics.RegisterSpanEvent(span, condition, w.id.String(), "", "sent nack, indeterminate state")
+		metrics.RegisterSpanEvent(span, condition, w.id.String(), "", "sent nack, indeterminate state", err)
 
 		return
 	}
@@ -279,21 +279,21 @@ func (w *Worker) doWork(ctx context.Context, condition *rctypes.Condition, e eve
 		w.eventAckComplete(e)
 
 		metrics.RegisterEventCounter(false, "ack")
-		metrics.RegisterSpanEvent(span, condition, w.id.String(), "", "sent ack, error task init")
+		metrics.RegisterSpanEvent(span, condition, w.id.String(), "", "sent ack, error task init", err)
 
 		return
 	}
 
 	startTS := time.Now()
 
-	publisher, err := newStatusKVPublisher(w.stream, w.logger, w.id.String(), w.cfg.NatsOptions.KV)
+	publisher, err := newStatusKVPublisher(w.stream, w.logger, w.id.String(), w.facilityCode, w.cfg.NatsOptions.KV)
 	if err != nil {
 		w.logger.WithError(err).Warn("status KV init - internal error")
 
 		w.eventNak(e)
 
 		metrics.RegisterEventCounter(false, "nack")
-		metrics.RegisterSpanEvent(span, condition, w.id.String(), "", "sent nack, error task init")
+		metrics.RegisterSpanEvent(span, condition, w.id.String(), "", "sent nack, error task init", err)
 	}
 
 	// update task state, status
@@ -325,6 +325,7 @@ func (w *Worker) doWork(ctx context.Context, condition *rctypes.Condition, e eve
 			w.id.String(),
 			task.Parameters.AssetID.String(),
 			"sent nack: store query error",
+			err,
 		)
 
 	case errAssetNotFound, errCollector:
@@ -340,6 +341,7 @@ func (w *Worker) doWork(ctx context.Context, condition *rctypes.Condition, e eve
 			w.id.String(),
 			task.Parameters.AssetID.String(),
 			"sent ack: error"+err.Error(),
+			err,
 		)
 
 	case nil:
@@ -378,8 +380,12 @@ func (w *Worker) runTaskWithMonitor(ctx context.Context, task *Task, e events.Me
 	)
 	defer span.End()
 
-	// the child function is expected to close this channel to indicate its done
-	doneCh := make(chan bool)
+	// doneCh is passed to the condition handler methods invoked below
+	// and must be closed by those handler methods on return.
+	//
+	// This channel indicates is used by the monitor func below
+	// to stop ack'ing the event message as 'in-progress' and return.
+	doneCh := make(chan struct{})
 
 	// monitor sends in progress ack's until the task completes.
 	monitor := func() {
@@ -408,15 +414,18 @@ func (w *Worker) runTaskWithMonitor(ctx context.Context, task *Task, e events.Me
 
 	switch task.Parameters.Method {
 	case rctypes.InbandInventory:
+		// close doneCh here until inband inventory method is implemented
+		close(doneCh)
 		return errors.Wrap(errTaskFirmwareParam, "inband inventory collector not implemented")
 	case rctypes.OutofbandInventory:
 		return w.inventoryOutofband(taskCtx, task, doneCh)
 	default:
+		close(doneCh)
 		return errors.Wrap(errTaskFirmwareParam, "invalid method: "+string(task.Parameters.Method))
 	}
 }
 
-func (w *Worker) inventoryOutofband(ctx context.Context, task *Task, doneCh chan bool) error {
+func (w *Worker) inventoryOutofband(ctx context.Context, task *Task, doneCh chan<- struct{}) error {
 	ctx, span := otel.Tracer(pkgName).Start(
 		ctx,
 		"worker.inventoryOutofband",
