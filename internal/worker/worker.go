@@ -359,11 +359,12 @@ func (w *Worker) doWork(ctx context.Context, condition *rctypes.Condition, e eve
 			w.id.String(),
 			task.Parameters.AssetID.String(),
 			"sent ack: condition finalized",
+			nil,
 		)
 
 		publisher.Publish(ctx, task)
 		w.logger.WithFields(logrus.Fields{
-			"deviceID":    task.Parameters.AssetID.String(),
+			"serverID":    task.Parameters.AssetID.String(),
 			"conditionID": task.ID,
 			"elapsed":     time.Since(startTS).String(),
 			"state":       task.state,
