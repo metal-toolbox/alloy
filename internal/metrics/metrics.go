@@ -140,7 +140,7 @@ func init() {
 
 	NATSErrors = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "flasher_nats_errors",
+			Name: "alloy_nats_errors",
 			Help: "A count of errors while trying to use NATS.",
 		},
 		[]string{"operation"},
@@ -201,13 +201,19 @@ func AddLabels(current, add prometheus.Labels) prometheus.Labels {
 // RegisterSpanEvent adds a span event along with the given attributes.
 //
 // event here is arbitrary and can be in the form of strings like - publishCondition, updateCondition etc
-func RegisterSpanEvent(span trace.Span, condition *rctypes.Condition, workerID, serverID, event string) {
-	span.AddEvent(event, trace.WithAttributes(
+func RegisterSpanEvent(span trace.Span, condition *rctypes.Condition, workerID, serverID, event string, err error) {
+	attrs := []attribute.KeyValue{
 		attribute.String("workerID", workerID),
 		attribute.String("serverID", serverID),
 		attribute.String("conditionID", condition.ID.String()),
 		attribute.String("conditionKind", string(condition.Kind)),
-	))
+	}
+
+	if err != nil {
+		attrs = append(attrs, attribute.String("error", err.Error()))
+	}
+
+	span.AddEvent(event, trace.WithAttributes(attrs...))
 }
 
 // RegisterEventCounter increments the counter for NATS events, response is one of ack/nack
