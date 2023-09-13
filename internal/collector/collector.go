@@ -16,7 +16,6 @@ import (
 	"github.com/metal-toolbox/alloy/internal/store"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -269,11 +268,6 @@ func NewAssetIterCollectorWithStore(
 
 // Collect iterates over assets returned by the AssetIterator and collects their inventory, bios configuration data.
 func (d *AssetIterCollector) Collect(ctx context.Context) {
-	tracer := otel.Tracer("collector.AssetIteratorCollector")
-	ctx, span := tracer.Start(context.TODO(), "Collect()")
-
-	defer span.End()
-
 	// pauser helps throttle asset retrieval to match the data collection rate.
 	pauser := NewPauser()
 
@@ -339,7 +333,7 @@ Loop:
 			atomic.AddInt32(&dispatched, 1)
 
 			// throttle asset iterator based on dispatched vs concurrency limit
-			d.throttle(span, pauser, dispatched)
+			d.throttle(nil, pauser, dispatched)
 
 			// run collection in routine
 			go func(ctx context.Context, asset *model.Asset) {
