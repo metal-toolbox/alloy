@@ -23,17 +23,11 @@ import (
 )
 
 var (
-	// The outofband collector tracer
-	tracer        trace.Tracer
 	ErrInventory  = errors.New("inventory collection error")
 	ErrBiosConfig = errors.New("BIOS configuration collection error")
 	ErrConnect    = errors.New("BMC connection error")
 	ErrBMCSession = errors.New("BMC session error")
 )
-
-func init() {
-	tracer = otel.Tracer("outofband.Queryor")
-}
 
 const (
 	// logoutTimeout is the timeout value for each bmc logout attempt.
@@ -42,6 +36,8 @@ const (
 	// bmclib will attempt multiple providers (drivers) - to perform an action,
 	// this is maximum amount of time bmclib will spend performing a query on a BMC.
 	bmclibProviderTimeout = 180 * time.Second
+
+	pkgName = "internal/outofband"
 )
 
 // OutOfBand collector collects hardware, firmware inventory out of band
@@ -84,7 +80,8 @@ func NewQueryor(logger *logrus.Logger) *Queryor {
 // Inventory retrieves device component and firmware information
 // and updates the given asset object with the inventory
 func (o *Queryor) Inventory(ctx context.Context, asset *model.Asset) error {
-	ctx, span := tracer.Start(ctx, "Inventory()")
+	// attach child span
+	ctx, span := otel.Tracer(pkgName).Start(ctx, "Inventory")
 	defer span.End()
 
 	setTraceSpanAssetAttributes(span, asset)
@@ -119,8 +116,10 @@ func (o *Queryor) Inventory(ctx context.Context, asset *model.Asset) error {
 
 func (o *Queryor) BiosConfiguration(ctx context.Context, asset *model.Asset) error {
 	// attach child span
-	ctx, span := tracer.Start(ctx, "BiosConfiguration()")
+	ctx, span := otel.Tracer(pkgName).Start(ctx, "BiosConfiguration")
 	defer span.End()
+
+	setTraceSpanAssetAttributes(span, asset)
 
 	// login
 	bmc, err := o.bmcLogin(ctx, asset)
@@ -250,7 +249,7 @@ func (o *Queryor) bmcLogin(ctx context.Context, asset *model.Asset) (BMCQueryor,
 	var bmc BMCQueryor
 
 	// attach child span
-	ctx, span := tracer.Start(ctx, "bmcLogin()")
+	ctx, span := otel.Tracer(pkgName).Start(ctx, "bmcLogin")
 	defer span.End()
 
 	if o.mockClient == nil {
@@ -298,8 +297,7 @@ func (o *Queryor) bmcLogout(bmc BMCQueryor, asset *model.Asset) {
 	ctx, cancel := context.WithTimeout(context.Background(), o.logoutTimeout)
 	defer cancel()
 
-	// attach child span
-	ctx, span := tracer.Start(ctx, "bmcLogout()")
+	ctx, span := otel.Tracer(pkgName).Start(ctx, "bmclibLogOut")
 	defer span.End()
 
 	o.logger.WithFields(

@@ -19,20 +19,13 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 
 	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
 )
 
-var (
-
-	// The serverservice asset getter tracer
-	tracer trace.Tracer
+const (
+	pkgName = "internal/store"
 )
-
-func init() {
-	tracer = otel.Tracer("store.serverservice")
-}
 
 // Store is an asset inventory store
 type Store struct {
@@ -100,8 +93,7 @@ func (r *Store) Kind() model.StoreKind {
 
 // assetByID queries serverService for the hardware asset by ID and returns an Asset object
 func (r *Store) AssetByID(ctx context.Context, id string, fetchBmcCredentials bool) (*model.Asset, error) {
-	// attach child span
-	ctx, span := tracer.Start(ctx, "AssetByID()")
+	ctx, span := otel.Tracer(pkgName).Start(ctx, "Serverservice.AssetByID")
 	defer span.End()
 
 	sid, err := uuid.Parse(id)
@@ -136,8 +128,8 @@ func (r *Store) AssetByID(ctx context.Context, id string, fetchBmcCredentials bo
 
 // assetByID queries serverService for the hardware asset by ID and returns an Asset object
 func (r *Store) AssetsByOffsetLimit(ctx context.Context, offset, limit int) (assets []*model.Asset, totalAssets int, err error) {
-	// attach child span
-	ctx, span := tracer.Start(ctx, "AssetsByOffsetLimit()")
+	ctx, span := otel.Tracer(pkgName).Start(ctx, "Serverservice.AssetByOffsetLimit")
+	defer span.End()
 
 	span.SetAttributes(
 		attribute.Int("offset", offset),
@@ -192,8 +184,7 @@ func (r *Store) AssetsByOffsetLimit(ctx context.Context, offset, limit int) (ass
 
 // AssetUpdate inserts/updates the asset data in the serverservice store
 func (r *Store) AssetUpdate(ctx context.Context, asset *model.Asset) error {
-	// attach child span
-	ctx, span := tracer.Start(ctx, "AssetUpdate()")
+	ctx, span := otel.Tracer(pkgName).Start(ctx, "Serverservice.AssetUpdate")
 	defer span.End()
 
 	if asset == nil {
@@ -303,8 +294,7 @@ func (r *Store) createUpdateInventory(ctx context.Context, device *model.Asset, 
 //
 // nolint:gocyclo // the method caries out all steps to have device data compared and registered, for now its accepted as cyclomatic.
 func (r *Store) createUpdateServerComponents(ctx context.Context, serverID uuid.UUID, device *model.Asset) error {
-	// attach child span
-	ctx, span := tracer.Start(ctx, "createUpdateServerComponents()")
+	ctx, span := otel.Tracer(pkgName).Start(ctx, "Serverservice.createUpdateServerComponents")
 	defer span.End()
 
 	if device.Inventory == nil {
@@ -472,10 +462,6 @@ func diffFilter(_ []string, _ reflect.Type, field reflect.StructField) bool {
 // serverServiceChangeList compares the current vs newer slice of server components
 // and returns 3 lists - add, update, remove.
 func serverServiceChangeList(ctx context.Context, currentObjs, newObjs []*serverserviceapi.ServerComponent) (add, update, remove serverserviceapi.ServerComponentSlice, err error) {
-	// attach child span
-	_, span := tracer.Start(ctx, "serverServiceChangeList()")
-	defer span.End()
-
 	// 1. list updated and removed objects
 	for _, currentObj := range currentObjs {
 		// changeObj is the component changes to be registered
@@ -565,8 +551,7 @@ func serverServiceComponentsUpdated(currentObj, newObj *serverserviceapi.ServerC
 }
 
 func (r *Store) cacheServerComponentFirmwares(ctx context.Context) error {
-	// attach child span
-	ctx, span := tracer.Start(ctx, "cacheServerComponentFirmwares()")
+	ctx, span := otel.Tracer(pkgName).Start(ctx, "Serverservice.cacheServerComponentFirmwares")
 	defer span.End()
 
 	// Query ServerService for all firmware
@@ -590,8 +575,7 @@ func (r *Store) cacheServerComponentFirmwares(ctx context.Context) error {
 }
 
 func (r *Store) cacheServerComponentTypes(ctx context.Context) error {
-	// attach child span
-	ctx, span := tracer.Start(ctx, "cacheServerComponentTypes()")
+	ctx, span := otel.Tracer(pkgName).Start(ctx, "Serverservice.cacheServerComponentTypes")
 	defer span.End()
 
 	serverComponentTypes, _, err := r.ListServerComponentTypes(ctx, nil)
@@ -613,8 +597,7 @@ func (r *Store) cacheServerComponentTypes(ctx context.Context) error {
 }
 
 func (r *Store) createServerComponentTypes(ctx context.Context) error {
-	// attach child span
-	ctx, span := tracer.Start(ctx, "createServerComponentTypes()")
+	ctx, span := otel.Tracer(pkgName).Start(ctx, "Serverservice.createServerComponentTypes")
 	defer span.End()
 
 	existing, _, err := r.ListServerComponentTypes(ctx, nil)
