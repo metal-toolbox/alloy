@@ -461,7 +461,7 @@ func diffFilter(_ []string, _ reflect.Type, field reflect.StructField) bool {
 
 // serverServiceChangeList compares the current vs newer slice of server components
 // and returns 3 lists - add, update, remove.
-func serverServiceChangeList(ctx context.Context, currentObjs, newObjs []*serverserviceapi.ServerComponent) (add, update, remove serverserviceapi.ServerComponentSlice, err error) {
+func serverServiceChangeList(_ context.Context, currentObjs, newObjs []*serverserviceapi.ServerComponent) (add, update, remove serverserviceapi.ServerComponentSlice, err error) {
 	// 1. list updated and removed objects
 	for _, currentObj := range currentObjs {
 		// changeObj is the component changes to be registered
