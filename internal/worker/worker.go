@@ -349,6 +349,8 @@ func (w *Worker) doWork(ctx context.Context, condition *rctypes.Condition, e eve
 	case nil:
 		// work completed successfully
 		task.SetState(rctypes.Succeeded)
+		task.Status = "collection completed successfully"
+
 		publisher.Publish(ctx, task)
 
 		w.eventAckComplete(e)
