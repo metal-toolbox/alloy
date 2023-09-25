@@ -64,14 +64,15 @@ type Worker struct {
 	logger       *logrus.Logger
 	name         string
 	facilityCode string
-	replicaCount int
 	concurrency  int
+	replicaCount int
 	dispatched   int32
 }
 
 func New(
 	ctx context.Context,
 	facilityCode string,
+	replicaCount int,
 	stream events.Stream,
 	cfg *app.Configuration,
 	syncWG *sync.WaitGroup,
@@ -92,6 +93,7 @@ func New(
 	return &Worker{
 		name:         id,
 		facilityCode: facilityCode,
+		replicaCount: replicaCount,
 		cfg:          cfg,
 		syncWG:       syncWG,
 		logger:       logger,
@@ -121,7 +123,7 @@ func (w *Worker) Run(ctx context.Context) {
 	// register worker in NATS active-controllers kv bucket
 	w.startWorkerLivenessCheckin(ctx)
 
-	if _, err := createOrBindKVBucketWithOpts(w.stream, w.cfg.NatsOptions.KV); err != nil {
+	if _, err := createOrBindKVBucketWithOpts(w.stream, w.replicaCount); err != nil {
 		w.logger.WithError(err).Error("failed to create/bind to status kv" + inventoryStatusKVBucket)
 	}
 
@@ -286,7 +288,7 @@ func (w *Worker) doWork(ctx context.Context, condition *rctypes.Condition, e eve
 
 	startTS := time.Now()
 
-	publisher, err := newStatusKVPublisher(w.stream, w.logger, w.id.String(), w.facilityCode, w.cfg.NatsOptions.KV)
+	publisher, err := newStatusKVPublisher(w.stream, w.logger, w.id.String(), w.facilityCode, w.replicaCount)
 	if err != nil {
 		w.logger.WithError(err).Warn("status KV init - internal error")
 

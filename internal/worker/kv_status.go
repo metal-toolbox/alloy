@@ -29,11 +29,11 @@ var (
 	}
 )
 
-func createOrBindKVBucketWithOpts(s events.Stream, opts *events.NatsKVOptions) (nats.KeyValue, error) {
+func createOrBindKVBucketWithOpts(s events.Stream, replicaCount int) (nats.KeyValue, error) {
 	kvOptions := defaultKVOpts
 
-	if opts.ReplicaCount > 1 {
-		kvOptions = append(kvOptions, kv.WithReplicas(opts.ReplicaCount))
+	if replicaCount > 1 {
+		kvOptions = append(kvOptions, kv.WithReplicas(replicaCount))
 	}
 
 	js, ok := s.(*events.NatsJetstream)
@@ -52,8 +52,8 @@ type statusKVPublisher struct {
 	facility string
 }
 
-func newStatusKVPublisher(s events.Stream, log *logrus.Logger, workerID, facility string, opts *events.NatsKVOptions) (*statusKVPublisher, error) {
-	statusKV, err := createOrBindKVBucketWithOpts(s, opts)
+func newStatusKVPublisher(s events.Stream, log *logrus.Logger, workerID, facility string, replicaCount int) (*statusKVPublisher, error) {
+	statusKV, err := createOrBindKVBucketWithOpts(s, replicaCount)
 	if err != nil {
 		return nil, err
 	}

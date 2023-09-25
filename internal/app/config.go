@@ -240,14 +240,6 @@ func (a *App) envVarNatsOverrides() error {
 		a.Config.NatsOptions.Consumer.Name = a.v.GetString("nats.consumer.name")
 	}
 
-	if a.v.GetInt("nats.kv.replicaCount") != 0 {
-		if a.Config.NatsOptions.KV == nil {
-			a.Config.NatsOptions.KV = &events.NatsKVOptions{}
-		}
-
-		a.Config.NatsOptions.KV.ReplicaCount = a.v.GetInt("nats.kv.replicaCount")
-	}
-
 	if len(a.v.GetStringSlice("nats.consumer.subscribeSubjects")) != 0 {
 		a.Config.NatsOptions.Consumer.SubscribeSubjects = a.v.GetStringSlice("nats.consumer.subscribeSubjects")
 	}
