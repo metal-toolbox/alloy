@@ -34,7 +34,7 @@ func (w *Worker) startWorkerLivenessCheckin(ctx context.Context) {
 			kv.WithTTL(livenessTTL),
 		}
 
-		// any setting of replicas (even 1) chokes NATS in non-clustered mode
+		// any setting of replicaCount (even 1) chokes NATS in non-clustered mode
 		if w.replicaCount != 1 {
 			opts = append(opts, kv.WithReplicas(w.replicaCount))
 		}

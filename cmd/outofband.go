@@ -36,6 +36,9 @@ var (
 
 	// asWorker when true runs Alloy as a worker listening on the NATS JS for Conditions to act on.
 	asWorker bool
+
+	// The number of replicaCount to use NATS KV data
+	replicaCount int
 )
 
 // outofband inventory, bios configuration collection command
@@ -90,7 +93,7 @@ func runWorker(ctx context.Context, alloy *app.App) {
 		alloy.Logger.Fatal(err)
 	}
 
-	w, err := worker.New(ctx, facilityCode, stream, alloy.Config, alloy.SyncWg, alloy.Logger)
+	w, err := worker.New(ctx, facilityCode, replicaCount, stream, alloy.Config, alloy.SyncWg, alloy.Logger)
 	if err != nil {
 		alloy.Logger.Fatal(err)
 	}
@@ -127,6 +130,7 @@ func init() {
 	cmdOutofband.PersistentFlags().StringVar(&csvFile, "csv-file", "assets.csv", "CSV file containing BMC credentials for assets.")
 	cmdOutofband.PersistentFlags().StringVar(&facilityCode, "facility-code", "sandbox", "The facility code this Alloy instance is associated with")
 	cmdOutofband.PersistentFlags().BoolVar(&asWorker, "worker", false, "Run Alloy as a worker listening for conditions on NATS")
+	cmdOutofband.PersistentFlags().IntVarP(&replicaCount, "replica-count", "r", 3, "The number of replicaCount to use for NATS KV data") // nolint:gomnd // obvious int is obvious
 
 	rootCmd.AddCommand(cmdOutofband)
 }
