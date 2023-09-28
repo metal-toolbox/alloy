@@ -16,6 +16,8 @@ type (
 
 	// LogLevel is the logging level string.
 	LogLevel string
+
+	CollectorError string
 )
 
 const (
@@ -74,8 +76,17 @@ type Asset struct {
 	BMCAddress net.IP
 }
 
-// IncludeError includes the given error key and value in the asset
+// AppendError includes the given error key and value in the asset
 // which is then available to the publisher for reporting.
-func (a *Asset) IncludeError(key, value string) {
-	a.Errors[key] = value
+func (a *Asset) AppendError(key CollectorError, value string) {
+	if a.Errors == nil {
+		a.Errors = map[string]string{}
+	}
+
+	a.Errors[string(key)] = value
+}
+
+func (a *Asset) HasError(cErr CollectorError) bool {
+	_, exists := a.Errors[string(cErr)]
+	return exists
 }

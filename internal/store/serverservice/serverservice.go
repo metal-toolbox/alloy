@@ -9,6 +9,7 @@ import (
 	"github.com/bmc-toolbox/common"
 	"github.com/google/uuid"
 	"github.com/metal-toolbox/alloy/internal/app"
+	"github.com/metal-toolbox/alloy/internal/device/outofband"
 	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/pkg/errors"
@@ -225,65 +226,85 @@ func (r *Store) AssetUpdate(ctx context.Context, asset *model.Asset) error {
 		return errors.Wrap(ErrServerServiceQuery, "got nil Server object")
 	}
 
-	// create/update inventory.
-	if errInventory := r.createUpdateInventory(ctx, asset, server); errInventory != nil {
+	// publish server inventory
+	if errPublish := r.publish(ctx, asset, server); errPublish != nil {
 		r.logger.WithFields(
 			logrus.Fields{
 				"id":  id,
 				"hr":  hr,
-				"err": errInventory.Error(),
+				"err": errPublish.Error(),
 			}).Warn("inventory asset insert/update error")
 
 		metricInventorized.With(prometheus.Labels{"status": "failed"}).Add(1)
-	} else {
-		// count devices with no errors
-		metricInventorized.With(prometheus.Labels{"status": "success"}).Add(1)
 	}
 
-	// Don't publish bios config if there's no data
-	if len(asset.BiosConfig) != 0 {
-		err = r.createUpdateServerBIOSConfiguration(ctx, server.UUID, asset.BiosConfig)
-		if err != nil {
-			metricBiosCfgCollected.With(prometheus.Labels{"status": "failed"}).Add(1)
+	// count devices with no errors
+	metricInventorized.With(prometheus.Labels{"status": "success"}).Add(1)
 
-			r.logger.WithFields(
-				logrus.Fields{
-					"id":  server.UUID.String(),
-					"err": err,
-				}).Warn("error in server bios configuration versioned attribute update")
+	return nil
+}
+
+func (r *Store) publish(ctx context.Context, asset *model.Asset, server *serverserviceapi.Server) error {
+	// create/update server bmc error attributes - for out of band data collection
+	if r.appKind == model.AppKindOutOfBand && len(asset.Errors) > 0 {
+		if err := r.createUpdateServerBMCErrorAttributes(
+			ctx,
+			server.UUID,
+			attributeByNamespace(serverBMCErrorsAttributeNS, server.Attributes),
+			asset,
+		); err != nil {
+			return errors.Wrap(ErrServerServiceQuery, "BMC error attribute create/update error: "+err.Error())
 		}
 
-		metricInventorized.With(prometheus.Labels{"status": "success"}).Add(1)
+		// both inventory and BIOS configuration collection failed on a login failure
+		if asset.HasError(outofband.LoginError) {
+			return errors.New(string(outofband.LoginError))
+		}
+	}
+
+	// publish server inventory
+	if !asset.HasError(outofband.InventoryError) {
+		if errPublishInventory := r.publishInventory(ctx, server, asset); errPublishInventory != nil {
+			return errPublishInventory
+		}
+	}
+
+	// Don't publish bios config if there's no bios config data
+	if len(asset.BiosConfig) == 0 {
+		errNoBiosConfig := errors.New("no BIOS configuration collected")
+		return errNoBiosConfig
+	}
+
+	if asset.HasError(outofband.GetBiosConfigError) {
+		return errors.New(string(outofband.GetBiosConfigError))
+	}
+
+	// publish bios configuration
+	err := r.createUpdateServerBIOSConfiguration(ctx, server.UUID, asset.BiosConfig)
+	if err != nil {
+		r.logger.WithFields(
+			logrus.Fields{
+				"id":  server.UUID.String(),
+				"err": err,
+			}).Warn("error in server bios configuration versioned attribute update")
 	}
 
 	return nil
 }
 
-func (r *Store) createUpdateInventory(ctx context.Context, device *model.Asset, server *serverserviceapi.Server) error {
-	// create/update server bmc error attributes - for out of band data collection
-	if r.appKind == model.AppKindOutOfBand && len(device.Errors) > 0 {
-		if err := r.createUpdateServerBMCErrorAttributes(
-			ctx,
-			server.UUID,
-			attributeByNamespace(serverBMCErrorsAttributeNS, server.Attributes),
-			device,
-		); err != nil {
-			return errors.Wrap(ErrServerServiceQuery, "BMC error attribute create/update error: "+err.Error())
-		}
-	}
-
+func (r *Store) publishInventory(ctx context.Context, server *serverserviceapi.Server, asset *model.Asset) error {
 	// create/update server serial, vendor, model attributes
-	if err := r.createUpdateServerAttributes(ctx, server, device); err != nil {
+	if err := r.createUpdateServerAttributes(ctx, server, asset); err != nil {
 		return errors.Wrap(ErrServerServiceQuery, "Server Vendor attribute create/update error: "+err.Error())
 	}
 
 	// create update server metadata attributes
-	if err := r.createUpdateServerMetadataAttributes(ctx, server.UUID, device); err != nil {
+	if err := r.createUpdateServerMetadataAttributes(ctx, server.UUID, asset); err != nil {
 		return errors.Wrap(ErrServerServiceQuery, "Server Metadata attribute create/update error: "+err.Error())
 	}
 
 	// create update server component
-	if err := r.createUpdateServerComponents(ctx, server.UUID, device); err != nil {
+	if err := r.createUpdateServerComponents(ctx, server.UUID, asset); err != nil {
 		return errors.Wrap(ErrServerServiceQuery, "Server Component create/update error: "+err.Error())
 	}
 
