@@ -38,6 +38,10 @@ const (
 	bmclibProviderTimeout = 180 * time.Second
 
 	pkgName = "internal/outofband"
+
+	LoginError         model.CollectorError = "LoginError"
+	InventoryError     model.CollectorError = "InventoryError"
+	GetBiosConfigError model.CollectorError = "GetBiosConfigError"
 )
 
 // OutOfBand collector collects hardware, firmware inventory out of band
@@ -166,13 +170,13 @@ func (o *Queryor) biosConfiguration(ctx context.Context, bmc BMCQueryor, asset *
 		// increment get bios configuration query error count metric
 		switch {
 		case strings.Contains(err.Error(), "no compatible System Odata IDs identified"):
-			asset.IncludeError("GetBiosConfigurationError", "redfish_incompatible: no compatible System Odata IDs identified")
+			asset.AppendError(GetBiosConfigError, "redfish_incompatible: no compatible System Odata IDs identified")
 			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "redfish_incompatible")
 		case strings.Contains(err.Error(), "no BiosConfigurationGetter implementations found"):
-			asset.IncludeError("NoBiosConfigurationGetter", "BIOS configuration collection not supported for device")
+			asset.AppendError(GetBiosConfigError, "redfish_incompatible: no compatible System Odata IDs identified")
 			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "NoBiosConfigurationGetter")
 		default:
-			asset.IncludeError("GetBiosConfigurationError", err.Error())
+			asset.AppendError(GetBiosConfigError, err.Error())
 			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "GetBiosConfigurationError")
 		}
 
@@ -208,10 +212,10 @@ func (o *Queryor) bmcInventory(ctx context.Context, bmc BMCQueryor, asset *model
 
 		// increment inventory query error count metric
 		if strings.Contains(err.Error(), "no compatible System Odata IDs identified") {
-			asset.IncludeError("inventory_error", "redfish_incompatible: no compatible System Odata IDs identified")
+			asset.AppendError(InventoryError, "redfish_incompatible: no compatible System Odata IDs identified")
 			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "redfish_incompatible")
 		} else {
-			asset.IncludeError("inventory_error", err.Error())
+			asset.AppendError(InventoryError, err.Error())
 			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "inventory")
 		}
 
@@ -271,13 +275,13 @@ func (o *Queryor) bmcLogin(ctx context.Context, asset *model.Asset) (BMCQueryor,
 
 		switch {
 		case strings.Contains(err.Error(), "operation timed out"):
-			asset.IncludeError("login_error", "operation timed out in "+time.Since(startTS).String())
+			asset.AppendError(LoginError, "operation timed out in "+time.Since(startTS).String())
 			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "conn_timeout")
 		case strings.Contains(err.Error(), "401: "), strings.Contains(err.Error(), "failed to login"):
-			asset.IncludeError("login_error", "unauthorized")
+			asset.AppendError(LoginError, "unauthorized")
 			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "unauthorized")
 		default:
-			asset.IncludeError("login_error", err.Error())
+			asset.AppendError(LoginError, err.Error())
 			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "other")
 		}
 
