@@ -49,8 +49,7 @@ var (
 	errTaskFirmwareParam    = errors.New("error in task firmware parameters")
 	errInitTask             = errors.New("error initializing new task from event")
 
-	errAssetNotFound  = errors.New("asset not found in inventory")
-	errInventoryQuery = errors.New("inventory query returned error")
+	errAssetNotFound = errors.New("asset not found in inventory")
 
 	errCollector = errors.New("collector error")
 )
@@ -313,39 +312,6 @@ func (w *Worker) doWork(ctx context.Context, condition *rctypes.Condition, e eve
 	// check no error
 	err = w.runTaskWithMonitor(ctx, task, e)
 	switch err {
-	case errInventoryQuery:
-		// inventory lookup failure - non 404 errors
-		task.SetState(rctypes.Failed)
-		task.Status = err.Error()
-
-		metrics.RegisterEventCounter(true, "nack")
-		w.eventNak(e) // have the message bus re-deliver the message
-
-		metrics.RegisterSpanEvent(
-			span,
-			condition,
-			w.id.String(),
-			task.Parameters.AssetID.String(),
-			"sent nack: store query error",
-			err,
-		)
-
-	case errAssetNotFound, errCollector:
-		// asset was not found
-		task.SetState(rctypes.Failed)
-		task.Status = err.Error()
-
-		w.eventAckComplete(e)
-
-		metrics.RegisterSpanEvent(
-			span,
-			condition,
-			w.id.String(),
-			task.Parameters.AssetID.String(),
-			"sent ack: error"+err.Error(),
-			err,
-		)
-
 	case nil:
 		// work completed successfully
 		task.SetState(rctypes.Succeeded)
@@ -367,6 +333,7 @@ func (w *Worker) doWork(ctx context.Context, condition *rctypes.Condition, e eve
 		)
 
 		publisher.Publish(ctx, task)
+
 		w.logger.WithFields(logrus.Fields{
 			"serverID":    task.Parameters.AssetID.String(),
 			"conditionID": task.ID,
@@ -374,6 +341,62 @@ func (w *Worker) doWork(ctx context.Context, condition *rctypes.Condition, e eve
 			"state":       task.state,
 			"status":      task.Status,
 		}).Info("task for device completed")
+
+	case model.ErrInventoryQuery:
+		// inventory lookup failure - non 404 errors
+		task.SetState(rctypes.Failed)
+		task.Status = err.Error()
+
+		w.eventNak(e) // have the message bus re-deliver the message
+
+		publisher.Publish(ctx, task)
+
+		metrics.RegisterEventCounter(true, "nack")
+		metrics.RegisterConditionMetrics(startTS, string(rctypes.Failed))
+		metrics.RegisterSpanEvent(
+			span,
+			condition,
+			w.id.String(),
+			task.Parameters.AssetID.String(),
+			"sent nack: store query error",
+			err,
+		)
+
+		w.logger.WithFields(logrus.Fields{
+			"serverID":    task.Parameters.AssetID.String(),
+			"conditionID": task.ID,
+			"elapsed":     time.Since(startTS).String(),
+			"state":       task.state,
+			"status":      task.Status,
+		}).Info("task for device failed and will be retried")
+
+	default:
+		// all other error cases
+		task.SetState(rctypes.Failed)
+		task.Status = err.Error()
+
+		w.eventAckComplete(e)
+
+		publisher.Publish(ctx, task)
+
+		metrics.RegisterConditionMetrics(startTS, string(rctypes.Failed))
+		metrics.RegisterEventCounter(true, "ack")
+		metrics.RegisterSpanEvent(
+			span,
+			condition,
+			w.id.String(),
+			task.Parameters.AssetID.String(),
+			"sent ack: error"+err.Error(),
+			err,
+		)
+
+		w.logger.WithFields(logrus.Fields{
+			"serverID":    task.Parameters.AssetID.String(),
+			"conditionID": task.ID,
+			"elapsed":     time.Since(startTS).String(),
+			"state":       task.state,
+			"status":      task.Status,
+		}).Info("task for device failed")
 	}
 }
 
@@ -446,7 +469,7 @@ func (w *Worker) inventoryOutofband(ctx context.Context, task *Task, doneCh chan
 			return errors.Wrap(errAssetNotFound, err.Error())
 		}
 
-		return errors.Wrap(errInventoryQuery, err.Error())
+		return errors.Wrap(model.ErrInventoryQuery, err.Error())
 	}
 
 	c, err := collector.NewDeviceCollectorWithStore(w.repository, w.cfg.AppKind, w.logger)
