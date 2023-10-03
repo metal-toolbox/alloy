@@ -7,6 +7,7 @@ import (
 	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/collector"
 	"github.com/metal-toolbox/alloy/internal/model"
+	"github.com/metal-toolbox/alloy/internal/version"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
@@ -76,6 +77,15 @@ var cmdInband = &cobra.Command{
 }
 
 func collectInband(ctx context.Context, cfg *app.Configuration, logger *logrus.Logger) {
+	v := version.Current()
+	logger.WithFields(
+		logrus.Fields{
+			"version": v.AppVersion,
+			"commit":  v.GitCommit,
+			"branch":  v.GitBranch,
+		},
+	).Info("Alloy collector running")
+
 	c, err := collector.NewDeviceCollector(
 		ctx,
 		model.StoreKind(storeKind),
