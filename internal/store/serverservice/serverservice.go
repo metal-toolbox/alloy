@@ -107,7 +107,7 @@ func (r *Store) AssetByID(ctx context.Context, id string, fetchBmcCredentials bo
 	if err != nil {
 		span.SetStatus(codes.Error, "Get() server failed")
 
-		return nil, errors.Wrap(ErrServerServiceQuery, "error querying server attributes: "+err.Error())
+		return nil, errors.Wrap(model.ErrInventoryQuery, "error querying server attributes: "+err.Error())
 	}
 
 	var credential *serverserviceapi.ServerCredential
@@ -120,7 +120,7 @@ func (r *Store) AssetByID(ctx context.Context, id string, fetchBmcCredentials bo
 		if err != nil {
 			span.SetStatus(codes.Error, "GetCredential() failed")
 
-			return nil, errors.Wrap(ErrServerServiceQuery, "error querying BMC credentials: "+err.Error())
+			return nil, errors.Wrap(model.ErrInventoryQuery, "error querying BMC credentials: "+err.Error())
 		}
 	}
 
@@ -157,7 +157,7 @@ func (r *Store) AssetsByOffsetLimit(ctx context.Context, offset, limit int) (ass
 	if err != nil {
 		span.SetStatus(codes.Error, "List() servers failed")
 
-		return nil, 0, errors.Wrap(ErrServerServiceQuery, err.Error())
+		return nil, 0, errors.Wrap(model.ErrInventoryQuery, err.Error())
 	}
 
 	assets = make([]*model.Asset, 0, len(servers))
@@ -168,7 +168,7 @@ func (r *Store) AssetsByOffsetLimit(ctx context.Context, offset, limit int) (ass
 		if err != nil {
 			span.SetStatus(codes.Error, "GetCredential() failed")
 
-			return nil, 0, errors.Wrap(ErrServerServiceQuery, err.Error())
+			return nil, 0, errors.Wrap(model.ErrInventoryQuery, err.Error())
 		}
 
 		asset, err := toAsset(server, credential, true)
@@ -213,7 +213,7 @@ func (r *Store) AssetUpdate(ctx context.Context, asset *model.Asset) error {
 		// count error
 		metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
 
-		return errors.Wrap(ErrServerServiceQuery, err.Error())
+		return errors.Wrap(model.ErrInventoryQuery, err.Error())
 	}
 
 	if server == nil {
@@ -223,53 +223,45 @@ func (r *Store) AssetUpdate(ctx context.Context, asset *model.Asset) error {
 				"hr": hr,
 			}).Warn("server service server query returned nil object")
 
-		return errors.Wrap(ErrServerServiceQuery, "got nil Server object")
+		return errors.Wrap(model.ErrInventoryQuery, "got nil Server object")
 	}
 
 	// publish server inventory
-	if errPublish := r.publish(ctx, asset, server); errPublish != nil {
+	if errPublishInv := r.publishInventory(ctx, asset, server); errPublishInv != nil {
 		r.logger.WithFields(
 			logrus.Fields{
 				"id":  id,
 				"hr":  hr,
-				"err": errPublish.Error(),
-			}).Warn("inventory asset insert/update error")
+				"err": errPublishInv.Error(),
+			}).Warn("asset inventory insert/update error")
 
 		metricInventorized.With(prometheus.Labels{"status": "failed"}).Add(1)
+
+		return errors.Wrap(model.ErrInventoryQuery, errPublishInv.Error())
 	}
 
 	// count devices with no errors
 	metricInventorized.With(prometheus.Labels{"status": "success"}).Add(1)
 
+	if errPublishBiosCfg := r.publishBiosConfig(ctx, asset, server); errPublishBiosCfg != nil {
+		r.logger.WithFields(
+			logrus.Fields{
+				"id":  server.UUID.String(),
+				"err": errPublishBiosCfg,
+			}).Warn("asset bios configuration insert/update error")
+
+		metricBiosCfgCollected.With(prometheus.Labels{"status": "failed"}).Add(1)
+
+		return errors.Wrap(model.ErrInventoryQuery, errPublishBiosCfg.Error())
+	}
+
+	metricBiosCfgCollected.With(prometheus.Labels{"status": "success"}).Add(1)
+
 	return nil
 }
 
-func (r *Store) publish(ctx context.Context, asset *model.Asset, server *serverserviceapi.Server) error {
-	// create/update server bmc error attributes - for out of band data collection
-	if r.appKind == model.AppKindOutOfBand && len(asset.Errors) > 0 {
-		if err := r.createUpdateServerBMCErrorAttributes(
-			ctx,
-			server.UUID,
-			attributeByNamespace(serverBMCErrorsAttributeNS, server.Attributes),
-			asset,
-		); err != nil {
-			return errors.Wrap(ErrServerServiceQuery, "BMC error attribute create/update error: "+err.Error())
-		}
-
-		// both inventory and BIOS configuration collection failed on a login failure
-		if asset.HasError(outofband.LoginError) {
-			return errors.New(string(outofband.LoginError))
-		}
-	}
-
-	// publish server inventory
-	if !asset.HasError(outofband.InventoryError) {
-		if errPublishInventory := r.publishInventory(ctx, server, asset); errPublishInventory != nil {
-			return errPublishInventory
-		}
-	}
-
-	// Don't publish bios config if there's no bios config data
+func (r *Store) publishBiosConfig(ctx context.Context, asset *model.Asset, server *serverserviceapi.Server) error {
+	// Don't publish bios config if there's no bios config data made avai
 	if len(asset.BiosConfig) == 0 {
 		errNoBiosConfig := errors.New("no BIOS configuration collected")
 		return errNoBiosConfig
@@ -279,33 +271,44 @@ func (r *Store) publish(ctx context.Context, asset *model.Asset, server *servers
 		return errors.New(string(outofband.GetBiosConfigError))
 	}
 
-	// publish bios configuration
-	err := r.createUpdateServerBIOSConfiguration(ctx, server.UUID, asset.BiosConfig)
-	if err != nil {
-		r.logger.WithFields(
-			logrus.Fields{
-				"id":  server.UUID.String(),
-				"err": err,
-			}).Warn("error in server bios configuration versioned attribute update")
-	}
-
-	return nil
+	return r.createUpdateServerBIOSConfiguration(ctx, server.UUID, asset.BiosConfig)
 }
 
-func (r *Store) publishInventory(ctx context.Context, server *serverserviceapi.Server, asset *model.Asset) error {
+func (r *Store) publishInventory(ctx context.Context, asset *model.Asset, server *serverserviceapi.Server) error {
+	// create/update server bmc error attributes - for out of band data collection
+	if r.appKind == model.AppKindOutOfBand && len(asset.Errors) > 0 {
+		if err := r.createUpdateServerBMCErrorAttributes(
+			ctx,
+			server.UUID,
+			attributeByNamespace(serverBMCErrorsAttributeNS, server.Attributes),
+			asset,
+		); err != nil {
+			return errors.Wrap(model.ErrInventoryQuery, "BMC error attribute create/update error: "+err.Error())
+		}
+
+		// both inventory and BIOS configuration collection failed on a login failure
+		if asset.HasError(outofband.LoginError) {
+			return errors.New(string(outofband.LoginError))
+		}
+
+		if asset.HasError(outofband.InventoryError) {
+			return errors.New(string(outofband.InventoryError))
+		}
+	}
+
 	// create/update server serial, vendor, model attributes
 	if err := r.createUpdateServerAttributes(ctx, server, asset); err != nil {
-		return errors.Wrap(ErrServerServiceQuery, "Server Vendor attribute create/update error: "+err.Error())
+		return errors.Wrap(model.ErrInventoryQuery, "Server Vendor attribute create/update error: "+err.Error())
 	}
 
 	// create update server metadata attributes
 	if err := r.createUpdateServerMetadataAttributes(ctx, server.UUID, asset); err != nil {
-		return errors.Wrap(ErrServerServiceQuery, "Server Metadata attribute create/update error: "+err.Error())
+		return errors.Wrap(model.ErrInventoryQuery, "Server Metadata attribute create/update error: "+err.Error())
 	}
 
 	// create update server component
 	if err := r.createUpdateServerComponents(ctx, server.UUID, asset); err != nil {
-		return errors.Wrap(ErrServerServiceQuery, "Server Component create/update error: "+err.Error())
+		return errors.Wrap(model.ErrInventoryQuery, "Server Component create/update error: "+err.Error())
 	}
 
 	return nil
@@ -345,7 +348,7 @@ func (r *Store) createUpdateServerComponents(ctx context.Context, serverID uuid.
 		// set span status
 		span.SetStatus(codes.Error, "GetComponents() failed")
 
-		return errors.Wrap(ErrServerServiceQuery, err.Error())
+		return errors.Wrap(model.ErrInventoryQuery, err.Error())
 	}
 
 	// For debugging and to capture test fixtures data.
@@ -372,7 +375,7 @@ func (r *Store) createUpdateServerComponents(ctx context.Context, serverID uuid.
 	// identify changes to be applied
 	add, update, remove, err := serverServiceChangeList(ctx, currentInventoryPtrSlice, newInventory)
 	if err != nil {
-		return errors.Wrap(ErrServerServiceQuery, err.Error())
+		return errors.Wrap(model.ErrInventoryQuery, err.Error())
 	}
 
 	if len(add) == 0 && len(update) == 0 && len(remove) == 0 {
@@ -409,7 +412,7 @@ func (r *Store) createUpdateServerComponents(ctx context.Context, serverID uuid.
 			// set span status
 			span.SetStatus(codes.Error, "CreateComponents() failed")
 
-			return errors.Wrap(ErrServerServiceQuery, "CreateComponents: "+err.Error())
+			return errors.Wrap(model.ErrInventoryQuery, "CreateComponents: "+err.Error())
 		}
 	}
 
@@ -433,7 +436,7 @@ func (r *Store) createUpdateServerComponents(ctx context.Context, serverID uuid.
 			// set span status
 			span.SetStatus(codes.Error, "UpdateComponents() failed")
 
-			return errors.Wrap(ErrServerServiceQuery, "UpdateComponents: "+err.Error())
+			return errors.Wrap(model.ErrInventoryQuery, "UpdateComponents: "+err.Error())
 		}
 	}
 

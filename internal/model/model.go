@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"net"
 
 	"github.com/bmc-toolbox/common"
@@ -18,6 +19,10 @@ type (
 	LogLevel string
 
 	CollectorError string
+)
+
+var (
+	ErrInventoryQuery = errors.New("inventory query returned error")
 )
 
 const (
