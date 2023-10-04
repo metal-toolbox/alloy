@@ -170,10 +170,12 @@ func (o *Queryor) biosConfiguration(ctx context.Context, bmc BMCQueryor, asset *
 		// increment get bios configuration query error count metric
 		switch {
 		case strings.Contains(err.Error(), "no compatible System Odata IDs identified"):
+			// device provides a redfish API, but BIOS configuration export isn't supported in the current redfish library
 			asset.AppendError(GetBiosConfigError, "redfish_incompatible: no compatible System Odata IDs identified")
 			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "redfish_incompatible")
 		case strings.Contains(err.Error(), "no BiosConfigurationGetter implementations found"):
-			asset.AppendError(GetBiosConfigError, "redfish_incompatible: no compatible System Odata IDs identified")
+			// no means to export BIOS configuration were found
+			asset.AppendError(GetBiosConfigError, "device not supported")
 			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "NoBiosConfigurationGetter")
 		default:
 			asset.AppendError(GetBiosConfigError, err.Error())
@@ -212,6 +214,7 @@ func (o *Queryor) bmcInventory(ctx context.Context, bmc BMCQueryor, asset *model
 
 		// increment inventory query error count metric
 		if strings.Contains(err.Error(), "no compatible System Odata IDs identified") {
+			// device provides a redfish API, but inventory export isn't supported in the current redfish library
 			asset.AppendError(InventoryError, "redfish_incompatible: no compatible System Odata IDs identified")
 			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "redfish_incompatible")
 		} else {
