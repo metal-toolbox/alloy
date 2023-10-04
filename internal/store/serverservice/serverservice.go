@@ -202,10 +202,9 @@ func (r *Store) AssetUpdate(ctx context.Context, asset *model.Asset) error {
 	if err != nil {
 		r.logger.WithFields(
 			logrus.Fields{
-				"err":      err,
 				"id":       id,
 				"response": hr,
-			}).Warn("server service server query returned error")
+			}).WithError(err).Error("server service server query returned error")
 
 		// set span status
 		span.SetStatus(codes.Error, "Get() server failed")
@@ -221,7 +220,7 @@ func (r *Store) AssetUpdate(ctx context.Context, asset *model.Asset) error {
 			logrus.Fields{
 				"id": id,
 				"hr": hr,
-			}).Warn("server service server query returned nil object")
+			}).Error("server service server query returned nil object")
 
 		return errors.Wrap(model.ErrInventoryQuery, "got nil Server object")
 	}
@@ -230,10 +229,8 @@ func (r *Store) AssetUpdate(ctx context.Context, asset *model.Asset) error {
 	if errPublishInv := r.publishInventory(ctx, asset, server); errPublishInv != nil {
 		r.logger.WithFields(
 			logrus.Fields{
-				"id":  id,
-				"hr":  hr,
-				"err": errPublishInv.Error(),
-			}).Warn("asset inventory insert/update error")
+				"id": id,
+			}).WithError(errPublishInv).Error("asset inventory insert/update error")
 
 		metricInventorized.With(prometheus.Labels{"status": "failed"}).Add(1)
 
@@ -246,9 +243,8 @@ func (r *Store) AssetUpdate(ctx context.Context, asset *model.Asset) error {
 	if errPublishBiosCfg := r.publishBiosConfig(ctx, asset, server); errPublishBiosCfg != nil {
 		r.logger.WithFields(
 			logrus.Fields{
-				"id":  server.UUID.String(),
-				"err": errPublishBiosCfg,
-			}).Warn("asset bios configuration insert/update error")
+				"id": server.UUID.String(),
+			}).WithError(errPublishBiosCfg).Error("asset bios configuration insert/update error")
 
 		metricBiosCfgCollected.With(prometheus.Labels{"status": "failed"}).Add(1)
 
