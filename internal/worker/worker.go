@@ -317,8 +317,6 @@ func (w *Worker) doWork(ctx context.Context, condition *rctypes.Condition, e eve
 		task.SetState(rctypes.Succeeded)
 		task.Status = "collection completed successfully"
 
-		publisher.Publish(ctx, task)
-
 		w.eventAckComplete(e)
 
 		metrics.RegisterConditionMetrics(startTS, string(rctypes.Succeeded))
@@ -331,8 +329,6 @@ func (w *Worker) doWork(ctx context.Context, condition *rctypes.Condition, e eve
 			"sent ack: condition finalized",
 			nil,
 		)
-
-		publisher.Publish(ctx, task)
 
 		w.logger.WithFields(logrus.Fields{
 			"serverID":    task.Parameters.AssetID.String(),
@@ -348,8 +344,6 @@ func (w *Worker) doWork(ctx context.Context, condition *rctypes.Condition, e eve
 		task.Status = err.Error()
 
 		w.eventNak(e) // have the message bus re-deliver the message
-
-		publisher.Publish(ctx, task)
 
 		metrics.RegisterEventCounter(true, "nack")
 		metrics.RegisterConditionMetrics(startTS, string(rctypes.Failed))
@@ -377,8 +371,6 @@ func (w *Worker) doWork(ctx context.Context, condition *rctypes.Condition, e eve
 
 		w.eventAckComplete(e)
 
-		publisher.Publish(ctx, task)
-
 		metrics.RegisterConditionMetrics(startTS, string(rctypes.Failed))
 		metrics.RegisterEventCounter(true, "ack")
 		metrics.RegisterSpanEvent(
@@ -398,6 +390,9 @@ func (w *Worker) doWork(ctx context.Context, condition *rctypes.Condition, e eve
 			"status":      task.Status,
 		}).Info("task for device failed")
 	}
+
+	// publish result
+	publisher.Publish(ctx, task)
 }
 
 // runTaskWithMonitor runs the task method based on the parameters, while ack'ing its progress to the NATS JS.
