@@ -1167,15 +1167,23 @@ func (r *Store) enrichFirmwareData(deviceVendor, componentVendor string, vattr *
 	// Check in the cache if we have a match by vendor + version
 	for _, fw := range r.firmwares[componentVendor] {
 		if strings.EqualFold(fw.Version, vattr.Firmware.Installed) {
+			fwUUID := fw.UUID
+
 			vattr.Vendor = fw.Vendor
-			vattr.UUID = &fw.UUID
+			vattr.UUID = &fwUUID
+
+			return
 		}
 	}
 
 	for _, fw := range r.firmwares[deviceVendor] {
 		if strings.EqualFold(fw.Version, vattr.Firmware.Installed) {
+			fwUUID := fw.UUID
+
 			vattr.Vendor = fw.Vendor
-			vattr.UUID = &fw.UUID
+			vattr.UUID = &fwUUID
+
+			return
 		}
 	}
 }
