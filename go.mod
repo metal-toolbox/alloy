@@ -15,7 +15,7 @@ require (
 	github.com/jacobweinstock/registrar v0.4.7
 	github.com/jeremywohl/flatten v1.0.1
 	github.com/jinzhu/copier v0.3.5
-	github.com/metal-toolbox/ironlib v0.2.15-0.20231222143939-19caf253762a
+	github.com/metal-toolbox/ironlib v0.2.15
 	github.com/metal-toolbox/rivets v0.2.3-0.20231222134907-c139dbc19928
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/nats-io/nats.go v1.31.0
