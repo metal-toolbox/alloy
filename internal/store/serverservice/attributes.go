@@ -64,11 +64,7 @@ func (r *Store) createUpdateServerAttributes(ctx context.Context, server *server
 		return err
 	}
 
-	if err := r.publishUEFIVars(ctx, server.UUID, asset); err != nil {
-		return err
-	}
-
-	return nil
+	return r.publishUEFIVars(ctx, server.UUID, asset)
 }
 
 func (r *Store) publishUEFIVars(ctx context.Context, serverID uuid.UUID, asset *model.Asset) error {
