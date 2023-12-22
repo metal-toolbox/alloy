@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/metal-toolbox/alloy/internal/helpers"
 	"github.com/metal-toolbox/alloy/internal/model"
+	rs "github.com/metal-toolbox/rivets/serverservice"
 	"github.com/pkg/errors"
 	r3diff "github.com/r3labs/diff/v3"
 	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
@@ -63,7 +64,31 @@ func (r *Store) createUpdateServerAttributes(ctx context.Context, server *server
 		return err
 	}
 
+	if err := r.publishUEFIVars(ctx, server.UUID, asset); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (r *Store) publishUEFIVars(ctx context.Context, serverID uuid.UUID, asset *model.Asset) error {
+	if asset.Inventory == nil || asset.Inventory.Metadata == nil {
+		return nil
+	}
+
+	vars, exists := asset.Inventory.Metadata["uefi-variables"]
+	if !exists {
+		return nil
+	}
+
+	va := serverserviceapi.VersionedAttributes{
+		Namespace: rs.UEFIVarsNS,
+		Data:      []byte(vars),
+	}
+
+	_, err := r.CreateVersionedAttributes(ctx, serverID, va)
+
+	return err
 }
 
 // initializes a map with the device vendor data attributes
