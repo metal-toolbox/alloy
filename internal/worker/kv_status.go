@@ -8,7 +8,6 @@ import (
 
 	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/metal-toolbox/alloy/internal/model"
-	rkv "github.com/metal-toolbox/rivets/kv"
 	"github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -16,6 +15,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
+	rctypes "github.com/metal-toolbox/rivets/condition"
 	"go.hollow.sh/toolbox/events"
 	"go.hollow.sh/toolbox/events/pkg/kv"
 )
@@ -82,7 +82,7 @@ func (s *statusKVPublisher) Publish(ctx context.Context, task *Task) {
 
 	key := fmt.Sprintf("%s.%s", s.facility, task.ID.String())
 
-	payload := rkv.StatusValue{
+	payload := rctypes.StatusValue{
 		WorkerID: s.workerID,
 		Target:   task.Parameters.AssetID.String(),
 		TraceID:  trace.SpanFromContext(ctx).SpanContext().TraceID().String(),
