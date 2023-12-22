@@ -10,7 +10,7 @@ require (
 	github.com/equinix-labs/otel-init-go v0.0.8
 	github.com/gammazero/workerpool v1.1.3
 	github.com/google/go-cmp v0.5.9
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.1
 	github.com/hashicorp/go-retryablehttp v0.7.4
 	github.com/jacobweinstock/registrar v0.4.7
 	github.com/jinzhu/copier v0.3.5
@@ -23,11 +23,11 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.16.0
 	github.com/stretchr/testify v1.8.4
-	go.hollow.sh/serverservice v0.16.0
+	go.hollow.sh/serverservice v0.16.2
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.42.0
 	go.opentelemetry.io/otel v1.16.0
 	go.opentelemetry.io/otel/trace v1.16.0
-	golang.org/x/exp v0.0.0-20230811145659-89c5cff77bcb
+	golang.org/x/exp v0.0.0-20230817173708-d852ddb80c63
 	golang.org/x/net v0.14.0
 	golang.org/x/oauth2 v0.11.0
 )
@@ -124,7 +124,7 @@ require (
 	github.com/volatiletech/null/v8 v8.1.2 // indirect
 	github.com/volatiletech/randomize v0.0.1 // indirect
 	github.com/volatiletech/sqlboiler v3.7.1+incompatible // indirect
-	github.com/volatiletech/sqlboiler/v4 v4.14.2 // indirect
+	github.com/volatiletech/sqlboiler/v4 v4.15.0 // indirect
 	github.com/volatiletech/strmangle v0.0.5 // indirect
 	go.hollow.sh/toolbox v0.6.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
