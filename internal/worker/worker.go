@@ -24,7 +24,6 @@ import (
 	"go.hollow.sh/toolbox/events/registry"
 
 	rctypes "github.com/metal-toolbox/rivets/condition"
-	rkv "github.com/metal-toolbox/rivets/kv"
 )
 
 const (
@@ -216,7 +215,7 @@ func (w *Worker) processSingleEvent(ctx context.Context, e events.Message) {
 	}
 
 	// check and see if the task is or has-been handled by another worker
-	currentState, err := rkv.ConditionStatus(
+	currentState, err := rctypes.CheckConditionInProgress(
 		condition.ID.String(),
 		w.facilityCode,
 		inventoryStatusKVBucket,
@@ -229,14 +228,14 @@ func (w *Worker) processSingleEvent(ctx context.Context, e events.Message) {
 	}
 
 	switch currentState {
-	case rkv.InProgress:
+	case rctypes.InProgress:
 		w.logger.WithField("conditionID", condition.ID.String()).Info("condition is already in progress")
 		w.eventAckInProgress(e)
 		metrics.RegisterSpanEvent(span, condition, w.id.String(), "", "ackInProgress", err)
 
 		return
 
-	case rkv.Complete:
+	case rctypes.Complete:
 		w.logger.WithField("conditionID", condition.ID.String()).Info("condition is complete")
 		w.eventAckComplete(e)
 		metrics.RegisterSpanEvent(span, condition, w.id.String(), "", "ackComplete", err)
@@ -244,16 +243,16 @@ func (w *Worker) processSingleEvent(ctx context.Context, e events.Message) {
 		return
 
 	// we need to restart this event
-	case rkv.Orphaned:
+	case rctypes.Orphaned:
 		w.logger.WithField("conditionID", condition.ID.String()).Warn("restarting this condition")
 		metrics.RegisterSpanEvent(span, condition, w.id.String(), "", "restarting condition", err)
 
 	// break out here, this is a new event
-	case rkv.NotStarted:
+	case rctypes.NotStarted:
 		w.logger.WithField("conditionID", condition.ID.String()).Info("starting new condition")
 		metrics.RegisterSpanEvent(span, condition, w.id.String(), "", "start new condition", err)
 
-	case rkv.Indeterminate:
+	case rctypes.Indeterminate:
 		w.logger.WithField("conditionID", condition.ID.String()).Warn("unable to determine state of this condition")
 		// send it back to NATS to try again
 		w.eventNak(e)
