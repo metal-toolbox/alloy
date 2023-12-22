@@ -523,6 +523,8 @@ github.com/metal-toolbox/ironlib v0.2.15-0.20231222142904-33805cc706da h1:f5H0nV
 github.com/metal-toolbox/ironlib v0.2.15-0.20231222142904-33805cc706da/go.mod h1:QRGRb//lV7LR2yDIe/zmXTFYGKhltQsRol05QlHzfBw=
 github.com/metal-toolbox/ironlib v0.2.15-0.20231222143939-19caf253762a h1:5GuMn4Gj39lJrZ3oDhdWUo2DfsbtTD2v/pm7uMVVwtw=
 github.com/metal-toolbox/ironlib v0.2.15-0.20231222143939-19caf253762a/go.mod h1:QRGRb//lV7LR2yDIe/zmXTFYGKhltQsRol05QlHzfBw=
+github.com/metal-toolbox/ironlib v0.2.15 h1:0uLmUnS7GgRZVwTOGJ+uyUlDEkSzoD+BYvZme9/C5tk=
+github.com/metal-toolbox/ironlib v0.2.15/go.mod h1:QRGRb//lV7LR2yDIe/zmXTFYGKhltQsRol05QlHzfBw=
 github.com/metal-toolbox/rivets v0.2.3-0.20231222134907-c139dbc19928 h1:j9suDVBwndsBQreWaqkS/3NDgPlRhHY3fk5uMTehSgg=
 github.com/metal-toolbox/rivets v0.2.3-0.20231222134907-c139dbc19928/go.mod h1:XYcHa0lsKG3jYKImcCfjtHkjTNewLGonzozOC5IcdKk=
 github.com/microsoft/go-mssqldb v0.17.0/go.mod h1:OkoNGhGEs8EZqchVTtochlXruEhEOaO4S0d2sB5aeGQ=
