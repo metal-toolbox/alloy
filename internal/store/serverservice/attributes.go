@@ -195,8 +195,6 @@ func (r *Store) createUpdateServerBIOSConfiguration(ctx context.Context, serverI
 	return err
 }
 
-// createUpdateServerMetadataAttributes creates/updates metadata attributes of a server
-//
 // nolint:gocyclo // (joel) theres a bunch of validation going on here, I'll split the method out if theres more to come.
 func (r *Store) createUpdateServerBMCErrorAttributes(ctx context.Context, serverID uuid.UUID, current *serverserviceapi.Attributes, asset *model.Asset) error {
 	// 1. no errors reported, none currently present
