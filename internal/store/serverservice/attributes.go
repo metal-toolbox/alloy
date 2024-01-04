@@ -17,6 +17,10 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+const (
+	uefiVariablesKey = "uefi-variables"
+)
+
 // createUpdateServerAttributes creates/updates the server serial, vendor, model attributes
 func (r *Store) createUpdateServerAttributes(ctx context.Context, server *serverserviceapi.Server, asset *model.Asset) error {
 	// device vendor data
@@ -72,7 +76,7 @@ func (r *Store) publishUEFIVars(ctx context.Context, serverID uuid.UUID, asset *
 		return nil
 	}
 
-	vars, exists := asset.Inventory.Metadata["uefi-variables"]
+	vars, exists := asset.Inventory.Metadata[uefiVariablesKey]
 	if !exists {
 		return nil
 	}
@@ -143,6 +147,29 @@ func vendorDataUpdate(newData, currentData map[string]string) map[string]string 
 	return currentData
 }
 
+// mustFilterAssetMetadata processes the asset inventory metadata to filter out fields we'll turn into versioned attributes (e.g. UEFIVariables)
+func mustFilterAssetMetadata(inventory map[string]string) json.RawMessage {
+	excludedKeys := map[string]struct{}{
+		uefiVariablesKey: {},
+	}
+
+	filtered := make(map[string]string)
+
+	for k, v := range inventory {
+		if _, ok := excludedKeys[k]; ok {
+			continue
+		}
+		filtered[k] = v
+	}
+
+	byt, err := json.Marshal(filtered)
+	if err != nil {
+		panic("serializing metadata string map")
+	}
+
+	return byt
+}
+
 // createUpdateServerMetadataAttributes creates/updates metadata attributes of a server
 func (r *Store) createUpdateServerMetadataAttributes(ctx context.Context, serverID uuid.UUID, asset *model.Asset) error {
 	// no metadata reported in inventory from device
@@ -150,11 +177,13 @@ func (r *Store) createUpdateServerMetadataAttributes(ctx context.Context, server
 		return nil
 	}
 
-	// marshal metadata from device
-	metadata, err := json.Marshal(asset.Inventory.Metadata)
-	if err != nil {
-		return err
+	// update when metadata differs
+	if helpers.MapsAreEqual(asset.Metadata, asset.Inventory.Metadata) {
+		return nil
 	}
+
+	// marshal metadata from device
+	metadata := mustFilterAssetMetadata(asset.Inventory.Metadata)
 
 	attribute := serverserviceapi.Attributes{
 		Namespace: serverMetadataAttributeNS,
@@ -163,17 +192,12 @@ func (r *Store) createUpdateServerMetadataAttributes(ctx context.Context, server
 
 	// current asset metadata has no attributes set, create
 	if len(asset.Metadata) == 0 {
-		_, err = r.CreateAttributes(ctx, serverID, attribute)
+		_, err := r.CreateAttributes(ctx, serverID, attribute)
 		return err
 	}
 
-	// update when metadata differs
-	if helpers.MapsAreEqual(asset.Metadata, asset.Inventory.Metadata) {
-		return nil
-	}
-
 	// update vendor, model attributes
-	_, err = r.UpdateAttributes(ctx, serverID, serverMetadataAttributeNS, metadata)
+	_, err := r.UpdateAttributes(ctx, serverID, serverMetadataAttributeNS, metadata)
 
 	return err
 }
@@ -195,8 +219,6 @@ func (r *Store) createUpdateServerBIOSConfiguration(ctx context.Context, serverI
 	return err
 }
 
-// createUpdateServerMetadataAttributes creates/updates metadata attributes of a server
-//
 // nolint:gocyclo // (joel) theres a bunch of validation going on here, I'll split the method out if theres more to come.
 func (r *Store) createUpdateServerBMCErrorAttributes(ctx context.Context, serverID uuid.UUID, current *serverserviceapi.Attributes, asset *model.Asset) error {
 	// 1. no errors reported, none currently present

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -33,6 +34,7 @@ type DeviceCollector struct {
 	queryor    device.Queryor
 	repository store.Repository
 	kind       model.AppKind
+	log        *logrus.Logger
 }
 
 // NewDeviceCollector is a constructor method to return a inventory, bios configuration data collector.
@@ -51,6 +53,7 @@ func NewDeviceCollector(ctx context.Context, storeKind model.StoreKind, appKind 
 		kind:       appKind,
 		queryor:    queryor,
 		repository: repository,
+		log:        logger,
 	}, nil
 }
 
@@ -65,6 +68,7 @@ func NewDeviceCollectorWithStore(repository store.Repository, appKind model.AppK
 		kind:       appKind,
 		queryor:    queryor,
 		repository: repository,
+		log:        logger,
 	}, nil
 }
 
@@ -137,11 +141,17 @@ func (c *DeviceCollector) CollectOutofband(ctx context.Context, asset *model.Ass
 func (c *DeviceCollector) CollectInband(ctx context.Context, asset *model.Asset, outputStdout bool) error {
 	var errs error
 
+	// XXX: This is duplicative! The asset is fetched again prior to updating serverservice.
 	// fetch existing asset information from inventory
 	existing, err := c.repository.AssetByID(ctx, asset.ID, c.kind == model.AppKindOutOfBand)
 	if err != nil {
+		c.log.WithError(err).Warn("getting asset by ID")
 		errs = multierror.Append(errs, err)
 	}
+
+	c.log.WithFields(logrus.Fields{
+		"found_existing": strconv.FormatBool(existing != nil),
+	}).Info("asset by id complete")
 
 	// collect inventory
 	if errInventory := c.queryor.Inventory(ctx, asset); errInventory != nil {
@@ -154,6 +164,12 @@ func (c *DeviceCollector) CollectInband(ctx context.Context, asset *model.Asset,
 	}
 
 	if existing != nil {
+		c.log.WithFields(logrus.Fields{
+			"model":           existing.Model,
+			"vendor":          existing.Vendor,
+			"serial":          existing.Serial,
+			"metadata.length": len(existing.Metadata),
+		}).Info("setting existing data in asset")
 		// set collected inventory attributes based on inventory data
 		// so as to not overwrite any of these existing values when published.
 		if existing.Model != "" {
@@ -166,6 +182,10 @@ func (c *DeviceCollector) CollectInband(ctx context.Context, asset *model.Asset,
 
 		if existing.Serial != "" {
 			asset.Serial = existing.Serial
+		}
+
+		if len(existing.Metadata) > 0 {
+			asset.Metadata = existing.Metadata
 		}
 	}
 

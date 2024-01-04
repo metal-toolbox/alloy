@@ -20,6 +20,7 @@ import (
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
 )
 
@@ -936,4 +937,27 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_Updated(t *testing.
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestMetadataFilter(t *testing.T) {
+	t.Parallel()
+	clean := map[string]string{
+		"foo": "bar",
+		"baz": "quux",
+	}
+
+	dirty := map[string]string{
+		"foo":            "bar",
+		"baz":            "quux",
+		"uefi-variables": "uhoh-nogood",
+	}
+
+	exp, err := json.Marshal(clean)
+	require.NoError(t, err, "prerequisite setup")
+
+	got := mustFilterAssetMetadata(clean)
+	require.Equal(t, json.RawMessage(exp), got, "clean doesn't serialize properly")
+
+	got = mustFilterAssetMetadata(dirty)
+	require.Equal(t, json.RawMessage(exp), got, "dirty doesn't serialize properly")
 }
