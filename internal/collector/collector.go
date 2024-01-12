@@ -25,10 +25,6 @@ var (
 	ErrInventoryCollect = errors.New("error collecting inventory data")
 )
 
-func init() {
-
-}
-
 // DeviceCollector holds attributes to collect inventory, bios configuration data from a single device.
 type DeviceCollector struct {
 	queryor    device.Queryor

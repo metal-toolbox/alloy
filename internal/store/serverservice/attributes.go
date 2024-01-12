@@ -18,7 +18,8 @@ import (
 )
 
 const (
-	uefiVariablesKey = "uefi-variables"
+	uefiVariablesKey         = "uefi-variables"
+	ssMetadataAttributeFound = "__ss_found"
 )
 
 // createUpdateServerAttributes creates/updates the server serial, vendor, model attributes
@@ -174,11 +175,7 @@ func mustFilterAssetMetadata(inventory map[string]string) json.RawMessage {
 func (r *Store) createUpdateServerMetadataAttributes(ctx context.Context, serverID uuid.UUID, asset *model.Asset) error {
 	// no metadata reported in inventory from device
 	if asset.Inventory == nil || len(asset.Inventory.Metadata) == 0 {
-		return nil
-	}
-
-	// update when metadata differs
-	if helpers.MapsAreEqual(asset.Metadata, asset.Inventory.Metadata) {
+		// XXX: should delete the metadata on the server-service record!
 		return nil
 	}
 
@@ -190,12 +187,15 @@ func (r *Store) createUpdateServerMetadataAttributes(ctx context.Context, server
 		Data:      metadata,
 	}
 
-	// current asset metadata has no attributes set, create
-	if len(asset.Metadata) == 0 {
+	// XXX: This would be much easier if serverservice/fleetdb supported upsert
+	// current asset metadata has no attributes set and no metadata attribute, create one
+	if _, ok := asset.Metadata[ssMetadataAttributeFound]; !ok {
+		r.logger.WithField("server.id", serverID.String()).Debug("creating metadata attributes")
 		_, err := r.CreateAttributes(ctx, serverID, attribute)
 		return err
 	}
 
+	r.logger.WithField("server.id", serverID.String()).Debug("updating metadata attributes")
 	// update vendor, model attributes
 	_, err := r.UpdateAttributes(ctx, serverID, serverMetadataAttributeNS, metadata)
 
@@ -498,6 +498,10 @@ func serverMetadataAttributes(attributes []serverserviceapi.Attributes) (map[str
 			if err := json.Unmarshal(attribute.Data, &metadata); err != nil {
 				return nil, errors.Wrap(ErrServerServiceObject, "server metadata attribute: "+err.Error())
 			}
+			// XXX: it is possible for there to be a metadata attribute with an empty Data field
+			// Add an entry here so that when we test for doing a create vs. an update we make the
+			// right decision.
+			metadata[ssMetadataAttributeFound] = "true"
 		}
 	}
 

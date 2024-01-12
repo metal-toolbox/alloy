@@ -13,6 +13,7 @@ import (
 	"go.uber.org/goleak"
 )
 
+// XXX: Warning, this test might be flaky.
 func Test_Collect_Concurrent(t *testing.T) {
 	ignorefunc := "go.opencensus.io/stats/view.(*worker).start"
 	defer goleak.VerifyNone(t, goleak.IgnoreTopFunction(ignorefunc))
