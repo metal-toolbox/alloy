@@ -15,7 +15,6 @@ import (
 	"github.com/bmc-toolbox/common"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-retryablehttp"
-	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/fixtures"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/sirupsen/logrus"
@@ -44,7 +43,7 @@ func testStoreInstance(t *testing.T, mockURL string) *Store {
 	}
 
 	return &Store{
-		logger:                       app.NewLogrusEntryFromLogger(logrus.Fields{"component": "publisher"}, logrus.New()),
+		logger:                       logrus.New(),
 		slugs:                        fixtures.ServerServiceSlugMap(),
 		Client:                       mockClient,
 		attributeNS:                  serverComponentAttributeNS(model.AppKindOutOfBand),
@@ -676,11 +675,17 @@ func Test_ServerService_CreateUpdateServerMetadataAttributes_Update(t *testing.T
 	serverID, _ := uuid.Parse(fixtures.TestserverID_Dell_fc167440)
 
 	device := &model.Asset{
-		Metadata: map[string]string{"foo": "bar"},
-		Vendor:   "foobar",
+		Metadata: map[string]string{
+			"foo":        "bar",
+			"__ss_found": "true",
+		},
+		Vendor: "foobar",
 		Inventory: &common.Device{
 			Common: common.Common{
-				Metadata: map[string]string{"foo": "bar", "test": "lala"},
+				Metadata: map[string]string{
+					"foo":  "bar",
+					"test": "lala",
+				},
 			},
 		},
 	}
@@ -693,23 +698,19 @@ func Test_ServerService_CreateUpdateServerMetadataAttributes_Update(t *testing.T
 			switch r.Method {
 			case http.MethodPut:
 				b, err := io.ReadAll(r.Body)
-				if err != nil {
-					t.Fatal(err)
-				}
+				require.NoError(t, err)
 
 				// unpack attributes posted by method
 				attributes := &serverserviceapi.Attributes{}
-				if err = json.Unmarshal(b, attributes); err != nil {
-					t.Fatal(err)
-				}
+				err = json.Unmarshal(b, attributes)
+				require.NoError(t, err)
 
 				// unpack attributes data
 				data := map[string]string{}
-				if err = json.Unmarshal(attributes.Data, &data); err != nil {
-					t.Fatal(err)
-				}
+				err = json.Unmarshal(attributes.Data, &data)
+				require.NoError(t, err)
 
-				assert.Equal(t, device.Inventory.Metadata, data)
+				require.Equal(t, device.Inventory.Metadata, data)
 
 				w.Header().Set("Content-Type", "application/json")
 				_, _ = w.Write(fixtures.ServerServiceR6515Components_fc167440_JSON())
@@ -719,13 +720,17 @@ func Test_ServerService_CreateUpdateServerMetadataAttributes_Update(t *testing.T
 		},
 	)
 
+	handler.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		t.Logf("unhandled URL: %s", r.URL)
+		w.WriteHeader(404)
+	})
+
 	mock := httptest.NewServer(handler)
+	t.Logf("mock URL: %s", mock.URL)
 	p := testStoreInstance(t, mock.URL)
 
 	err := p.createUpdateServerMetadataAttributes(context.TODO(), serverID, device)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 }
 
 func Test_ServerService_CreateUpdateServerBMCErrorAttributes_NoErrorsNoChanges(t *testing.T) {

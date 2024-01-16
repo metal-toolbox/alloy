@@ -31,7 +31,7 @@ const (
 // Store is an asset inventory store
 type Store struct {
 	*serverserviceapi.Client
-	logger                       *logrus.Entry
+	logger                       *logrus.Logger
 	config                       *app.ServerserviceOptions
 	slugs                        map[string]*serverserviceapi.ServerComponentType
 	firmwares                    map[string][]*serverserviceapi.ComponentFirmwareVersion
@@ -44,12 +44,9 @@ type Store struct {
 
 // NewStore returns a serverservice store queryor to lookup and publish assets to, from the store.
 func New(ctx context.Context, appKind model.AppKind, cfg *app.ServerserviceOptions, logger *logrus.Logger) (*Store, error) {
-	loggerEntry := app.NewLogrusEntryFromLogger(
-		logrus.Fields{"component": "store.serverservice"},
-		logger,
-	)
+	logger.Info("serverservice store ctor")
 
-	apiclient, err := NewServerServiceClient(ctx, cfg, loggerEntry)
+	apiclient, err := NewServerServiceClient(ctx, cfg, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +54,7 @@ func New(ctx context.Context, appKind model.AppKind, cfg *app.ServerserviceOptio
 	s := &Store{
 		Client:                       apiclient,
 		appKind:                      appKind,
-		logger:                       loggerEntry,
+		logger:                       logger,
 		config:                       cfg,
 		slugs:                        make(map[string]*serverserviceapi.ServerComponentType),
 		firmwares:                    make(map[string][]*serverserviceapi.ComponentFirmwareVersion),
@@ -345,21 +342,6 @@ func (r *Store) createUpdateServerComponents(ctx context.Context, serverID uuid.
 		span.SetStatus(codes.Error, "GetComponents() failed")
 
 		return errors.Wrap(model.ErrInventoryQuery, err.Error())
-	}
-
-	// For debugging and to capture test fixtures data.
-	if os.Getenv(model.EnvVarDumpFixtures) == "true" {
-		current := serverID.String() + ".current.components.fixture"
-		r.logger.Info("components current fixture dumped as file: " + current)
-
-		// nolint:gomnd // file permissions are clearer in this form.
-		_ = os.WriteFile(current, []byte(litter.Sdump(currentInventory)), 0o600)
-
-		newc := serverID.String() + ".new.components.fixture"
-		r.logger.Info("components new fixture dumped as file: " + newc)
-
-		// nolint:gomnd // file permissions are clearer in this form.
-		_ = os.WriteFile(newc, []byte(litter.Sdump(newInventory)), 0o600)
 	}
 
 	// convert to a pointer slice since this data is passed around

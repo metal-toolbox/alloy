@@ -30,7 +30,7 @@ var (
 // TODO move this under an interface
 
 // NewServerServiceClient instantiates and returns a serverService client
-func NewServerServiceClient(ctx context.Context, cfg *app.ServerserviceOptions, logger *logrus.Entry) (*serverserviceapi.Client, error) {
+func NewServerServiceClient(ctx context.Context, cfg *app.ServerserviceOptions, logger *logrus.Logger) (*serverserviceapi.Client, error) {
 	if cfg == nil {
 		return nil, errors.Wrap(ErrConfig, "configuration is nil")
 	}
@@ -43,7 +43,7 @@ func NewServerServiceClient(ctx context.Context, cfg *app.ServerserviceOptions, 
 }
 
 // returns a serverservice retryable client with Otel
-func newServerserviceClientWithOtel(cfg *app.ServerserviceOptions, endpoint string, logger *logrus.Entry) (*serverserviceapi.Client, error) {
+func newServerserviceClientWithOtel(cfg *app.ServerserviceOptions, endpoint string, logger *logrus.Logger) (*serverserviceapi.Client, error) {
 	if cfg == nil {
 		return nil, errors.Wrap(ErrConfig, "configuration is nil")
 	}
@@ -69,13 +69,6 @@ func newServerserviceClientWithOtel(cfg *app.ServerserviceOptions, endpoint stri
 	// set retryable HTTP client to be the otel http client to collect telemetry
 	retryableClient.HTTPClient = otelhttp.DefaultClient
 
-	// disable default debug logging on the retryable client
-	if logger.Level < logrus.DebugLevel {
-		retryableClient.Logger = nil
-	} else {
-		retryableClient.Logger = logger
-	}
-
 	// requests taking longer than timeout value should be canceled.
 	client := retryableClient.StandardClient()
 	client.Timeout = timeout
@@ -88,23 +81,18 @@ func newServerserviceClientWithOtel(cfg *app.ServerserviceOptions, endpoint stri
 }
 
 // returns a serverservice retryable http client with Otel and Oauth wrapped in
-func newServerserviceClientWithOAuthOtel(ctx context.Context, cfg *app.ServerserviceOptions, endpoint string, logger *logrus.Entry) (*serverserviceapi.Client, error) {
+func newServerserviceClientWithOAuthOtel(ctx context.Context, cfg *app.ServerserviceOptions, endpoint string, logger *logrus.Logger) (*serverserviceapi.Client, error) {
 	if cfg == nil {
 		return nil, errors.Wrap(ErrConfig, "configuration is nil")
 	}
+
+	logger.Info("serverservice client ctor")
 
 	// init retryable http client
 	retryableClient := retryablehttp.NewClient()
 
 	// set retryable HTTP client to be the otel http client to collect telemetry
 	retryableClient.HTTPClient = otelhttp.DefaultClient
-
-	// disable default debug logging on the retryable client
-	if logger.Level < logrus.DebugLevel {
-		retryableClient.Logger = nil
-	} else {
-		retryableClient.Logger = logger
-	}
 
 	// setup oidc provider
 	provider, err := oidc.NewProvider(ctx, cfg.OidcIssuerEndpoint)
