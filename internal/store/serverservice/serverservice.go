@@ -254,10 +254,14 @@ func (r *Store) AssetUpdate(ctx context.Context, asset *model.Asset) error {
 }
 
 func (r *Store) publishBiosConfig(ctx context.Context, asset *model.Asset, server *serverserviceapi.Server) error {
-	// Don't publish bios config if there's no bios config data made avai
+	// Nothing to publish
 	if len(asset.BiosConfig) == 0 {
-		errNoBiosConfig := errors.New("no BIOS configuration collected")
-		return errNoBiosConfig
+		r.logger.WithFields(logrus.Fields{
+			"vendor": asset.Vendor,
+			"model":  asset.Model,
+			"serial": asset.Serial,
+		}).Info("no bios configuration collected")
+		return nil
 	}
 
 	if asset.HasError(outofband.GetBiosConfigError) {
