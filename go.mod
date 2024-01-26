@@ -9,7 +9,7 @@ require (
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/equinix-labs/otel-init-go v0.0.7
 	github.com/google/go-cmp v0.6.0
-	github.com/google/uuid v1.3.1
+	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-retryablehttp v0.7.4
 	github.com/jacobweinstock/registrar v0.4.7
