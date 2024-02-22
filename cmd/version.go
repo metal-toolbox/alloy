@@ -19,5 +19,5 @@ var cmdVersion = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(cmdVersion)
+	RootCmd.AddCommand(cmdVersion)
 }

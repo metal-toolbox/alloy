@@ -132,5 +132,5 @@ func init() {
 	cmdOutofband.PersistentFlags().BoolVar(&asWorker, "worker", false, "Run Alloy as a worker listening for conditions on NATS")
 	cmdOutofband.PersistentFlags().IntVarP(&replicaCount, "replica-count", "r", 3, "The number of replicaCount to use for NATS KV data") // nolint:gomnd // obvious int is obvious
 
-	rootCmd.AddCommand(cmdOutofband)
+	RootCmd.AddCommand(cmdOutofband)
 }

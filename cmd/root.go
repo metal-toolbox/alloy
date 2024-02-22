@@ -36,8 +36,8 @@ var (
 	enableProfiling bool
 )
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
+// RootCmd represents the base command when called without any subcommands
+var RootCmd = &cobra.Command{
 	Use:   "alloy",
 	Short: "server inventory and bios configuration collector",
 }
@@ -45,7 +45,7 @@ var rootCmd = &cobra.Command{
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
@@ -53,9 +53,9 @@ func Execute() {
 
 func init() {
 	// Read in env vars with appName as prefix
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "configuration file")
-	rootCmd.PersistentFlags().StringVar(&storeKind, "store", "mock", "The inventory store kind (serverservice, csv)")
-	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "set logging level - debug, trace")
-	rootCmd.PersistentFlags().BoolVarP(&outputStdout, "output-stdout", "", false, "Output collected data to STDOUT instead of the store")
-	rootCmd.PersistentFlags().BoolVarP(&enableProfiling, "enable-pprof", "", false, "Enable profiling endpoint at: "+model.ProfilingEndpoint)
+	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "configuration file")
+	RootCmd.PersistentFlags().StringVar(&storeKind, "store", "mock", "The inventory store kind (serverservice, csv)")
+	RootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "set logging level - debug, trace")
+	RootCmd.PersistentFlags().BoolVarP(&outputStdout, "output-stdout", "", false, "Output collected data to STDOUT instead of the store")
+	RootCmd.PersistentFlags().BoolVarP(&enableProfiling, "enable-pprof", "", false, "Enable profiling endpoint at: "+model.ProfilingEndpoint)
 }

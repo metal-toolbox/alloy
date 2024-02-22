@@ -15,7 +15,10 @@ limitations under the License.
 */
 package main
 
-import "github.com/metal-toolbox/alloy/cmd"
+import (
+	"github.com/metal-toolbox/alloy/cmd"
+	_ "github.com/metal-toolbox/alloy/cmd/lean"
+)
 
 func main() {
 	cmd.Execute()

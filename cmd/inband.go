@@ -112,5 +112,5 @@ func init() {
 	cmdInband.PersistentFlags().StringVarP(&assetID, "asset-id", "", "", "The asset identifier - required when store is set to serverservice")
 	cmdInband.PersistentFlags().DurationVar(&inbandTimeout, "timeout", 1*time.Minute, "timeout inventory collection if the duration exceeds the given parameter, accepted values are int time.Duration string format - 12h, 5d...")
 
-	rootCmd.AddCommand(cmdInband)
+	RootCmd.AddCommand(cmdInband)
 }
