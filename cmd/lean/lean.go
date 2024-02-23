@@ -104,15 +104,15 @@ var lean = &cobra.Command{
 	Run: func(c *cobra.Command, _ []string) {
 		ctx, cancel := context.WithTimeout(c.Context(), timeout)
 		defer cancel()
-		logger := &logrus.Logger{
-			Formatter: &logrus.JSONFormatter{},
-			Level:     logrus.TraceLevel,
-		}
+		logger := logrus.New()
+		logger.SetFormatter(&logrus.JSONFormatter{})
+		logger.SetLevel(logrus.TraceLevel)
 
 		i := getInventorier(ctx, logger)
 		if i == nil {
 			logger.Fatal("no inventorier available")
 		}
+		defer i.Close(context.Background())
 
 		device, err := i.GetInventory(ctx)
 		if err != nil {
@@ -143,9 +143,9 @@ var lean = &cobra.Command{
 
 func init() {
 	cmd.RootCmd.AddCommand(lean)
-	lean.Flags().StringVarP(&bmcHost, "host", "h", "", "the BMC host")
-	lean.Flags().StringVarP(&bmcUser, "user", "u", "", "the BMC user")
-	lean.Flags().StringVarP(&bmcPwd, "pwd", "p", "", "the BMC password")
+	lean.Flags().StringVar(&bmcHost, "host", "bogusHost", "the BMC host")
+	lean.Flags().StringVarP(&bmcUser, "user", "u", "bogusUser", "the BMC user")
+	lean.Flags().StringVarP(&bmcPwd, "pwd", "p", "bogusPwd", "the BMC password")
 	lean.Flags().BoolVarP(&doInband, "in-band", "i", true, "run in in-band mode")
 	lean.Flags().BoolVarP(&getBIOS, "bios", "b", true, "collect bios configuration (in-band mode only)")
 	//nolint:gomnd // do shut up.
