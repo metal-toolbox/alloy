@@ -19,59 +19,56 @@ lint:
 
 ## Go test
 test: lint
-	CGO_ENABLED=0 go test -timeout 1m -v -covermode=atomic ./...
+	go test -timeout 1m -v -covermode=atomic ./...
 
 ## build osx bin
 build-osx:
-ifeq ($(GO_VERSION), 0)
+ifeq (${GO_VERSION}, 0)
 	$(error build requies go version 1.17.n or higher)
 endif
-	  GOOS=darwin GOARCH=amd64 go build -o alloy \
-	   -ldflags \
-		"-X $(LDFLAG_LOCATION).GitCommit=$(GIT_COMMIT) \
-         -X $(LDFLAG_LOCATION).GitBranch=$(GIT_BRANCH) \
-         -X $(LDFLAG_LOCATION).GitSummary=$(GIT_SUMMARY) \
-         -X $(LDFLAG_LOCATION).Version=$(VERSION) \
-         -X $(LDFLAG_LOCATION).BuildDate=$(BUILD_DATE)"
-
-
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o alloy \
+		-ldflags \
+		"-X ${LDFLAG_LOCATION}.GitCommit=${GIT_COMMIT} \
+		 -X ${LDFLAG_LOCATION}.GitBranch=${GIT_BRANCH} \
+		 -X ${LDFLAG_LOCATION}.GitSummary=${GIT_SUMMARY} \
+		 -X ${LDFLAG_LOCATION}.Version=${VERSION} \
+		 -X ${LDFLAG_LOCATION}.BuildDate=${BUILD_DATE}"
 
 ## Build linux bin
 build-linux:
-ifeq ($(GO_VERSION), 0)
+ifeq (${GO_VERSION}, 0)
 	$(error build requies go version 1.16.n or higher)
 endif
-	GOOS=linux GOARCH=amd64 go build -o alloy \
-	   -ldflags \
-		"-X $(LDFLAG_LOCATION).GitCommit=$(GIT_COMMIT) \
-         -X $(LDFLAG_LOCATION).GitBranch=$(GIT_BRANCH) \
-         -X $(LDFLAG_LOCATION).GitSummary=$(GIT_SUMMARY) \
-         -X $(LDFLAG_LOCATION).Version=$(VERSION) \
-         -X $(LDFLAG_LOCATION).BuildDate=$(BUILD_DATE)"
-
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o alloy \
+		-ldflags \
+		"-X ${LDFLAG_LOCATION}.GitCommit=${GIT_COMMIT} \
+		 -X ${LDFLAG_LOCATION}.GitBranch=${GIT_BRANCH} \
+		 -X ${LDFLAG_LOCATION}.GitSummary=${GIT_SUMMARY} \
+		 -X ${LDFLAG_LOCATION}.Version=${VERSION} \
+		 -X ${LDFLAG_LOCATION}.BuildDate=${BUILD_DATE}"
 
 ## build docker image and tag as ghcr.io/metal-toolbox/alloy:latest
 build-image: build-linux
 	@echo ">>>> NOTE: You may want to execute 'make build-image-nocache' depending on the Docker stages changed"
-	docker build --rm=true -f Dockerfile -t ${DOCKER_IMAGE}:latest  . \
-							 --label org.label-schema.schema-version=1.0 \
-							 --label org.label-schema.vcs-ref=$(GIT_COMMIT_FULL) \
-							 --label org.label-schema.vcs-url=$(REPO)
+	docker build --rm=true -f Dockerfile -t ${DOCKER_IMAGE}:latest . \
+		--label org.label-schema.schema-version=1.0 \
+		--label org.label-schema.vcs-ref=${GIT_COMMIT_FULL} \
+		--label org.label-schema.vcs-url=${REPO}
 
 ## build docker image and tag as ghcr.io/metal-toolbox/alloy-inband:latest
 build-image-inband: build-linux
 	@echo ">>>> NOTE: You may want to execute 'make build-image-nocache' depending on the Docker stages changed"
-	docker build --rm=true -f Dockerfile.inband -t ${DOCKER_IMAGE_INBAND}:latest  . \
-							 --label org.label-schema.schema-version=1.0 \
-							 --label org.label-schema.vcs-ref=$(GIT_COMMIT_FULL) \
-							 --label org.label-schema.vcs-url=$(REPO)
+	docker build --rm=true -f Dockerfile.inband -t ${DOCKER_IMAGE_INBAND}:latest . \
+		--label org.label-schema.schema-version=1.0 \
+		--label org.label-schema.vcs-ref=${GIT_COMMIT_FULL} \
+		--label org.label-schema.vcs-url=${REPO}
 
 ## build docker image, ignoring the cache
 build-image-inband-nocache: build-linux
-	docker build --no-cache --rm=true -f Dockerfile.inband -t ${DOCKER_IMAGE_INBAND}:latest  . \
-							 --label org.label-schema.schema-version=1.0 \
-							 --label org.label-schema.vcs-ref=$(GIT_COMMIT_FULL) \
-							 --label org.label-schema.vcs-url=$(REPO)
+	docker build --no-cache --rm=true -f Dockerfile.inband -t ${DOCKER_IMAGE_INBAND}:latest . \
+		--label org.label-schema.schema-version=1.0 \
+		--label org.label-schema.vcs-ref=${GIT_COMMIT_FULL} \
+		--label org.label-schema.vcs-url=${REPO}
 
 ## push devel docker image
 push-image-devel: build-image
@@ -105,7 +102,7 @@ help:
 		if (helpMessage) { \
 			helpCommand = substr($$1, 0, index($$1, ":")-1); \
 			helpMessage = substr(lastLine, RSTART + 3, RLENGTH); \
-			printf "  ${YELLOW}%-$(TARGET_MAX_CHAR_NUM)s${RESET} ${GREEN}%s${RESET}\n", helpCommand, helpMessage; \
+			printf "  ${YELLOW}%-${TARGET_MAX_CHAR_NUM}s${RESET} ${GREEN}%s${RESET}\n", helpCommand, helpMessage; \
 		} \
 	} \
-	{ lastLine = $$0 }' $(MAKEFILE_LIST)
+	{ lastLine = $$0 }' ${MAKEFILE_LIST}
