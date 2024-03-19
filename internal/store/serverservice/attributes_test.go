@@ -966,3 +966,157 @@ func TestMetadataFilter(t *testing.T) {
 	got = mustFilterAssetMetadata(dirty)
 	require.Equal(t, json.RawMessage(exp), got, "dirty doesn't serialize properly")
 }
+
+func TestDeviceVendorData(t *testing.T) {
+	testcases := []struct {
+		name     string
+		asset    *model.Asset
+		expected map[string]string
+	}{
+		{
+			"default values",
+			&model.Asset{
+				ID: uuid.NewString(),
+				Inventory: &common.Device{
+					Common: common.Common{},
+				},
+			},
+			map[string]string{
+				serverSerialAttributeKey: "unknown",
+				serverVendorAttributeKey: "unknown",
+				serverModelAttributeKey:  "unknown",
+			},
+		},
+		{
+			"expected values set",
+			&model.Asset{
+				ID: uuid.NewString(),
+				Inventory: &common.Device{
+					Common: common.Common{
+						Vendor: "foobar",
+						Model:  "baz",
+						Serial: "00123",
+					},
+				},
+			},
+			map[string]string{
+				serverVendorAttributeKey: "foobar",
+				serverModelAttributeKey:  "baz",
+				serverSerialAttributeKey: "00123",
+			},
+		},
+		{
+			"model attribute formatted",
+			&model.Asset{
+				ID: uuid.NewString(),
+				Inventory: &common.Device{
+					Common: common.Common{
+						Vendor: "foobar",
+						Model:  "PIO-519C-MR-PH004",
+						Serial: "00123",
+					},
+				},
+			},
+			map[string]string{
+				serverVendorAttributeKey: "foobar",
+				serverModelAttributeKey:  "x11sch-f",
+				serverSerialAttributeKey: "00123",
+			},
+		},
+	}
+
+	s := &Store{}
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := s.deviceVendorData(tc.asset)
+			assert.Equal(t, tc.expected, got, tc.name)
+		})
+	}
+}
+
+func TestVendorDataUpdate(t *testing.T) {
+	tests := []struct {
+		name        string
+		newData     map[string]string
+		currentData map[string]string
+		expected    map[string]string
+	}{
+		{
+			name:        "updates when currentData is nil",
+			newData:     map[string]string{"vendor": "foo", "model": "bar"},
+			currentData: nil,
+			expected:    map[string]string{"vendor": "foo", "model": "bar"},
+		},
+		{
+			name:        "updates model when current model is unknown",
+			newData:     map[string]string{"model": "foo"},
+			currentData: map[string]string{"model": "unknown"},
+			expected:    map[string]string{"model": "foo"},
+		},
+		{
+			name:        "updates serial when current serial is unknown",
+			newData:     map[string]string{"model": "foo", "serial": "123"},
+			currentData: map[string]string{"model": "foo", "serial": "unknown"},
+			expected:    map[string]string{"model": "foo", "serial": "123"},
+		},
+		{
+			name:        "updates serial when current serial is empty",
+			newData:     map[string]string{"model": "foo", "serial": "123"},
+			currentData: map[string]string{"model": "foo", "serial": ""},
+			expected:    map[string]string{"model": "foo", "serial": "123"},
+		},
+		{
+			name:        "no update when new model matches current",
+			newData:     map[string]string{"model": "r6515"},
+			currentData: map[string]string{"model": "r6515"},
+			expected:    nil,
+		},
+		{
+			name:        "no update when new vendor matches current",
+			newData:     map[string]string{"vendor": "r6515"},
+			currentData: map[string]string{"vendor": "baz"},
+			expected:    nil,
+		},
+		{
+			name:        "no update when serial matches current",
+			newData:     map[string]string{"model": "foo", "serial": "123"},
+			currentData: map[string]string{"model": "foo", "serial": "123"},
+			expected:    nil,
+		},
+		{
+			name:        "update model when current does not match new",
+			newData:     map[string]string{"vendor": "bar", "model": "newfoo"},
+			currentData: map[string]string{"vendor": "baz", "model": "oldfoo"},
+			expected:    map[string]string{"vendor": "baz", "model": "newfoo"},
+		},
+		{
+			name:        "no update when new model is formatted and matches current",
+			newData:     map[string]string{"vendor": "bar", "model": "PIO-519C-MR-PH004"},
+			currentData: map[string]string{"vendor": "baz", "model": "x11sch-f"},
+			expected:    nil,
+		},
+		{
+			name:        "update when new model is formatted and does not match current",
+			newData:     map[string]string{"vendor": "bar", "model": "PIO-519C-MR-PH004"},
+			currentData: map[string]string{"vendor": "baz", "model": "PIO-519C-MR-PH004"},
+			expected:    map[string]string{"vendor": "baz", "model": "x11sch-f"},
+		},
+		{
+			name:        "ignore 'unknown' in new values",
+			newData:     map[string]string{"model": "unknown", "vendor": "unknown"},
+			currentData: map[string]string{"model": "foo", "vendor": "bar"},
+			expected:    nil,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := vendorDataUpdate(tc.newData, tc.currentData)
+			if tc.expected != nil {
+				assert.Equal(t, tc.expected, got, tc.name)
+			} else {
+				assert.Nil(t, got, tc.name)
+			}
+		})
+	}
+}
