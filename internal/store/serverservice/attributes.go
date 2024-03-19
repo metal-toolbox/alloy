@@ -6,6 +6,7 @@ import (
 	"os"
 	"sort"
 
+	"github.com/bmc-toolbox/common"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"github.com/metal-toolbox/alloy/internal/helpers"
@@ -106,8 +107,9 @@ func (r *Store) deviceVendorData(asset *model.Asset) map[string]string {
 			m[serverSerialAttributeKey] = asset.Inventory.Serial
 		}
 
-		if asset.Inventory.Model != "" {
-			m[serverModelAttributeKey] = asset.Inventory.Model
+		invModelFormatted := common.FormatProductName(asset.Inventory.Model)
+		if invModelFormatted != "" {
+			m[serverModelAttributeKey] = invModelFormatted
 		}
 
 		if asset.Inventory.Vendor != "" {
@@ -119,21 +121,48 @@ func (r *Store) deviceVendorData(asset *model.Asset) map[string]string {
 }
 
 // returns a map with device vendor attributes when an update is required
+//
+// nolint:gocyclo // data verify is cyclomatic
 func vendorDataUpdate(newData, currentData map[string]string) map[string]string {
+	const unknown = "unknown"
+	var changes bool
+
 	if currentData == nil {
 		return newData
 	}
 
-	var changes bool
+	newModelNumber := common.FormatProductName(newData[serverModelAttributeKey])
+	currentModelNumber := currentData[serverModelAttributeKey]
+
+	changeRequired := func(key string) bool {
+		newModelDefined := newModelNumber != unknown && newModelNumber != ""
+		currentModelUndefined := currentModelNumber == unknown || currentModelNumber == ""
+
+		// model number to be updated
+		if key == serverModelAttributeKey {
+			if currentModelUndefined && newModelDefined {
+				return true
+			}
+
+			if newModelDefined && currentModelNumber != newModelNumber {
+				newData[serverModelAttributeKey] = newModelNumber
+				return true
+			}
+
+			return false
+		}
+
+		// rest of the keys are updated when the new data is defined and current is not.
+		newKeyDefined := newData[key] != unknown && newData[key] != ""
+		currentKeyUndefined := currentData[key] == "" || currentData[key] == unknown
+		return newKeyDefined && currentKeyUndefined
+	}
 
 	setValue := func(key string, newData, currentData map[string]string) {
-		const unknown = "unknown"
-
-		if currentData[key] == "" || currentData[key] == unknown {
-			if newData[key] != unknown {
-				changes = true
-				currentData[key] = newData[key]
-			}
+		// value is empty or explicit check for model number
+		if changeRequired(key) {
+			changes = true
+			currentData[key] = newData[key]
 		}
 	}
 
