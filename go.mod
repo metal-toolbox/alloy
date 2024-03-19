@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/bmc-toolbox/bmclib/v2 v2.0.1-0.20230825151635-6cf01686c513
-	github.com/bmc-toolbox/common v0.0.0-20230717121556-5eb9915a8a5a
+	github.com/bmc-toolbox/common v0.0.0-20231204194243-7bcbccab7116
 	github.com/bombsimon/logrusr/v2 v2.0.1
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/equinix-labs/otel-init-go v0.0.7
