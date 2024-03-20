@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 
-	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
+	fleetdbapi "github.com/metal-toolbox/fleetdb/pkg/api/v1"
 )
 
 const (
@@ -30,11 +30,11 @@ const (
 
 // Store is an asset inventory store
 type Store struct {
-	*serverserviceapi.Client
+	*fleetdbapi.Client
 	logger                       *logrus.Logger
 	config                       *app.ServerserviceOptions
-	slugs                        map[string]*serverserviceapi.ServerComponentType
-	firmwares                    map[string][]*serverserviceapi.ComponentFirmwareVersion
+	slugs                        map[string]*fleetdbapi.ServerComponentType
+	firmwares                    map[string][]*fleetdbapi.ComponentFirmwareVersion
 	appKind                      model.AppKind
 	attributeNS                  string
 	firmwareVersionedAttributeNS string
@@ -56,8 +56,8 @@ func New(ctx context.Context, appKind model.AppKind, cfg *app.ServerserviceOptio
 		appKind:                      appKind,
 		logger:                       logger,
 		config:                       cfg,
-		slugs:                        make(map[string]*serverserviceapi.ServerComponentType),
-		firmwares:                    make(map[string][]*serverserviceapi.ComponentFirmwareVersion),
+		slugs:                        make(map[string]*fleetdbapi.ServerComponentType),
+		firmwares:                    make(map[string][]*fleetdbapi.ComponentFirmwareVersion),
 		attributeNS:                  serverComponentAttributeNS(appKind),
 		firmwareVersionedAttributeNS: serverComponentFirmwareNS(appKind),
 		statusVersionedAttributeNS:   serverComponentStatusNS(appKind),
@@ -107,13 +107,13 @@ func (r *Store) AssetByID(ctx context.Context, id string, fetchBmcCredentials bo
 		return nil, errors.Wrap(model.ErrInventoryQuery, "error querying server attributes: "+err.Error())
 	}
 
-	var credential *serverserviceapi.ServerCredential
+	var credential *fleetdbapi.ServerCredential
 
 	if fetchBmcCredentials {
 		var err error
 
 		// get bmc credential
-		credential, _, err = r.GetCredential(ctx, sid, serverserviceapi.ServerCredentialTypeBMC)
+		credential, _, err = r.GetCredential(ctx, sid, fleetdbapi.ServerCredentialTypeBMC)
 		if err != nil {
 			span.SetStatus(codes.Error, "GetCredential() failed")
 
@@ -136,14 +136,14 @@ func (r *Store) AssetsByOffsetLimit(ctx context.Context, offset, limit int) (ass
 
 	defer span.End()
 
-	params := &serverserviceapi.ServerListParams{
+	params := &fleetdbapi.ServerListParams{
 		FacilityCode: r.facilityCode,
-		AttributeListParams: []serverserviceapi.AttributeListParams{
+		AttributeListParams: []fleetdbapi.AttributeListParams{
 			{
 				Namespace: bmcAttributeNamespace,
 			},
 		},
-		PaginationParams: &serverserviceapi.PaginationParams{
+		PaginationParams: &fleetdbapi.PaginationParams{
 			Limit: limit,
 			Page:  offset,
 		},
@@ -161,7 +161,7 @@ func (r *Store) AssetsByOffsetLimit(ctx context.Context, offset, limit int) (ass
 
 	// collect bmc secrets and structure as alloy asset
 	for _, server := range serverPtrSlice(servers) {
-		credential, _, err := r.GetCredential(ctx, server.UUID, serverserviceapi.ServerCredentialTypeBMC)
+		credential, _, err := r.GetCredential(ctx, server.UUID, fleetdbapi.ServerCredentialTypeBMC)
 		if err != nil {
 			span.SetStatus(codes.Error, "GetCredential() failed")
 
@@ -253,7 +253,7 @@ func (r *Store) AssetUpdate(ctx context.Context, asset *model.Asset) error {
 	return nil
 }
 
-func (r *Store) publishBiosConfig(ctx context.Context, asset *model.Asset, server *serverserviceapi.Server) error {
+func (r *Store) publishBiosConfig(ctx context.Context, asset *model.Asset, server *fleetdbapi.Server) error {
 	// Nothing to publish
 	if len(asset.BiosConfig) == 0 {
 		r.logger.WithFields(logrus.Fields{
@@ -271,7 +271,7 @@ func (r *Store) publishBiosConfig(ctx context.Context, asset *model.Asset, serve
 	return r.createUpdateServerBIOSConfiguration(ctx, server.UUID, asset.BiosConfig)
 }
 
-func (r *Store) publishInventory(ctx context.Context, asset *model.Asset, server *serverserviceapi.Server) error {
+func (r *Store) publishInventory(ctx context.Context, asset *model.Asset, server *fleetdbapi.Server) error {
 	// create/update server bmc error attributes - for out of band data collection
 	if r.appKind == model.AppKindOutOfBand && len(asset.Errors) > 0 {
 		if err := r.createUpdateServerBMCErrorAttributes(
@@ -337,7 +337,7 @@ func (r *Store) createUpdateServerComponents(ctx context.Context, serverID uuid.
 	).Add(float64(len(newInventory)))
 
 	// retrieve current inventory from server service
-	currentInventory, _, err := r.GetComponents(ctx, serverID, &serverserviceapi.PaginationParams{})
+	currentInventory, _, err := r.GetComponents(ctx, serverID, &fleetdbapi.PaginationParams{})
 	if err != nil {
 		// count error
 		metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
@@ -467,7 +467,7 @@ func diffFilter(_ []string, _ reflect.Type, field reflect.StructField) bool {
 
 // serverServiceChangeList compares the current vs newer slice of server components
 // and returns 3 lists - add, update, remove.
-func serverServiceChangeList(_ context.Context, currentObjs, newObjs []*serverserviceapi.ServerComponent) (add, update, remove serverserviceapi.ServerComponentSlice, err error) {
+func serverServiceChangeList(_ context.Context, currentObjs, newObjs []*fleetdbapi.ServerComponent) (add, update, remove fleetdbapi.ServerComponentSlice, err error) {
 	// 1. list updated and removed objects
 	for _, currentObj := range currentObjs {
 		// changeObj is the component changes to be registered
@@ -505,7 +505,7 @@ func serverServiceChangeList(_ context.Context, currentObjs, newObjs []*serverse
 	return add, update, remove, nil
 }
 
-func serverServiceComponentsUpdated(currentObj, newObj *serverserviceapi.ServerComponent) (*serverserviceapi.ServerComponent, error) {
+func serverServiceComponentsUpdated(currentObj, newObj *fleetdbapi.ServerComponent) (*fleetdbapi.ServerComponent, error) {
 	differ, err := r3diff.NewDiffer(r3diff.Filter(diffFilter))
 	if err != nil {
 		return nil, err
@@ -644,7 +644,7 @@ func (r *Store) createServerComponentTypes(ctx context.Context) error {
 	}
 
 	for _, slug := range componentSlugs {
-		sct := serverserviceapi.ServerComponentType{
+		sct := fleetdbapi.ServerComponentType{
 			Name: slug,
 			Slug: strings.ToLower(slug),
 		}

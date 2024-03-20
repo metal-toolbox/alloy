@@ -156,9 +156,9 @@ var lean = &cobra.Command{
 
 		var cisResp string
 		if doInband {
-			cisResp, err = client.UpdateInbandInventory(ctx, assetID, cisReq)
+			cisResp, err = client.UpdateInbandInventory(ctx, assetID, &cisReq)
 		} else {
-			cisResp, err = client.UpdateOutOfbandInventory(ctx, assetID, cisReq)
+			cisResp, err = client.UpdateOutOfbandInventory(ctx, assetID, &cisReq)
 		}
 
 		if err != nil {

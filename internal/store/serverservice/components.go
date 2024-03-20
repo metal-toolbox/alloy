@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
+	fleetdbapi "github.com/metal-toolbox/fleetdb/pkg/api/v1"
 )
 
 // devel notes
@@ -23,7 +23,7 @@ import (
 //   will end up being new components added.
 
 // componentBySlugSerial returns a pointer to a component that matches the given slug, serial attributes
-func componentBySlugSerial(slug, serial string, components []*serverserviceapi.ServerComponent) *serverserviceapi.ServerComponent {
+func componentBySlugSerial(slug, serial string, components []*fleetdbapi.ServerComponent) *fleetdbapi.ServerComponent {
 	for _, c := range components {
 		if strings.EqualFold(slug, c.ComponentTypeSlug) && strings.EqualFold(serial, c.Serial) {
 			return c
@@ -33,15 +33,15 @@ func componentBySlugSerial(slug, serial string, components []*serverserviceapi.S
 	return nil
 }
 
-// componentPtrSlice returns a slice of pointers to serverserviceapi.ServerComponent.
+// componentPtrSlice returns a slice of pointers to fleetdbapi.ServerComponent.
 //
 // The hollow client methods require component slice objects to be passed as values
 // these tend to be large objects.
 //
 // This helper method is to reduce the amount of copying of component objects (~240 bytes each) when passed around between methods and range loops,
 // while it seems like a minor optimization, it also keeps the linter happy.
-func componentPtrSlice(components serverserviceapi.ServerComponentSlice) []*serverserviceapi.ServerComponent {
-	s := make([]*serverserviceapi.ServerComponent, 0, len(components))
+func componentPtrSlice(components fleetdbapi.ServerComponentSlice) []*fleetdbapi.ServerComponent {
+	s := make([]*fleetdbapi.ServerComponent, 0, len(components))
 
 	// nolint:gocritic // the copying has to be done somewhere
 	for _, c := range components {
@@ -53,8 +53,8 @@ func componentPtrSlice(components serverserviceapi.ServerComponentSlice) []*serv
 }
 
 // toComponentSlice converts an model.AssetDevice object to the server service component slice object
-func (r *Store) toComponentSlice(serverID uuid.UUID, device *model.Asset) ([]*serverserviceapi.ServerComponent, error) {
-	componentsTmp := []*serverserviceapi.ServerComponent{}
+func (r *Store) toComponentSlice(serverID uuid.UUID, device *model.Asset) ([]*fleetdbapi.ServerComponent, error) {
+	componentsTmp := []*fleetdbapi.ServerComponent{}
 	componentsTmp = append(componentsTmp,
 		r.bios(device.Vendor, device.Inventory.BIOS),
 		r.bmc(device.Vendor, device.Inventory.BMC),
@@ -72,7 +72,7 @@ func (r *Store) toComponentSlice(serverID uuid.UUID, device *model.Asset) ([]*se
 	componentsTmp = append(componentsTmp, r.storageControllers(device.Vendor, device.Inventory.StorageControllers)...)
 	componentsTmp = append(componentsTmp, r.enclosures(device.Vendor, device.Inventory.Enclosures)...)
 
-	components := []*serverserviceapi.ServerComponent{}
+	components := []*fleetdbapi.ServerComponent{}
 
 	for _, component := range componentsTmp {
 		if component == nil || r.requiredAttributesEmpty(component) {
@@ -86,7 +86,7 @@ func (r *Store) toComponentSlice(serverID uuid.UUID, device *model.Asset) ([]*se
 	return components, nil
 }
 
-func (r *Store) requiredAttributesEmpty(component *serverserviceapi.ServerComponent) bool {
+func (r *Store) requiredAttributesEmpty(component *fleetdbapi.ServerComponent) bool {
 	return component.Serial == "0" &&
 		component.Model == "" &&
 		component.Vendor == "" &&
@@ -94,7 +94,7 @@ func (r *Store) requiredAttributesEmpty(component *serverserviceapi.ServerCompon
 		len(component.VersionedAttributes) == 0
 }
 
-func (r *Store) newComponent(slug, cvendor, cmodel, cserial, cproduct string) (*serverserviceapi.ServerComponent, error) {
+func (r *Store) newComponent(slug, cvendor, cmodel, cserial, cproduct string) (*fleetdbapi.ServerComponent, error) {
 	// lower case slug to changeObj how its stored in server service
 	slug = strings.ToLower(slug)
 
@@ -114,7 +114,7 @@ func (r *Store) newComponent(slug, cvendor, cmodel, cserial, cproduct string) (*
 		cmodel = cproduct
 	}
 
-	return &serverserviceapi.ServerComponent{
+	return &fleetdbapi.ServerComponent{
 		Name:              r.slugs[slug].Name,
 		Vendor:            common.FormatVendorName(cvendor),
 		Model:             cmodel,
@@ -125,12 +125,12 @@ func (r *Store) newComponent(slug, cvendor, cmodel, cserial, cproduct string) (*
 	}, nil
 }
 
-func (r *Store) gpus(deviceVendor string, gpus []*common.GPU) []*serverserviceapi.ServerComponent {
+func (r *Store) gpus(deviceVendor string, gpus []*common.GPU) []*fleetdbapi.ServerComponent {
 	if gpus == nil {
 		return nil
 	}
 
-	components := make([]*serverserviceapi.ServerComponent, 0, len(gpus))
+	components := make([]*fleetdbapi.ServerComponent, 0, len(gpus))
 
 	for idx, c := range gpus {
 		if strings.TrimSpace(c.Serial) == "" {
@@ -177,12 +177,12 @@ func (r *Store) gpus(deviceVendor string, gpus []*common.GPU) []*serverserviceap
 	return components
 }
 
-func (r *Store) cplds(deviceVendor string, cplds []*common.CPLD) []*serverserviceapi.ServerComponent {
+func (r *Store) cplds(deviceVendor string, cplds []*common.CPLD) []*fleetdbapi.ServerComponent {
 	if cplds == nil {
 		return nil
 	}
 
-	components := make([]*serverserviceapi.ServerComponent, 0, len(cplds))
+	components := make([]*fleetdbapi.ServerComponent, 0, len(cplds))
 
 	for idx, c := range cplds {
 		if strings.TrimSpace(c.Serial) == "" {
@@ -229,12 +229,12 @@ func (r *Store) cplds(deviceVendor string, cplds []*common.CPLD) []*serverservic
 	return components
 }
 
-func (r *Store) tpms(deviceVendor string, tpms []*common.TPM) []*serverserviceapi.ServerComponent {
+func (r *Store) tpms(deviceVendor string, tpms []*common.TPM) []*fleetdbapi.ServerComponent {
 	if tpms == nil {
 		return nil
 	}
 
-	components := make([]*serverserviceapi.ServerComponent, 0, len(tpms))
+	components := make([]*fleetdbapi.ServerComponent, 0, len(tpms))
 
 	for idx, c := range tpms {
 		if strings.TrimSpace(c.Serial) == "" {
@@ -282,12 +282,12 @@ func (r *Store) tpms(deviceVendor string, tpms []*common.TPM) []*serverserviceap
 	return components
 }
 
-func (r *Store) cpus(deviceVendor string, cpus []*common.CPU) []*serverserviceapi.ServerComponent {
+func (r *Store) cpus(deviceVendor string, cpus []*common.CPU) []*fleetdbapi.ServerComponent {
 	if cpus == nil {
 		return nil
 	}
 
-	components := make([]*serverserviceapi.ServerComponent, 0, len(cpus))
+	components := make([]*fleetdbapi.ServerComponent, 0, len(cpus))
 
 	for idx, c := range cpus {
 		if strings.TrimSpace(c.Serial) == "" {
@@ -340,12 +340,12 @@ func (r *Store) cpus(deviceVendor string, cpus []*common.CPU) []*serverserviceap
 	return components
 }
 
-func (r *Store) storageControllers(deviceVendor string, controllers []*common.StorageController) []*serverserviceapi.ServerComponent {
+func (r *Store) storageControllers(deviceVendor string, controllers []*common.StorageController) []*fleetdbapi.ServerComponent {
 	if controllers == nil {
 		return nil
 	}
 
-	components := make([]*serverserviceapi.ServerComponent, 0, len(controllers))
+	components := make([]*fleetdbapi.ServerComponent, 0, len(controllers))
 
 	serials := map[string]bool{}
 
@@ -416,12 +416,12 @@ func (r *Store) storageControllers(deviceVendor string, controllers []*common.St
 	return components
 }
 
-func (r *Store) psus(deviceVendor string, psus []*common.PSU) []*serverserviceapi.ServerComponent {
+func (r *Store) psus(deviceVendor string, psus []*common.PSU) []*fleetdbapi.ServerComponent {
 	if psus == nil {
 		return nil
 	}
 
-	components := make([]*serverserviceapi.ServerComponent, 0, len(psus))
+	components := make([]*fleetdbapi.ServerComponent, 0, len(psus))
 
 	for idx, c := range psus {
 		if strings.TrimSpace(c.Serial) == "" {
@@ -471,12 +471,12 @@ func (r *Store) psus(deviceVendor string, psus []*common.PSU) []*serverserviceap
 	return components
 }
 
-func (r *Store) drives(deviceVendor string, drives []*common.Drive) []*serverserviceapi.ServerComponent {
+func (r *Store) drives(deviceVendor string, drives []*common.Drive) []*fleetdbapi.ServerComponent {
 	if drives == nil {
 		return nil
 	}
 
-	components := make([]*serverserviceapi.ServerComponent, 0, len(drives))
+	components := make([]*fleetdbapi.ServerComponent, 0, len(drives))
 
 	for idx, c := range drives {
 		if strings.TrimSpace(c.Serial) == "" {
@@ -541,12 +541,12 @@ func (r *Store) drives(deviceVendor string, drives []*common.Drive) []*serverser
 	return components
 }
 
-func (r *Store) nics(deviceVendor string, nics []*common.NIC) []*serverserviceapi.ServerComponent {
+func (r *Store) nics(deviceVendor string, nics []*common.NIC) []*fleetdbapi.ServerComponent {
 	if nics == nil {
 		return nil
 	}
 
-	components := make([]*serverserviceapi.ServerComponent, 0, len(nics))
+	components := make([]*fleetdbapi.ServerComponent, 0, len(nics))
 
 	for idx, c := range nics {
 		if strings.TrimSpace(c.Serial) == "" {
@@ -620,12 +620,12 @@ func (r *Store) nics(deviceVendor string, nics []*common.NIC) []*serverserviceap
 	return components
 }
 
-func (r *Store) dimms(deviceVendor string, dimms []*common.Memory) []*serverserviceapi.ServerComponent {
+func (r *Store) dimms(deviceVendor string, dimms []*common.Memory) []*fleetdbapi.ServerComponent {
 	if dimms == nil {
 		return nil
 	}
 
-	components := make([]*serverserviceapi.ServerComponent, 0, len(dimms))
+	components := make([]*fleetdbapi.ServerComponent, 0, len(dimms))
 
 	for idx, c := range dimms {
 		// skip empty dimm slots
@@ -687,7 +687,7 @@ func (r *Store) dimms(deviceVendor string, dimms []*common.Memory) []*serverserv
 	return components
 }
 
-func (r *Store) mainboard(deviceVendor string, c *common.Mainboard) *serverserviceapi.ServerComponent {
+func (r *Store) mainboard(deviceVendor string, c *common.Mainboard) *fleetdbapi.ServerComponent {
 	if c == nil {
 		return nil
 	}
@@ -735,12 +735,12 @@ func (r *Store) mainboard(deviceVendor string, c *common.Mainboard) *serverservi
 	return sc
 }
 
-func (r *Store) enclosures(deviceVendor string, enclosures []*common.Enclosure) []*serverserviceapi.ServerComponent {
+func (r *Store) enclosures(deviceVendor string, enclosures []*common.Enclosure) []*fleetdbapi.ServerComponent {
 	if enclosures == nil {
 		return nil
 	}
 
-	components := make([]*serverserviceapi.ServerComponent, 0, len(enclosures))
+	components := make([]*fleetdbapi.ServerComponent, 0, len(enclosures))
 
 	for idx, c := range enclosures {
 		if strings.TrimSpace(c.Serial) == "" {
@@ -790,7 +790,7 @@ func (r *Store) enclosures(deviceVendor string, enclosures []*common.Enclosure) 
 	return components
 }
 
-func (r *Store) bmc(deviceVendor string, c *common.BMC) *serverserviceapi.ServerComponent {
+func (r *Store) bmc(deviceVendor string, c *common.BMC) *fleetdbapi.ServerComponent {
 	if c == nil {
 		return nil
 	}
@@ -837,7 +837,7 @@ func (r *Store) bmc(deviceVendor string, c *common.BMC) *serverserviceapi.Server
 	return sc
 }
 
-func (r *Store) bios(deviceVendor string, c *common.BIOS) *serverserviceapi.ServerComponent {
+func (r *Store) bios(deviceVendor string, c *common.BIOS) *fleetdbapi.ServerComponent {
 	if c == nil {
 		return nil
 	}
@@ -956,7 +956,7 @@ type statusVersionedAttribute struct {
 // attributes per component in serverservice have a unique constraint on the component ID, namespace values.
 //
 // so if this method is called twice for the same component, namespace, that attribute will be ignored,
-func (r *Store) setAttributesList(component *serverserviceapi.ServerComponent, attrs []*attributes) {
+func (r *Store) setAttributesList(component *fleetdbapi.ServerComponent, attrs []*attributes) {
 	if len(attrs) == 0 {
 		return
 	}
@@ -973,7 +973,7 @@ func (r *Store) setAttributesList(component *serverserviceapi.ServerComponent, a
 	}
 
 	if component.Attributes == nil {
-		component.Attributes = []serverserviceapi.Attributes{}
+		component.Attributes = []fleetdbapi.Attributes{}
 	} else {
 		for _, existingA := range component.Attributes {
 			if existingA.Namespace != r.attributeNS {
@@ -993,7 +993,7 @@ func (r *Store) setAttributesList(component *serverserviceapi.ServerComponent, a
 
 	component.Attributes = append(
 		component.Attributes,
-		serverserviceapi.Attributes{
+		fleetdbapi.Attributes{
 			Namespace: r.attributeNS,
 			Data:      data,
 		},
@@ -1001,7 +1001,7 @@ func (r *Store) setAttributesList(component *serverserviceapi.ServerComponent, a
 }
 
 // setAttributes updates the serverservice API component object with the given attributes
-func (r *Store) setAttributes(component *serverserviceapi.ServerComponent, attr *attributes) {
+func (r *Store) setAttributes(component *fleetdbapi.ServerComponent, attr *attributes) {
 	// convert attributes to raw json
 	data, err := json.Marshal(attr)
 	if err != nil {
@@ -1020,7 +1020,7 @@ func (r *Store) setAttributes(component *serverserviceapi.ServerComponent, attr 
 	}
 
 	if component.Attributes == nil {
-		component.Attributes = []serverserviceapi.Attributes{}
+		component.Attributes = []fleetdbapi.Attributes{}
 	} else {
 		for _, existingA := range component.Attributes {
 			if existingA.Namespace != r.attributeNS {
@@ -1040,7 +1040,7 @@ func (r *Store) setAttributes(component *serverserviceapi.ServerComponent, attr 
 
 	component.Attributes = append(
 		component.Attributes,
-		serverserviceapi.Attributes{
+		fleetdbapi.Attributes{
 			Namespace: r.attributeNS,
 			Data:      data,
 		},
@@ -1053,7 +1053,7 @@ func (r *Store) setAttributes(component *serverserviceapi.ServerComponent, attr 
 // the component ID, namespace values.
 //
 // so if this method is called twice for the same component, namespace, that statusVersionedAttribute will be ignored.
-func (r *Store) setStatusVA(component *serverserviceapi.ServerComponent, statusesVA []*statusVersionedAttribute) {
+func (r *Store) setStatusVA(component *fleetdbapi.ServerComponent, statusesVA []*statusVersionedAttribute) {
 	if len(statusesVA) == 0 {
 		return
 	}
@@ -1076,7 +1076,7 @@ func (r *Store) setStatusVA(component *serverserviceapi.ServerComponent, statuse
 	}
 
 	if component.VersionedAttributes == nil {
-		component.VersionedAttributes = []serverserviceapi.VersionedAttributes{}
+		component.VersionedAttributes = []fleetdbapi.VersionedAttributes{}
 	} else {
 		for _, existingVA := range component.VersionedAttributes {
 			if existingVA.Namespace != r.statusVersionedAttributeNS {
@@ -1096,7 +1096,7 @@ func (r *Store) setStatusVA(component *serverserviceapi.ServerComponent, statuse
 
 	component.VersionedAttributes = append(
 		component.VersionedAttributes,
-		serverserviceapi.VersionedAttributes{
+		fleetdbapi.VersionedAttributes{
 			Namespace: r.statusVersionedAttributeNS,
 			Data:      data,
 		},
@@ -1109,7 +1109,7 @@ func (r *Store) setStatusVA(component *serverserviceapi.ServerComponent, statuse
 // the component ID, namespace values.
 //
 // so if this method is called twice for the same component, namespace, that versioned attribute will be ignored.
-func (r *Store) setFirmwareVA(deviceVendor string, component *serverserviceapi.ServerComponent, fwVA *firmwareVersionedAttribute) {
+func (r *Store) setFirmwareVA(deviceVendor string, component *fleetdbapi.ServerComponent, fwVA *firmwareVersionedAttribute) {
 	// add FirmwareData
 	if fwVA.Firmware != nil {
 		r.enrichFirmwareData(deviceVendor, component.Vendor, fwVA)
@@ -1133,7 +1133,7 @@ func (r *Store) setFirmwareVA(deviceVendor string, component *serverserviceapi.S
 	}
 
 	if component.VersionedAttributes == nil {
-		component.VersionedAttributes = []serverserviceapi.VersionedAttributes{}
+		component.VersionedAttributes = []fleetdbapi.VersionedAttributes{}
 	} else {
 		for _, existingVA := range component.VersionedAttributes {
 			if existingVA.Namespace != r.firmwareVersionedAttributeNS {
@@ -1153,7 +1153,7 @@ func (r *Store) setFirmwareVA(deviceVendor string, component *serverserviceapi.S
 
 	component.VersionedAttributes = append(
 		component.VersionedAttributes,
-		serverserviceapi.VersionedAttributes{
+		fleetdbapi.VersionedAttributes{
 			Namespace: r.firmwareVersionedAttributeNS,
 			Data:      data,
 		},

@@ -17,10 +17,10 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/metal-toolbox/alloy/internal/fixtures"
 	"github.com/metal-toolbox/alloy/internal/model"
+	fleetdbapi "github.com/metal-toolbox/fleetdb/pkg/api/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
 )
 
 func testStoreInstance(t *testing.T, mockURL string) *Store {
@@ -32,7 +32,7 @@ func testStoreInstance(t *testing.T, mockURL string) *Store {
 	// comment out to enable debug logs
 	cr.Logger = nil
 
-	mockClient, err := serverserviceapi.NewClientWithToken(
+	mockClient, err := fleetdbapi.NewClientWithToken(
 		"hunter2",
 		mockURL,
 		cr.StandardClient(),
@@ -56,7 +56,7 @@ func Test_DiffVersionedAttributes(t *testing.T) {
 	now := time.Now()
 
 	// current versioned attributes fixture for data read from serverService
-	fixtureCurrentVA := []serverserviceapi.VersionedAttributes{
+	fixtureCurrentVA := []fleetdbapi.VersionedAttributes{
 		{
 			Namespace: "server.components",
 			Data:      []byte(`{"firmware":{"installed":"2.2.5","software_id":"159"}`),
@@ -70,7 +70,7 @@ func Test_DiffVersionedAttributes(t *testing.T) {
 	}
 
 	// new versioned attributes fixture for data read from the BMC
-	fixtureNewVA := []serverserviceapi.VersionedAttributes{
+	fixtureNewVA := []fleetdbapi.VersionedAttributes{
 		{
 			Namespace: "server.components",
 			Data:      []byte(`{"firmware":{"installed":"2.2.6","software_id":"159"}`),
@@ -79,7 +79,7 @@ func Test_DiffVersionedAttributes(t *testing.T) {
 	}
 
 	// current versioned attribute fixture which includes data from newer, unsorted
-	fixtureCurrentWithNewerVA := []serverserviceapi.VersionedAttributes{
+	fixtureCurrentWithNewerVA := []fleetdbapi.VersionedAttributes{
 		fixtureCurrentVA[0],
 		fixtureCurrentVA[1],
 		fixtureNewVA[0],
@@ -88,29 +88,29 @@ func Test_DiffVersionedAttributes(t *testing.T) {
 	testcases := []struct {
 		name        string
 		expectedErr error
-		expectedObj *serverserviceapi.VersionedAttributes
-		currentObjs []serverserviceapi.VersionedAttributes
-		newObjs     []serverserviceapi.VersionedAttributes
+		expectedObj *fleetdbapi.VersionedAttributes
+		currentObjs []fleetdbapi.VersionedAttributes
+		newObjs     []fleetdbapi.VersionedAttributes
 	}{
 		{
 			"with no new versioned objects, the method returns nil",
 			nil,
 			nil,
 			fixtureCurrentVA,
-			[]serverserviceapi.VersionedAttributes{},
+			[]fleetdbapi.VersionedAttributes{},
 		},
 		{
 			"with no new versioned objects, and no current versioned objects the method returns nil",
 			nil,
 			nil,
-			[]serverserviceapi.VersionedAttributes{},
-			[]serverserviceapi.VersionedAttributes{},
+			[]fleetdbapi.VersionedAttributes{},
+			[]fleetdbapi.VersionedAttributes{},
 		},
 		{
 			"with an empty current versioned attribute object, the method returns the newer object",
 			nil,
 			&fixtureNewVA[0],
-			[]serverserviceapi.VersionedAttributes{},
+			[]fleetdbapi.VersionedAttributes{},
 			fixtureNewVA,
 		},
 		{
@@ -144,7 +144,7 @@ func Test_DiffVersionedAttributes(t *testing.T) {
 }
 
 // addVA
-func addcomponent(sc []*serverserviceapi.ServerComponent, t *testing.T, slug string, va *firmwareVersionedAttribute) []*serverserviceapi.ServerComponent {
+func addcomponent(sc []*fleetdbapi.ServerComponent, t *testing.T, slug string, va *firmwareVersionedAttribute) []*fleetdbapi.ServerComponent {
 	t.Helper()
 
 	data, err := json.Marshal(va)
@@ -152,11 +152,11 @@ func addcomponent(sc []*serverserviceapi.ServerComponent, t *testing.T, slug str
 		t.Error(err)
 	}
 
-	component := &serverserviceapi.ServerComponent{
+	component := &fleetdbapi.ServerComponent{
 		UUID:   uuid.New(),
 		Name:   slug,
 		Vendor: "",
-		VersionedAttributes: []serverserviceapi.VersionedAttributes{
+		VersionedAttributes: []fleetdbapi.VersionedAttributes{
 			{
 				Data:      data,
 				Namespace: "foo.bar",
@@ -169,10 +169,10 @@ func addcomponent(sc []*serverserviceapi.ServerComponent, t *testing.T, slug str
 	return sc
 }
 
-func updateComponentVA(sc []*serverserviceapi.ServerComponent, t *testing.T, slug string, va *firmwareVersionedAttribute) []*serverserviceapi.ServerComponent {
+func updateComponentVA(sc []*fleetdbapi.ServerComponent, t *testing.T, slug string, va *firmwareVersionedAttribute) []*fleetdbapi.ServerComponent {
 	t.Helper()
 
-	var component *serverserviceapi.ServerComponent
+	var component *fleetdbapi.ServerComponent
 
 	for _, c := range sc {
 		if strings.EqualFold(c.ComponentTypeSlug, strings.ToLower(slug)) {
@@ -316,7 +316,7 @@ func Test_ServerService_CreateUpdateServerComponents_ObjectsUpdated(t *testing.T
 					t.Fatal(err)
 				}
 
-				gotUpdate := []*serverserviceapi.ServerComponent{}
+				gotUpdate := []*fleetdbapi.ServerComponent{}
 				if err := json.Unmarshal(b, &gotUpdate); err != nil {
 					t.Fatal(err)
 				}
@@ -391,7 +391,7 @@ func Test_ServerService_CreateUpdateServerComponents_ObjectsAdded(t *testing.T) 
 					t.Fatal(err)
 				}
 
-				gotAdded := []*serverserviceapi.ServerComponent{}
+				gotAdded := []*fleetdbapi.ServerComponent{}
 				if err := json.Unmarshal(b, &gotAdded); err != nil {
 					t.Fatal(err)
 				}
@@ -456,7 +456,7 @@ func Test_ServerService_CreateUpdateServerAttributes_Create(t *testing.T) {
 	// test: createUpdateServerAttributes creates server attributes when its undefined in server service
 	serverID, _ := uuid.Parse(fixtures.TestserverID_Dell_fc167440)
 
-	server := &serverserviceapi.Server{UUID: serverID}
+	server := &fleetdbapi.Server{UUID: serverID}
 	// the device with model, vendor, serial as unknown in server service
 	// with inventory from the device with the actual model, vendor, serial attributes
 	device := &model.Asset{
@@ -486,7 +486,7 @@ func Test_ServerService_CreateUpdateServerAttributes_Create(t *testing.T) {
 				}
 
 				// unpack attributes posted by method
-				attributes := &serverserviceapi.Attributes{}
+				attributes := &fleetdbapi.Attributes{}
 				if err = json.Unmarshal(b, attributes); err != nil {
 					t.Fatal(err)
 				}
@@ -538,9 +538,9 @@ func Test_ServerService_CreateUpdateServerAttributes_Update(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	server := &serverserviceapi.Server{
+	server := &fleetdbapi.Server{
 		UUID: serverID,
-		Attributes: []serverserviceapi.Attributes{
+		Attributes: []fleetdbapi.Attributes{
 			{
 				Namespace: serverVendorAttributeNS,
 				Data:      d,
@@ -578,7 +578,7 @@ func Test_ServerService_CreateUpdateServerAttributes_Update(t *testing.T) {
 				}
 
 				// unpack attributes posted by method
-				attributes := &serverserviceapi.Attributes{}
+				attributes := &fleetdbapi.Attributes{}
 				if err = json.Unmarshal(b, attributes); err != nil {
 					t.Fatal(err)
 				}
@@ -637,7 +637,7 @@ func Test_ServerService_CreateUpdateServerMetadataAttributes_Create(t *testing.T
 				}
 
 				// unpack attributes posted by method
-				attributes := &serverserviceapi.Attributes{}
+				attributes := &fleetdbapi.Attributes{}
 				if err = json.Unmarshal(b, attributes); err != nil {
 					t.Fatal(err)
 				}
@@ -701,7 +701,7 @@ func Test_ServerService_CreateUpdateServerMetadataAttributes_Update(t *testing.T
 				require.NoError(t, err)
 
 				// unpack attributes posted by method
-				attributes := &serverserviceapi.Attributes{}
+				attributes := &fleetdbapi.Attributes{}
 				err = json.Unmarshal(b, attributes)
 				require.NoError(t, err)
 
@@ -774,7 +774,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_HasErrorsNoChanges(
 	p := testStoreInstance(t, mock.URL)
 
 	errs := []byte(`{"login_error": "bmc gave up"}`)
-	errAttribs := &serverserviceapi.Attributes{Data: errs}
+	errAttribs := &fleetdbapi.Attributes{Data: errs}
 
 	asset := &model.Asset{Errors: map[string]string{"login_error": "bmc gave up"}}
 
@@ -803,7 +803,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_RegisteredErrorsPur
 				}
 
 				// unpack attributes posted by method
-				attributes := &serverserviceapi.Attributes{}
+				attributes := &fleetdbapi.Attributes{}
 				if err = json.Unmarshal(b, attributes); err != nil {
 					t.Fatal(err)
 				}
@@ -827,7 +827,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_RegisteredErrorsPur
 	mock := httptest.NewServer(handler)
 	p := testStoreInstance(t, mock.URL)
 
-	errAttribs := &serverserviceapi.Attributes{Data: []byte(`{"login_error": "bmc gave up"}`)}
+	errAttribs := &fleetdbapi.Attributes{Data: []byte(`{"login_error": "bmc gave up"}`)}
 
 	err := p.createUpdateServerBMCErrorAttributes(context.TODO(), serverID, errAttribs, &model.Asset{})
 	if err != nil {
@@ -861,7 +861,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_Create(t *testing.T
 				}
 
 				// unpack attributes posted by method
-				attributes := &serverserviceapi.Attributes{}
+				attributes := &fleetdbapi.Attributes{}
 				if err = json.Unmarshal(b, attributes); err != nil {
 					t.Fatal(err)
 				}
@@ -909,7 +909,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_Updated(t *testing.
 				}
 
 				// unpack attributes posted by method
-				attributes := &serverserviceapi.Attributes{}
+				attributes := &fleetdbapi.Attributes{}
 				if err = json.Unmarshal(b, attributes); err != nil {
 					t.Fatal(err)
 				}
@@ -934,7 +934,7 @@ func Test_ServerService_CreateUpdateServerBMCErrorAttributes_Updated(t *testing.
 	p := testStoreInstance(t, mock.URL)
 
 	errs := []byte(`{"login_error": "bmc gave up"}`)
-	errAttribs := &serverserviceapi.Attributes{Data: errs}
+	errAttribs := &fleetdbapi.Attributes{Data: errs}
 
 	asset := &model.Asset{Errors: map[string]string{"login_error": "bmc on vacation"}}
 

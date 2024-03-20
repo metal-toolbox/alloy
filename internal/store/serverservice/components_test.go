@@ -9,10 +9,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/metal-toolbox/alloy/internal/fixtures"
 	"github.com/metal-toolbox/alloy/internal/model"
+	fleetdbapi "github.com/metal-toolbox/fleetdb/pkg/api/v1"
 	"github.com/sanity-io/litter"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
 )
 
 // To refresh the fixtures used below, set dumpFixtures to true and run the test.
@@ -50,7 +50,7 @@ func Test_ToComponentSlice(t *testing.T) {
 	testcases := []struct {
 		name     string
 		device   *model.Asset
-		expected []*serverserviceapi.ServerComponent
+		expected []*fleetdbapi.ServerComponent
 	}{
 		{
 			"E3C246D4INL",
