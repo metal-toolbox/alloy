@@ -10,7 +10,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/metal-toolbox/alloy/internal/helpers"
 	"github.com/metal-toolbox/alloy/internal/model"
-	rs "github.com/metal-toolbox/rivets/serverservice"
 	"github.com/pkg/errors"
 	r3diff "github.com/r3labs/diff/v3"
 	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
@@ -83,7 +82,7 @@ func (r *Store) publishUEFIVars(ctx context.Context, serverID uuid.UUID, asset *
 	}
 
 	va := serverserviceapi.VersionedAttributes{
-		Namespace: rs.UEFIVarsNS,
+		Namespace: "sh.hollow.alloy.uefi_vars",
 		Data:      []byte(vars),
 	}
 
