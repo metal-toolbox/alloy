@@ -6,7 +6,7 @@ import (
 
 type BiosConfig map[string]string
 
-type ComponentInventoryDevice struct {
+type InventoryDevice struct {
 	Inv     *common.Device `json:"inventory,omitempty"`
 	BiosCfg *BiosConfig    `json:"biosconfig,omitempty"`
 }
