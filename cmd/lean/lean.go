@@ -14,6 +14,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/metal-toolbox/alloy/cmd"
+	"github.com/metal-toolbox/alloy/types"
+	cisclient "github.com/metal-toolbox/component-inventory/pkg/api/client"
 )
 
 type inventorier interface {
@@ -63,6 +65,9 @@ var (
 	bmcUser string
 	bmcPwd  string
 	bmcHost string
+
+	cisAddr string
+	assetID string
 
 	timeout time.Duration
 )
@@ -119,7 +124,7 @@ var lean = &cobra.Command{
 			logger.WithError(err).Fatal("getting device inventory")
 		}
 
-		var biosCfg map[string]string
+		var biosCfg types.BiosConfig
 		if getBIOS {
 			biosCfg, err = i.GetBiosConfiguration(ctx)
 			if err != nil {
@@ -138,6 +143,29 @@ var lean = &cobra.Command{
 		}
 
 		fmt.Print(string(byt))
+
+		client, err := cisclient.NewClient(cisAddr)
+		if err != nil {
+			panic(err)
+		}
+
+		cisReq := types.InventoryDevice{
+			Inv:     device,
+			BiosCfg: &biosCfg,
+		}
+
+		var cisResp string
+		if doInband {
+			cisResp, err = client.UpdateInbandInventory(ctx, assetID, cisReq)
+		} else {
+			cisResp, err = client.UpdateOutOfbandInventory(ctx, assetID, cisReq)
+		}
+
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Print(cisResp)
 	},
 }
 
@@ -148,6 +176,8 @@ func init() {
 	lean.Flags().StringVarP(&bmcPwd, "pwd", "p", "bogusPwd", "the BMC password")
 	lean.Flags().BoolVarP(&doInband, "in-band", "i", true, "run in in-band mode")
 	lean.Flags().BoolVarP(&getBIOS, "bios", "b", true, "collect bios configuration (in-band mode only)")
+	lean.Flags().StringVarP(&cisAddr, "cis-addr", "c", "", "CIS server address")
+	lean.Flags().StringVarP(&assetID, "asset-id", "", "", "The asset identifier(aka server id) - required when store is set to serverservice")
 	//nolint:gomnd // do shut up.
 	lean.Flags().DurationVarP(&timeout, "timeout", "t", 20*time.Minute, "deadline for inventory to complete")
 }
