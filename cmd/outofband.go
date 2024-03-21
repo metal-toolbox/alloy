@@ -45,7 +45,7 @@ var (
 var cmdOutofband = &cobra.Command{
 	Use:   "outofband",
 	Short: "Collect inventory data, bios configuration data through the BMC",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(cmd *cobra.Command, _ []string) {
 		alloy, err := app.New(model.AppKindInband, model.StoreKind(storeKind), cfgFile, model.LogLevel(logLevel))
 		if err != nil {
 			log.Fatal(err)
