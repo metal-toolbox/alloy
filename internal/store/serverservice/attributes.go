@@ -10,9 +10,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/metal-toolbox/alloy/internal/helpers"
 	"github.com/metal-toolbox/alloy/internal/model"
+	fleetdbapi "github.com/metal-toolbox/fleetdb/pkg/api/v1"
 	"github.com/pkg/errors"
 	r3diff "github.com/r3labs/diff/v3"
-	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
 	"golang.org/x/exp/slices"
 )
 
@@ -22,7 +22,7 @@ const (
 )
 
 // createUpdateServerAttributes creates/updates the server serial, vendor, model attributes
-func (r *Store) createUpdateServerAttributes(ctx context.Context, server *serverserviceapi.Server, asset *model.Asset) error {
+func (r *Store) createUpdateServerAttributes(ctx context.Context, server *fleetdbapi.Server, asset *model.Asset) error {
 	// device vendor data
 	deviceVendorData := r.deviceVendorData(asset)
 
@@ -32,7 +32,7 @@ func (r *Store) createUpdateServerAttributes(ctx context.Context, server *server
 		return err
 	}
 
-	deviceVendorAttributes := &serverserviceapi.Attributes{
+	deviceVendorAttributes := &fleetdbapi.Attributes{
 		Namespace: serverVendorAttributeNS,
 		Data:      deviceVendorDataBytes,
 	}
@@ -81,7 +81,7 @@ func (r *Store) publishUEFIVars(ctx context.Context, serverID uuid.UUID, asset *
 		return nil
 	}
 
-	va := serverserviceapi.VersionedAttributes{
+	va := fleetdbapi.VersionedAttributes{
 		Namespace: "sh.hollow.alloy.uefi_vars",
 		Data:      []byte(vars),
 	}
@@ -181,7 +181,7 @@ func (r *Store) createUpdateServerMetadataAttributes(ctx context.Context, server
 	// marshal metadata from device
 	metadata := mustFilterAssetMetadata(asset.Inventory.Metadata)
 
-	attribute := serverserviceapi.Attributes{
+	attribute := fleetdbapi.Attributes{
 		Namespace: serverMetadataAttributeNS,
 		Data:      metadata,
 	}
@@ -208,7 +208,7 @@ func (r *Store) createUpdateServerBIOSConfiguration(ctx context.Context, serverI
 		return err
 	}
 
-	va := serverserviceapi.VersionedAttributes{
+	va := fleetdbapi.VersionedAttributes{
 		Namespace: serverBIOSConfigNS(r.appKind),
 		Data:      bc,
 	}
@@ -219,7 +219,7 @@ func (r *Store) createUpdateServerBIOSConfiguration(ctx context.Context, serverI
 }
 
 // nolint:gocyclo // (joel) theres a bunch of validation going on here, I'll split the method out if theres more to come.
-func (r *Store) createUpdateServerBMCErrorAttributes(ctx context.Context, serverID uuid.UUID, current *serverserviceapi.Attributes, asset *model.Asset) error {
+func (r *Store) createUpdateServerBMCErrorAttributes(ctx context.Context, serverID uuid.UUID, current *fleetdbapi.Attributes, asset *model.Asset) error {
 	// 1. no errors reported, none currently present
 	if len(asset.Errors) == 0 {
 		// server has no bmc errors registered
@@ -239,7 +239,7 @@ func (r *Store) createUpdateServerBMCErrorAttributes(ctx context.Context, server
 		return err
 	}
 
-	attribute := serverserviceapi.Attributes{
+	attribute := fleetdbapi.Attributes{
 		Namespace: serverBMCErrorsAttributeNS,
 		Data:      newData,
 	}
@@ -269,10 +269,10 @@ func (r *Store) createUpdateServerBMCErrorAttributes(ctx context.Context, server
 	return err
 }
 
-func diffComponentObjectsAttributes(currentObj, changeObj *serverserviceapi.ServerComponent) ([]serverserviceapi.Attributes, []serverserviceapi.VersionedAttributes, error) {
-	var attributes []serverserviceapi.Attributes
+func diffComponentObjectsAttributes(currentObj, changeObj *fleetdbapi.ServerComponent) ([]fleetdbapi.Attributes, []fleetdbapi.VersionedAttributes, error) {
+	var attributes []fleetdbapi.Attributes
 
-	var versionedAttributes []serverserviceapi.VersionedAttributes
+	var versionedAttributes []fleetdbapi.VersionedAttributes
 
 	differ, err := r3diff.NewDiffer(r3diff.Filter(diffFilter))
 	if err != nil {
@@ -317,7 +317,7 @@ func diffComponentObjectsAttributes(currentObj, changeObj *serverserviceapi.Serv
 // returning the versioned attribute to be registered with serverService.
 //
 // In the case that no changes are to be registered, a nil object is returned.
-func diffVersionedAttributes(currentObjs, newObjs []serverserviceapi.VersionedAttributes) (*serverserviceapi.VersionedAttributes, error) {
+func diffVersionedAttributes(currentObjs, newObjs []fleetdbapi.VersionedAttributes) (*fleetdbapi.VersionedAttributes, error) {
 	// no newObjects
 	if len(newObjs) == 0 {
 		return nil, nil
@@ -329,7 +329,7 @@ func diffVersionedAttributes(currentObjs, newObjs []serverserviceapi.VersionedAt
 	}
 
 	// identify current latest versioned attribute (sorted by created_at)
-	var currentObj serverserviceapi.VersionedAttributes
+	var currentObj fleetdbapi.VersionedAttributes
 
 	sort.Slice(currentObjs, func(i, j int) bool {
 		return currentObjs[i].CreatedAt.After(
@@ -370,10 +370,10 @@ func diffVersionedAttributes(currentObjs, newObjs []serverserviceapi.VersionedAt
 //
 // This is to ensure that this instance of Alloy is only working with the data that
 // is part of the defined attributes, versioned attributes namespaces
-func (r *Store) filterByAttributeNamespace(components []*serverserviceapi.ServerComponent) {
+func (r *Store) filterByAttributeNamespace(components []*fleetdbapi.ServerComponent) {
 	for cIdx, component := range components {
-		attributes := []serverserviceapi.Attributes{}
-		versionedAttributes := []serverserviceapi.VersionedAttributes{}
+		attributes := []fleetdbapi.Attributes{}
+		versionedAttributes := []fleetdbapi.VersionedAttributes{}
 
 		for idx, attribute := range component.Attributes {
 			if attribute.Namespace == r.attributeNS {
@@ -394,7 +394,7 @@ func (r *Store) filterByAttributeNamespace(components []*serverserviceapi.Server
 }
 
 // attributeByNamespace returns the attribute in the slice that matches the namespace
-func attributeByNamespace(ns string, attributes []serverserviceapi.Attributes) *serverserviceapi.Attributes {
+func attributeByNamespace(ns string, attributes []fleetdbapi.Attributes) *fleetdbapi.Attributes {
 	for _, attribute := range attributes {
 		if attribute.Namespace == ns {
 			return &attribute
@@ -407,7 +407,7 @@ func attributeByNamespace(ns string, attributes []serverserviceapi.Attributes) *
 // serverAttributes parses the server service attribute data
 // and returns a map containing the bmc address, server serial, vendor, model attributes
 // and optionally the BMC address and attributes.
-func serverAttributes(attributes []serverserviceapi.Attributes, wantBmcCredentials bool) (map[string]string, error) {
+func serverAttributes(attributes []fleetdbapi.Attributes, wantBmcCredentials bool) (map[string]string, error) {
 	// returned server attributes map
 	sAttributes := map[string]string{}
 
@@ -462,7 +462,7 @@ func serverAttributes(attributes []serverserviceapi.Attributes, wantBmcCredentia
 	return sAttributes, nil
 }
 
-func validateRequiredAttributes(server *serverserviceapi.Server, credential *serverserviceapi.ServerCredential, expectCredentials bool) error {
+func validateRequiredAttributes(server *fleetdbapi.Server, credential *fleetdbapi.ServerCredential, expectCredentials bool) error {
 	if server == nil {
 		return errors.New("server object nil")
 	}
@@ -488,7 +488,7 @@ func validateRequiredAttributes(server *serverserviceapi.Server, credential *ser
 
 // serverMetadataAttributes parses the server service server metdata attribute data
 // and returns a map containing the server metadata
-func serverMetadataAttributes(attributes []serverserviceapi.Attributes) (map[string]string, error) {
+func serverMetadataAttributes(attributes []fleetdbapi.Attributes) (map[string]string, error) {
 	metadata := map[string]string{}
 
 	for _, attribute := range attributes {

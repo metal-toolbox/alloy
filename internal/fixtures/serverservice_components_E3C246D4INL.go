@@ -3,21 +3,21 @@ package fixtures
 import (
 	"encoding/json"
 
-	serverservice "go.hollow.sh/serverservice/pkg/api/v1"
+	fleetdbapi "github.com/metal-toolbox/fleetdb/pkg/api/v1"
 )
 
 var (
 	// To refresh this fixture, see the serverservice_components_test.go file
 	// and/or docs/README.development
 	// nolint:simplifycompositelit // testdata
-	ServerServiceE3C246D4INLcomponents = serverservice.ServerComponentSlice{
-		serverservice.ServerComponent{
+	ServerServiceE3C246D4INLcomponents = fleetdbapi.ServerComponentSlice{
+		fleetdbapi.ServerComponent{
 			Name:   "BIOS",
 			Vendor: "american megatrends",
 			Model:  "",
 			Serial: "0",
-			Attributes: []serverservice.Attributes{
-				serverservice.Attributes{
+			Attributes: []fleetdbapi.Attributes{
+				fleetdbapi.Attributes{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -90,8 +90,8 @@ var (
 					},
 				},
 			},
-			VersionedAttributes: []serverservice.VersionedAttributes{
-				serverservice.VersionedAttributes{
+			VersionedAttributes: []fleetdbapi.VersionedAttributes{
+				fleetdbapi.VersionedAttributes{
 					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
@@ -137,13 +137,13 @@ var (
 			ComponentTypeName: "BIOS",
 			ComponentTypeSlug: "bios",
 		},
-		serverservice.ServerComponent{
+		fleetdbapi.ServerComponent{
 			Name:   "Mainboard",
 			Vendor: "asrockrack",
 			Model:  "E3C246D4I-NL",
 			Serial: "196231220000153",
-			Attributes: []serverservice.Attributes{
-				serverservice.Attributes{
+			Attributes: []fleetdbapi.Attributes{
+				fleetdbapi.Attributes{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -226,13 +226,13 @@ var (
 			ComponentTypeName:   "Mainboard",
 			ComponentTypeSlug:   "mainboard",
 		},
-		serverservice.ServerComponent{
+		fleetdbapi.ServerComponent{
 			Name:   "PhysicalMemory",
 			Vendor: "micron",
 			Model:  "18ASF2G72HZ-2G6E1",
 			Serial: "F0F9053F",
-			Attributes: []serverservice.Attributes{
-				serverservice.Attributes{
+			Attributes: []fleetdbapi.Attributes{
+				fleetdbapi.Attributes{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -414,13 +414,13 @@ var (
 			ComponentTypeName:   "PhysicalMemory",
 			ComponentTypeSlug:   "physicalmemory",
 		},
-		serverservice.ServerComponent{
+		fleetdbapi.ServerComponent{
 			Name:   "PhysicalMemory",
 			Vendor: "micron",
 			Model:  "18ASF2G72HZ-2G6E1",
 			Serial: "F0F90894",
-			Attributes: []serverservice.Attributes{
-				serverservice.Attributes{
+			Attributes: []fleetdbapi.Attributes{
+				fleetdbapi.Attributes{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -602,13 +602,13 @@ var (
 			ComponentTypeName:   "PhysicalMemory",
 			ComponentTypeSlug:   "physicalmemory",
 		},
-		serverservice.ServerComponent{
+		fleetdbapi.ServerComponent{
 			Name:   "NIC",
 			Vendor: "intel",
 			Model:  "Ethernet Controller X710 for 10GbE SFP+",
 			Serial: "b4:96:91:70:26:c8",
-			Attributes: []serverservice.Attributes{
-				serverservice.Attributes{
+			Attributes: []fleetdbapi.Attributes{
+				fleetdbapi.Attributes{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						91,
@@ -892,8 +892,8 @@ var (
 					},
 				},
 			},
-			VersionedAttributes: []serverservice.VersionedAttributes{
-				serverservice.VersionedAttributes{
+			VersionedAttributes: []fleetdbapi.VersionedAttributes{
+				fleetdbapi.VersionedAttributes{
 					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
@@ -941,13 +941,13 @@ var (
 			ComponentTypeName: "NIC",
 			ComponentTypeSlug: "nic",
 		},
-		serverservice.ServerComponent{
+		fleetdbapi.ServerComponent{
 			Name:   "Drive",
 			Vendor: "intel",
 			Model:  "INTEL SSDSC2KB48",
 			Serial: "PHYF001300HB480BGN",
-			Attributes: []serverservice.Attributes{
-				serverservice.Attributes{
+			Attributes: []fleetdbapi.Attributes{
+				fleetdbapi.Attributes{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -1074,13 +1074,13 @@ var (
 			ComponentTypeName:   "Drive",
 			ComponentTypeSlug:   "drive",
 		},
-		serverservice.ServerComponent{
+		fleetdbapi.ServerComponent{
 			Name:   "Drive",
 			Vendor: "intel",
 			Model:  "INTEL SSDSC2KB48",
 			Serial: "PHYF001209KL480BGN",
-			Attributes: []serverservice.Attributes{
-				serverservice.Attributes{
+			Attributes: []fleetdbapi.Attributes{
+				fleetdbapi.Attributes{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -1207,13 +1207,13 @@ var (
 			ComponentTypeName:   "Drive",
 			ComponentTypeSlug:   "drive",
 		},
-		serverservice.ServerComponent{
+		fleetdbapi.ServerComponent{
 			Name:   "CPU",
 			Vendor: "intel",
 			Model:  "Intel(R) Xeon(R) E-2278G CPU @ 3.40GHz",
 			Serial: "0",
-			Attributes: []serverservice.Attributes{
-				serverservice.Attributes{
+			Attributes: []fleetdbapi.Attributes{
+				fleetdbapi.Attributes{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -1365,13 +1365,13 @@ var (
 			ComponentTypeName:   "CPU",
 			ComponentTypeSlug:   "cpu",
 		},
-		serverservice.ServerComponent{
+		fleetdbapi.ServerComponent{
 			Name:   "StorageController",
 			Vendor: "intel",
 			Model:  "Cannon Lake PCH SATA AHCI Controller",
 			Serial: "0",
-			Attributes: []serverservice.Attributes{
-				serverservice.Attributes{
+			Attributes: []fleetdbapi.Attributes{
+				fleetdbapi.Attributes{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
