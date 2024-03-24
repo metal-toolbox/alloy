@@ -1,0 +1,9 @@
+component_inventory:
+  endpoint: http://serverservice:8000
+  oidc_issuer_endpoint: 
+  oidc_audience_endpoint: 
+  oidc_client_id: 
+  oidc_scopes:
+    - create:response
+    - read:server:component
+    - update:server:component
