@@ -3,6 +3,7 @@ package lean
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/bmc-toolbox/bmclib/v2"
@@ -13,6 +14,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/metal-toolbox/alloy/cmd"
+	"github.com/metal-toolbox/alloy/internal/app"
+	"github.com/metal-toolbox/alloy/internal/model"
+	ci "github.com/metal-toolbox/alloy/internal/store/componentinventory"
 	"github.com/metal-toolbox/alloy/types"
 )
 
@@ -126,15 +130,15 @@ var lean = &cobra.Command{
 			}
 		}
 
-		cfg, err := loadConfiguration(cfgFile)
+		alloy, err := app.New(model.AppKindInband, model.StoreKind(""), cfgFile, model.LogLevel(""))
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 
-		client, err := NewComponentInventoryClient(ctx, cfg)
+		client, err := ci.NewComponentInventoryClient(ctx, alloy.Config)
 		if err != nil {
 			// TODO: find a way to handle errors gracefully.
-			panic(err)
+			log.Fatal(err)
 		}
 
 		cisReq := types.InventoryDevice{
@@ -151,7 +155,7 @@ var lean = &cobra.Command{
 		}
 
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 
 		fmt.Print(cisResp)

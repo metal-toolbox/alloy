@@ -1,23 +1,35 @@
-package lean
+package componentinventory
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/coreos/go-oidc"
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/metal-toolbox/alloy/internal/app"
 	cisclient "github.com/metal-toolbox/component-inventory/pkg/api/client"
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/oauth2/clientcredentials"
 )
 
+var (
+	// timeout for requests made by this client.
+	timeout = 30 * time.Second
+
+	ErrConfigurationNil = errors.New("configuration is nil")
+)
+
 // NewComponentInventory instantiates and returns a componentinventory client
-func NewComponentInventoryClient(ctx context.Context, cfg *Configuration) (cisclient.Client, error) {
+func NewComponentInventoryClient(ctx context.Context, cfg *app.Configuration) (cisclient.Client, error) {
 	if cfg == nil {
-		return nil, errors.New("configuration is nil")
+		return nil, ErrConfigurationNil
 	}
 	cisConfig := cfg.ComponentInventory
+
+	fmt.Printf("cisConfig.DisableOAuth =  %v\n", cisConfig.DisableOAuth)
 
 	if cisConfig.DisableOAuth {
 		client, err := cisclient.NewClient(cisConfig.Endpoint)
@@ -32,9 +44,9 @@ func NewComponentInventoryClient(ctx context.Context, cfg *Configuration) (ciscl
 }
 
 // NewComponentInventoryWithOAuth returns a componentinventory retryable http client with Otel and Oauth wrapped in
-func NewComponentInventoryWithOAuth(ctx context.Context, cfg *Configuration) (cisclient.Client, error) {
+func NewComponentInventoryWithOAuth(ctx context.Context, cfg *app.Configuration) (cisclient.Client, error) {
 	if cfg == nil {
-		return nil, errors.New("configuration is nil")
+		return nil, ErrConfigurationNil
 	}
 	cisConfig := cfg.ComponentInventory
 
