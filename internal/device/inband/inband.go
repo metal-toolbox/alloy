@@ -31,54 +31,38 @@ func NewQueryor(logger *logrus.Logger) *Queryor {
 }
 
 // Inventory implements the Queryor interface to collect inventory inband.
-//
-// The given asset object is updated with the collected information.
-func (i *Queryor) Inventory(ctx context.Context, asset *model.Asset) error {
+func (i *Queryor) Inventory(ctx context.Context, _ *model.LoginInfo) (*common.Device, error) {
 	if !i.mock {
 		var err error
 
 		i.deviceManager, err = ironlib.New(i.logger.Logger)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	device, err := i.deviceManager.GetInventory(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	device.Vendor = common.FormatVendorName(device.Vendor)
 
-	// The "unknown" valued attributes here are to be filled in by the caller,
-	// with the data from the inventory source when its available.
-	asset.Inventory = device
-	asset.Vendor = "unknown"
-	asset.Model = "unknown"
-	asset.Serial = "unknown"
-
-	return nil
+	return device, nil
 }
 
 // BiosConfiguration implements the Queryor interface to collect BIOS configuration inband.
 //
 // The given asset object is updated with the collected information.
-func (i *Queryor) BiosConfiguration(ctx context.Context, asset *model.Asset) error {
+func (i *Queryor) BiosConfiguration(ctx context.Context, _ *model.LoginInfo) (map[string]string, error) {
 	if !i.mock {
 		var err error
 
 		i.deviceManager, err = ironlib.New(i.logger.Logger)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	biosConfig, err := i.deviceManager.GetBIOSConfiguration(ctx)
-	if err != nil {
-		return err
-	}
-
-	asset.BiosConfig = biosConfig
-
-	return nil
+	return i.deviceManager.GetBIOSConfiguration(ctx)
 }

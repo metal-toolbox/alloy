@@ -3,7 +3,6 @@ package worker
 import (
 	"context"
 	"os"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -47,10 +46,7 @@ var (
 	errConditionDeserialize = errors.New("unable to deserialize condition")
 	errTaskFirmwareParam    = errors.New("error in task firmware parameters")
 	errInitTask             = errors.New("error initializing new task from event")
-
-	errAssetNotFound = errors.New("asset not found in inventory")
-
-	errCollector = errors.New("collector error")
+	errCollector            = errors.New("collector error")
 )
 
 type Worker struct {
@@ -456,20 +452,10 @@ func (w *Worker) inventoryOutofband(ctx context.Context, task *Task, doneCh chan
 
 	defer close(doneCh)
 
-	// fetch asset inventory from inventory store
-	asset, err := w.repository.AssetByID(ctx, task.Parameters.AssetID.String(), true)
-	if err != nil {
-		if strings.Contains(err.Error(), "no rows in result set") {
-			return errors.Wrap(errAssetNotFound, err.Error())
-		}
-
-		return errors.Wrap(model.ErrInventoryQuery, err.Error())
-	}
-
-	c, err := collector.NewDeviceCollectorWithStore(w.repository, w.cfg.AppKind, w.logger)
+	c, err := collector.NewDeviceCollectorWithStore(ctx, w.repository, w.cfg.AppKind, w.cfg, w.logger)
 	if err != nil {
 		return errors.Wrap(errCollector, err.Error())
 	}
 
-	return c.CollectOutofband(ctx, asset, false)
+	return c.CollectOutofbandAndUploadToCIS(ctx, task.Parameters.AssetID.String(), false)
 }
