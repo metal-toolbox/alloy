@@ -1,0 +1,10 @@
+testonly: False
+with-expecter: True
+packages:
+  github.com/metal-toolbox/alloy/internal/device:
+    config:
+      dir: internal/device
+      fileName: "mock_{{.InterfaceName | firstLower}}.go"
+      inpackage: True
+    interfaces:
+      Queryor:

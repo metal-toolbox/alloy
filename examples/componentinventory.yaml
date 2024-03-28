@@ -6,7 +6,5 @@ component_inventory:
   oidc_client_secret: 
   oidc_client_id: 
   oidc_client_scopes:
-    - create:response
-    - read:server:component
     - update:server:component
   disable_oauth: true

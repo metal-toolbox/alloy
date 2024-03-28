@@ -109,3 +109,10 @@ help:
 		} \
 	} \
 	{ lastLine = $$0 }' $(MAKEFILE_LIST)
+
+
+## Generate mocks
+gen-mock:
+	go install github.com/vektra/mockery/v2@v2.42.1
+	mockery
+	go mod tidy
