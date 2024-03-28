@@ -51,6 +51,21 @@ const (
 	EnvVarDumpDiffers = "DEBUG_DUMP_DIFFERS"
 )
 
+type LoginInfo struct {
+	// The device ID from the inventory store
+	ID string
+	// The device vendor attribute
+	Vendor string
+	// The device model attribute
+	Model string
+	// Username is the BMC login username from the inventory store
+	BMCUsername string
+	// Password is the BMC login password from the inventory store
+	BMCPassword string
+	// Address is the BMC IP address from the inventory store
+	BMCAddress net.IP
+}
+
 // Asset represents attributes of an asset retrieved from the asset store
 type Asset struct {
 	// Inventory collected from the device

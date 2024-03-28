@@ -19,14 +19,14 @@ func Test_Inventory(t *testing.T) {
 		logger:     logrus.NewEntry(logger),
 	}
 
-	asset := &model.Asset{}
+	loginInfo := &model.LoginInfo{}
 
-	err := queryor.Inventory(context.TODO(), asset)
+	inventory, err := queryor.Inventory(context.TODO(), loginInfo)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.NotNil(t, asset.Inventory)
+	assert.NotNil(t, inventory)
 	assert.True(t, bmcQueryor.connOpened)
 	assert.True(t, bmcQueryor.connClosed)
 }
@@ -41,14 +41,14 @@ func Test_BiosConfiguration(t *testing.T) {
 		logger:     logrus.NewEntry(logger),
 	}
 
-	asset := &model.Asset{}
+	loginInfo := &model.LoginInfo{}
 
-	err := queryor.BiosConfiguration(context.TODO(), asset)
+	biosCfg, err := queryor.BiosConfiguration(context.TODO(), loginInfo)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, 1, len(asset.BiosConfig))
+	assert.Equal(t, 1, len(biosCfg))
 	assert.True(t, bmcQueryor.connOpened)
 	assert.True(t, bmcQueryor.connClosed)
 }

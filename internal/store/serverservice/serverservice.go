@@ -2,6 +2,7 @@ package serverservice
 
 import (
 	"context"
+	"net"
 	"os"
 	"reflect"
 	"strings"
@@ -122,6 +123,48 @@ func (r *Store) AssetByID(ctx context.Context, id string, fetchBmcCredentials bo
 	}
 
 	return toAsset(server, credential, fetchBmcCredentials)
+}
+
+// BMCCredentials fetches BMC credentials for login to the assert.
+func (r *Store) BMCCredentials(ctx context.Context, id string) (*model.LoginInfo, error) {
+	ctx, span := otel.Tracer(pkgName).Start(ctx, "Serverservice.BMCCredentials")
+	defer span.End()
+
+	sid, err := uuid.Parse(id)
+	if err != nil {
+		return nil, err
+	}
+
+	// get server
+	server, _, err := r.Get(ctx, sid)
+	if err != nil {
+		span.SetStatus(codes.Error, "Get() server failed")
+
+		return nil, errors.Wrap(model.ErrInventoryQuery, "error querying server attributes: "+err.Error())
+	}
+
+	// get vendor and model
+	serverAttributes, err := serverAttributes(server.Attributes, true)
+	if err != nil {
+		return nil, errors.Wrap(ErrServerServiceObject, err.Error())
+	}
+
+	// get bmc credential
+	credential, _, err := r.GetCredential(ctx, sid, serverserviceapi.ServerCredentialTypeBMC)
+	if err != nil {
+		span.SetStatus(codes.Error, "GetCredential() failed")
+
+		return nil, errors.Wrap(model.ErrInventoryQuery, "error querying BMC credentials: "+err.Error())
+	}
+
+	return &model.LoginInfo{
+		ID:          id,
+		Model:       serverAttributes[serverModelAttributeKey],
+		Vendor:      serverAttributes[serverVendorAttributeKey],
+		BMCAddress:  net.ParseIP(serverAttributes[bmcIPAddressAttributeKey]),
+		BMCUsername: credential.Username,
+		BMCPassword: credential.Password,
+	}, nil
 }
 
 // assetByID queries serverService for the hardware asset by ID and returns an Asset object

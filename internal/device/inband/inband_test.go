@@ -21,14 +21,14 @@ func Test_Inventory(t *testing.T) {
 		mock:          true,
 	}
 
-	asset := &model.Asset{}
+	loginInfo := &model.LoginInfo{}
 
-	err := queryor.Inventory(context.TODO(), asset)
+	inventory, err := queryor.Inventory(context.TODO(), loginInfo)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.NotNil(t, asset.Inventory)
+	assert.NotNil(t, inventory)
 }
 
 func Test_BiosConfiguration(t *testing.T) {
@@ -42,12 +42,12 @@ func Test_BiosConfiguration(t *testing.T) {
 		mock:          true,
 	}
 
-	asset := &model.Asset{}
+	loginInfo := &model.LoginInfo{}
 
-	err := queryor.BiosConfiguration(context.TODO(), asset)
+	biosCfg, err := queryor.BiosConfiguration(context.TODO(), loginInfo)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.NotNil(t, asset.BiosConfig)
+	assert.NotNil(t, biosCfg)
 }

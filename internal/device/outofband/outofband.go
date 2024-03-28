@@ -83,76 +83,76 @@ func NewQueryor(logger *logrus.Logger) *Queryor {
 
 // Inventory retrieves device component and firmware information
 // and updates the given asset object with the inventory
-func (o *Queryor) Inventory(ctx context.Context, asset *model.Asset) error {
+func (o *Queryor) Inventory(ctx context.Context, loginInfo *model.LoginInfo) (*common.Device, error) {
 	// attach child span
 	ctx, span := otel.Tracer(pkgName).Start(ctx, "Inventory")
 	defer span.End()
 
-	setTraceSpanAssetAttributes(span, asset)
+	setTraceSpanAssetAttributes(span, loginInfo)
 
 	o.logger.WithFields(
 		logrus.Fields{
-			"serverID": asset.ID,
-			"IP":       asset.BMCAddress.String(),
+			"serverID": loginInfo.ID,
+			"IP":       loginInfo.BMCAddress.String(),
 		}).Trace("logging into to BMC")
 
 	// login
-	bmc, err := o.bmcLogin(ctx, asset)
+	bmc, err := o.bmcLogin(ctx, loginInfo)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// defer logout
 	//
 	// ctx is not passed to bmcLogout to ensure that
 	// the bmc logout is carried out even if the context is canceled.
-	defer o.bmcLogout(bmc, asset)
+	defer o.bmcLogout(bmc, loginInfo)
 
 	o.logger.WithFields(
 		logrus.Fields{
-			"serverID": asset.ID,
-			"IP":       asset.BMCAddress.String(),
+			"serverID": loginInfo.ID,
+			"IP":       loginInfo.BMCAddress.String(),
 		}).Trace("collecting inventory from asset BMC..")
 
 	// collect inventory
-	return o.bmcInventory(ctx, bmc, asset)
+	return o.bmcInventory(ctx, bmc, loginInfo)
 }
 
-func (o *Queryor) BiosConfiguration(ctx context.Context, asset *model.Asset) error {
+func (o *Queryor) BiosConfiguration(ctx context.Context, loginInfo *model.LoginInfo) (map[string]string, error) {
 	// attach child span
 	ctx, span := otel.Tracer(pkgName).Start(ctx, "BiosConfiguration")
 	defer span.End()
 
-	setTraceSpanAssetAttributes(span, asset)
+	setTraceSpanAssetAttributes(span, loginInfo)
 
 	// login
-	bmc, err := o.bmcLogin(ctx, asset)
+	bmc, err := o.bmcLogin(ctx, loginInfo)
 	if err != nil {
 		o.logger.WithFields(
 			logrus.Fields{
-				"serverID": asset.ID,
-				"IP":       asset.BMCAddress.String(),
+				"serverID": loginInfo.ID,
+				"IP":       loginInfo.BMCAddress.String(),
 				"err":      err,
 			}).Warn("BMC login error")
 
-		return err
+		return nil, err
 	}
 
 	// defer logout
 	//
 	// ctx is not passed to bmcLogout to ensure that
 	// the bmc logout is carried out even if the context is canceled.
-	defer o.bmcLogout(bmc, asset)
+	defer o.bmcLogout(bmc, loginInfo)
 
 	// collect bios configuration
-	return o.biosConfiguration(ctx, bmc, asset)
+	return o.biosConfiguration(ctx, bmc, loginInfo)
 }
 
 // biosConfiguration collects bios configuration data from the BMC
 // it updates the asset.BiosConfig attribute with the data collected.
 //
 // If any errors occurred in the collection, those are included in the asset.Errors attribute.
-func (o *Queryor) biosConfiguration(ctx context.Context, bmc BMCQueryor, asset *model.Asset) error {
+func (o *Queryor) biosConfiguration(ctx context.Context, bmc BMCQueryor, loginInfo *model.LoginInfo) (map[string]string, error) {
 	// measure BMC biosConfiguration query
 	startTS := time.Now()
 
@@ -160,8 +160,8 @@ func (o *Queryor) biosConfiguration(ctx context.Context, bmc BMCQueryor, asset *
 	if err != nil {
 		o.logger.WithFields(
 			logrus.Fields{
-				"serverID": asset.ID,
-				"IP":       asset.BMCAddress.String(),
+				"serverID": loginInfo.ID,
+				"IP":       loginInfo.BMCAddress.String(),
 				"err":      err,
 			}).Warn("error in bmc bios configuration collection")
 
@@ -171,33 +171,28 @@ func (o *Queryor) biosConfiguration(ctx context.Context, bmc BMCQueryor, asset *
 		switch {
 		case strings.Contains(err.Error(), "no compatible System Odata IDs identified"):
 			// device provides a redfish API, but BIOS configuration export isn't supported in the current redfish library
-			asset.AppendError(GetBiosConfigError, "redfish_incompatible: no compatible System Odata IDs identified")
-			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "redfish_incompatible")
+			metrics.IncrementBMCQueryErrorCount(loginInfo.Vendor, loginInfo.Model, "redfish_incompatible")
 		case strings.Contains(err.Error(), "no BiosConfigurationGetter implementations found"):
 			// no means to export BIOS configuration were found
-			asset.AppendError(GetBiosConfigError, "device not supported")
-			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "NoBiosConfigurationGetter")
+			metrics.IncrementBMCQueryErrorCount(loginInfo.Vendor, loginInfo.Model, "NoBiosConfigurationGetter")
 		default:
-			asset.AppendError(GetBiosConfigError, err.Error())
-			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "GetBiosConfigurationError")
+			metrics.IncrementBMCQueryErrorCount(loginInfo.Vendor, loginInfo.Model, "GetBiosConfigurationError")
 		}
 
-		return errors.Wrap(ErrBiosConfig, err.Error())
+		return nil, errors.Wrap(ErrBiosConfig, err.Error())
 	}
 
 	// measure BMC GetBiosConfiguration query time
-	metrics.ObserveBMCQueryTimeSummary(asset.Vendor, asset.Model, "GetBiosConfiguration", startTS)
+	metrics.ObserveBMCQueryTimeSummary(loginInfo.Vendor, loginInfo.Model, "GetBiosConfiguration", startTS)
 
-	asset.BiosConfig = biosConfig
-
-	return nil
+	return biosConfig, nil
 }
 
 // bmcInventory collects inventory data from the BMC
 // it updates the asset.Inventory attribute with the data collected.
 //
 // If any errors occurred in the collection, those are included in the asset.Errors attribute.
-func (o *Queryor) bmcInventory(ctx context.Context, bmc BMCQueryor, asset *model.Asset) error {
+func (o *Queryor) bmcInventory(ctx context.Context, bmc BMCQueryor, loginInfo *model.LoginInfo) (*common.Device, error) {
 	// measure BMC inventory query
 	startTS := time.Now()
 
@@ -205,8 +200,8 @@ func (o *Queryor) bmcInventory(ctx context.Context, bmc BMCQueryor, asset *model
 	if err != nil {
 		o.logger.WithFields(
 			logrus.Fields{
-				"serverID": asset.ID,
-				"IP":       asset.BMCAddress.String(),
+				"serverID": loginInfo.ID,
+				"IP":       loginInfo.BMCAddress.String(),
 				"err":      err,
 			}).Warn("error in bmc inventory collection")
 
@@ -215,26 +210,24 @@ func (o *Queryor) bmcInventory(ctx context.Context, bmc BMCQueryor, asset *model
 		// increment inventory query error count metric
 		if strings.Contains(err.Error(), "no compatible System Odata IDs identified") {
 			// device provides a redfish API, but inventory export isn't supported in the current redfish library
-			asset.AppendError(InventoryError, "redfish_incompatible: no compatible System Odata IDs identified")
-			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "redfish_incompatible")
+			metrics.IncrementBMCQueryErrorCount(loginInfo.Vendor, loginInfo.Model, "redfish_incompatible")
 		} else {
-			asset.AppendError(InventoryError, err.Error())
-			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "inventory")
+			metrics.IncrementBMCQueryErrorCount(loginInfo.Vendor, loginInfo.Model, "inventory")
 		}
 
-		return errors.Wrap(ErrInventory, err.Error())
+		return nil, errors.Wrap(ErrInventory, err.Error())
 	}
 
 	if inventory == nil {
-		return errors.Wrap(ErrInventory, "nil *common.Device object returned")
+		return nil, errors.Wrap(ErrInventory, "nil *common.Device object returned")
 	}
 
 	// measure BMC inventory query time
-	metrics.ObserveBMCQueryTimeSummary(asset.Vendor, asset.Model, "inventory", startTS)
+	metrics.ObserveBMCQueryTimeSummary(loginInfo.Vendor, loginInfo.Model, "inventory", startTS)
 
 	// For debugging and to capture test fixtures data.
 	if os.Getenv(model.EnvVarDumpFixtures) == "true" {
-		f := asset.ID + ".device.fixture"
+		f := loginInfo.ID + ".device.fixture"
 		o.logger.Info("oob device fixture dumped as file: ", f)
 
 		// nolint:gomnd // file permissions are clearer in this form.
@@ -243,15 +236,14 @@ func (o *Queryor) bmcInventory(ctx context.Context, bmc BMCQueryor, asset *model
 
 	// format the device inventory vendor attribute so its consistent
 	inventory.Vendor = common.FormatVendorName(inventory.Vendor)
-	asset.Inventory = inventory
 
-	return nil
+	return inventory, nil
 }
 
 // bmcLogin initiates the BMC session
 //
 // when theres an error in the login process, asset.Errors is updated to include that information.
-func (o *Queryor) bmcLogin(ctx context.Context, asset *model.Asset) (BMCQueryor, error) {
+func (o *Queryor) bmcLogin(ctx context.Context, loginInfo *model.LoginInfo) (BMCQueryor, error) {
 	// bmc is the bmc client instance
 	var bmc BMCQueryor
 
@@ -261,7 +253,7 @@ func (o *Queryor) bmcLogin(ctx context.Context, asset *model.Asset) (BMCQueryor,
 
 	if o.mockClient == nil {
 		bmc = newBMCClient(
-			asset,
+			loginInfo,
 			o.logger.Logger,
 		)
 	} else {
@@ -278,26 +270,23 @@ func (o *Queryor) bmcLogin(ctx context.Context, asset *model.Asset) (BMCQueryor,
 
 		switch {
 		case strings.Contains(err.Error(), "operation timed out"):
-			asset.AppendError(LoginError, "operation timed out in "+time.Since(startTS).String())
-			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "conn_timeout")
+			metrics.IncrementBMCQueryErrorCount(loginInfo.Vendor, loginInfo.Model, "conn_timeout")
 		case strings.Contains(err.Error(), "401: "), strings.Contains(err.Error(), "failed to login"):
-			asset.AppendError(LoginError, "unauthorized")
-			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "unauthorized")
+			metrics.IncrementBMCQueryErrorCount(loginInfo.Vendor, loginInfo.Model, "unauthorized")
 		default:
-			asset.AppendError(LoginError, err.Error())
-			metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "other")
+			metrics.IncrementBMCQueryErrorCount(loginInfo.Vendor, loginInfo.Model, "other")
 		}
 
 		return nil, errors.Wrap(ErrConnect, err.Error())
 	}
 
 	// measure BMC connection open query time
-	metrics.ObserveBMCQueryTimeSummary(asset.Vendor, asset.Model, "conn_open", startTS)
+	metrics.ObserveBMCQueryTimeSummary(loginInfo.Vendor, loginInfo.Model, "conn_open", startTS)
 
 	return bmc, nil
 }
 
-func (o *Queryor) bmcLogout(bmc BMCQueryor, asset *model.Asset) {
+func (o *Queryor) bmcLogout(bmc BMCQueryor, loginInfo *model.LoginInfo) {
 	// measure BMC connection close
 	startTS := time.Now()
 
@@ -309,30 +298,30 @@ func (o *Queryor) bmcLogout(bmc BMCQueryor, asset *model.Asset) {
 
 	o.logger.WithFields(
 		logrus.Fields{
-			"serverID": asset.ID,
-			"IP":       asset.BMCAddress.String(),
+			"serverID": loginInfo.ID,
+			"IP":       loginInfo.BMCAddress.String(),
 		}).Trace("bmc connection close")
 
 	if err := bmc.Close(ctx); err != nil {
 		o.logger.WithFields(
 			logrus.Fields{
-				"serverID": asset.ID,
-				"IP":       asset.BMCAddress.String(),
+				"serverID": loginInfo.ID,
+				"IP":       loginInfo.BMCAddress.String(),
 				"err":      err,
 			}).Warn("error in bmc connection close")
 
 		span.SetStatus(codes.Error, " BMC connection close: "+err.Error())
 
 		// increment connection close error count metric
-		metrics.IncrementBMCQueryErrorCount(asset.Vendor, asset.Model, "conn_close")
+		metrics.IncrementBMCQueryErrorCount(loginInfo.Vendor, loginInfo.Model, "conn_close")
 	}
 
 	// measure BMC connection open query time
-	metrics.ObserveBMCQueryTimeSummary(asset.Vendor, asset.Model, "conn_close", startTS)
+	metrics.ObserveBMCQueryTimeSummary(loginInfo.Vendor, loginInfo.Model, "conn_close", startTS)
 }
 
 // newBMCClient initializes a bmclib client with the given credentials
-func newBMCClient(asset *model.Asset, l *logrus.Logger) *bmclibv2.Client {
+func newBMCClient(loginInfo *model.LoginInfo, l *logrus.Logger) *bmclibv2.Client {
 	logger := logrus.New()
 	logger.Formatter = l.Formatter
 
@@ -351,9 +340,9 @@ func newBMCClient(asset *model.Asset, l *logrus.Logger) *bmclibv2.Client {
 	logruslogr := logrusrv2.New(logger)
 
 	bmcClient := bmclibv2.NewClient(
-		asset.BMCAddress.String(),
-		asset.BMCUsername,
-		asset.BMCPassword,
+		loginInfo.BMCAddress.String(),
+		loginInfo.BMCUsername,
+		loginInfo.BMCPassword,
 		bmclibv2.WithLogger(logruslogr),
 		bmclibv2.WithPerProviderTimeout(bmclibProviderTimeout),
 	)
@@ -362,7 +351,7 @@ func newBMCClient(asset *model.Asset, l *logrus.Logger) *bmclibv2.Client {
 	//
 	// The bmclib drivers here are limited to the HTTPS means of connection,
 	// that is, drivers like ipmi are excluded.
-	switch asset.Vendor {
+	switch loginInfo.Vendor {
 	case common.VendorDell, common.VendorHPE:
 		// Set to the bmclib ProviderProtocol value
 		// https://github.com/bmc-toolbox/bmclib/blob/v2/providers/redfish/redfish.go#L26
@@ -413,19 +402,19 @@ func (o *Queryor) SessionActive(ctx context.Context, bmc BMCQueryor) bool {
 }
 
 // setTraceSpanAssetAttributes includes the asset attributes as span attributes
-func setTraceSpanAssetAttributes(span trace.Span, asset *model.Asset) {
+func setTraceSpanAssetAttributes(span trace.Span, loginInfo *model.LoginInfo) {
 	// set span attributes
-	span.SetAttributes(attribute.String("bmc.host", asset.BMCAddress.String()))
+	span.SetAttributes(attribute.String("bmc.host", loginInfo.BMCAddress.String()))
 
-	if asset.Vendor == "" {
-		asset.Vendor = "unknown"
+	if loginInfo.Vendor == "" {
+		loginInfo.Vendor = "unknown"
 	}
 
-	if asset.Model == "" {
-		asset.Model = "unknown"
+	if loginInfo.Model == "" {
+		loginInfo.Model = "unknown"
 	}
 
-	span.SetAttributes(attribute.String("bmc.vendor", asset.Vendor))
-	span.SetAttributes(attribute.String("bmc.model", asset.Model))
-	span.SetAttributes(attribute.String("serverID", asset.ID))
+	span.SetAttributes(attribute.String("bmc.vendor", loginInfo.Vendor))
+	span.SetAttributes(attribute.String("bmc.vendor", loginInfo.Vendor))
+	span.SetAttributes(attribute.String("serverID", loginInfo.ID))
 }
