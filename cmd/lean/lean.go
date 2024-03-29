@@ -3,6 +3,7 @@ package lean
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/bmc-toolbox/bmclib/v2"
@@ -13,8 +14,10 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/metal-toolbox/alloy/cmd"
+	"github.com/metal-toolbox/alloy/internal/app"
+	"github.com/metal-toolbox/alloy/internal/model"
+	ci "github.com/metal-toolbox/alloy/internal/store/componentinventory"
 	"github.com/metal-toolbox/alloy/types"
-	cisclient "github.com/metal-toolbox/component-inventory/pkg/api/client"
 )
 
 type inventorier interface {
@@ -58,6 +61,7 @@ func (bla *bmclibAdapter) Close(c context.Context) error {
 }
 
 var (
+	cfgFile  string
 	doInband bool
 	getBIOS  bool
 
@@ -65,7 +69,6 @@ var (
 	bmcPwd  string
 	bmcHost string
 
-	cisAddr string
 	assetID string
 
 	timeout time.Duration
@@ -127,10 +130,15 @@ var lean = &cobra.Command{
 			}
 		}
 
-		client, err := cisclient.NewClient(cisAddr)
+		alloy, err := app.New(model.AppKindInband, model.StoreKind(""), cfgFile, model.LogLevel(""))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		client, err := ci.NewComponentInventoryClient(ctx, alloy.Config)
 		if err != nil {
 			// TODO: find a way to handle errors gracefully.
-			panic(err)
+			log.Fatal(err)
 		}
 
 		cisReq := types.InventoryDevice{
@@ -147,7 +155,7 @@ var lean = &cobra.Command{
 		}
 
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 
 		fmt.Print(cisResp)
@@ -156,12 +164,12 @@ var lean = &cobra.Command{
 
 func init() {
 	cmd.RootCmd.AddCommand(lean)
+	lean.Flags().StringVar(&cfgFile, "config", "", "configuration file")
 	lean.Flags().StringVar(&bmcHost, "host", "bogusHost", "the BMC host")
 	lean.Flags().StringVarP(&bmcUser, "user", "u", "bogusUser", "the BMC user")
 	lean.Flags().StringVarP(&bmcPwd, "pwd", "p", "bogusPwd", "the BMC password")
 	lean.Flags().BoolVarP(&doInband, "in-band", "i", true, "run in in-band mode")
 	lean.Flags().BoolVarP(&getBIOS, "bios", "b", true, "collect bios configuration (in-band mode only)")
-	lean.Flags().StringVarP(&cisAddr, "cis-addr", "c", "", "CIS server address")
 	lean.Flags().StringVarP(&assetID, "asset-id", "", "", "The asset identifier(aka server id) - required when store is set to serverservice")
 	//nolint:gomnd // do shut up.
 	lean.Flags().DurationVarP(&timeout, "timeout", "t", 20*time.Minute, "deadline for inventory to complete")

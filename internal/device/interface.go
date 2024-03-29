@@ -3,6 +3,7 @@ package device
 import (
 	"context"
 
+	"github.com/bmc-toolbox/common"
 	"github.com/metal-toolbox/alloy/internal/device/inband"
 	"github.com/metal-toolbox/alloy/internal/device/outofband"
 	"github.com/metal-toolbox/alloy/internal/model"
@@ -17,12 +18,11 @@ var (
 // Queryor interface defines methods to query a device for information.
 type Queryor interface {
 	// Inventory retrieves device component and firmware information
-	// and updates the given asset object with the inventory.
-	Inventory(ctx context.Context, asset *model.Asset) error
+	Inventory(ctx context.Context, loginInfo *model.LoginInfo) (*common.Device, error)
 
 	// BiosConfiguration retrieves the device component and firmware information
 	// and updates the given asset object with the bios configuration.
-	BiosConfiguration(ctx context.Context, asset *model.Asset) error
+	BiosConfiguration(ctx context.Context, loginInfo *model.LoginInfo) (map[string]string, error)
 }
 
 func NewQueryor(kind model.AppKind, logger *logrus.Logger) (Queryor, error) {

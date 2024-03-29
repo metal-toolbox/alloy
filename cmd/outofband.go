@@ -115,8 +115,7 @@ func runOnAssets(ctx context.Context, alloy *app.App) {
 	}
 
 	for _, assetID := range assetIDs {
-		asset := &model.Asset{ID: assetID}
-		if err := c.CollectOutofband(ctx, asset, outputStdout); err != nil {
+		if err := c.CollectOutofbandAndUploadToCIS(ctx, assetID, outputStdout); err != nil {
 			alloy.Logger.Warn(err)
 		}
 	}

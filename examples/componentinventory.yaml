@@ -1,0 +1,10 @@
+log_level: debug
+component_inventory:
+  endpoint: http://localhost:8020
+  oidc_issuer_endpoint: 
+  oidc_audience_endpoint: 
+  oidc_client_secret: 
+  oidc_client_id: 
+  oidc_client_scopes:
+    - update:server:component
+  disable_oauth: true
