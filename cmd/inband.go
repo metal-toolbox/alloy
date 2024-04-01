@@ -99,7 +99,7 @@ func collectInband(ctx context.Context, cfg *app.Configuration, logger *logrus.L
 		return
 	}
 
-	if err := c.CollectInband(ctx, &model.Asset{ID: assetID}, outputStdout); err != nil {
+	if err := c.CollectInbandAndUploadToCIS(ctx, assetID, outputStdout); err != nil {
 		logger.Error(err)
 		return
 	}
