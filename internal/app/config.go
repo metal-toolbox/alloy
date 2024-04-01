@@ -47,9 +47,9 @@ type Configuration struct {
 	// This parameter is required when StoreKind is set to serverservice.
 	ServerserviceOptions *ServerserviceOptions `mapstructure:"serverservice"`
 
-	// ComponentInventory defines the component inventory client
+	// ComponentInventoryAPIOptions defines the component inventory client
 	// configuration parameters.
-	ComponentInventory *ComponentInventoryConfig `mapstructure:"component_inventory"`
+	ComponentInventoryAPIOptions *ComponentInventoryAPIOptions `mapstructure:"component_inventory"`
 
 	// Controller Out of band collector concurrency
 	Concurrency int `mapstructure:"concurrency"`
@@ -83,10 +83,10 @@ type ServerserviceOptions struct {
 	DisableOAuth         bool     `mapstructure:"disable_oauth"`
 }
 
-// ComponentInventoryConfig defines configuration for the
+// ComponentInventoryAPIOptions defines configuration for the
 // ComponentInventory client.
 // https://github.com/metal-toolbox/component-inventory
-type ComponentInventoryConfig struct {
+type ComponentInventoryAPIOptions struct {
 	Endpoint             string   `mapstructure:"endpoint"`
 	OidcIssuerEndpoint   string   `mapstructure:"oidc_issuer_endpoint"`
 	OidcAudienceEndpoint string   `mapstructure:"oidc_audience_endpoint"`
@@ -151,7 +151,7 @@ func (a *App) LoadConfiguration(cfgFile string, storeKind model.StoreKind) error
 	}
 
 	if err := a.envVarComponentInventoryOverrides(); err != nil {
-		return errors.Wrap(ErrConfig, "serverservice env overrides error:"+err.Error())
+		return errors.Wrap(ErrConfig, "component-inventory env overrides error:"+err.Error())
 	}
 
 	return nil
@@ -370,59 +370,59 @@ func (a *App) envVarServerserviceOverrides() error {
 
 // nolint:gocyclo // parameter validation is cyclomatic
 func (a *App) envVarComponentInventoryOverrides() error {
-	if a.Config.ComponentInventory == nil {
-		a.Config.ComponentInventory = &ComponentInventoryConfig{}
+	if a.Config.ComponentInventoryAPIOptions == nil {
+		a.Config.ComponentInventoryAPIOptions = &ComponentInventoryAPIOptions{}
 	}
 
 	if a.v.GetString("component_inventory.endpoint") != "" {
-		a.Config.ComponentInventory.Endpoint = a.v.GetString("component_inventory.endpoint")
+		a.Config.ComponentInventoryAPIOptions.Endpoint = a.v.GetString("component_inventory.endpoint")
 	}
 
 	if a.v.GetString("component_inventory.disable.oauth") != "" {
-		a.Config.ComponentInventory.DisableOAuth = a.v.GetBool("component_inventory.disable.oauth")
+		a.Config.ComponentInventoryAPIOptions.DisableOAuth = a.v.GetBool("component_inventory.disable.oauth")
 	}
 
-	if a.Config.ComponentInventory.DisableOAuth {
+	if a.Config.ComponentInventoryAPIOptions.DisableOAuth {
 		return nil
 	}
 
 	if a.v.GetString("component_inventory.oidc.issuer.endpoint") != "" {
-		a.Config.ComponentInventory.OidcIssuerEndpoint = a.v.GetString("component_inventory.oidc.issuer.endpoint")
+		a.Config.ComponentInventoryAPIOptions.OidcIssuerEndpoint = a.v.GetString("component_inventory.oidc.issuer.endpoint")
 	}
 
-	if a.Config.ComponentInventory.OidcIssuerEndpoint == "" {
+	if a.Config.ComponentInventoryAPIOptions.OidcIssuerEndpoint == "" {
 		return errors.New("component_inventory oidc.issuer.endpoint not defined")
 	}
 
 	if a.v.GetString("component_inventory.oidc.audience.endpoint") != "" {
-		a.Config.ComponentInventory.OidcAudienceEndpoint = a.v.GetString("component_inventory.oidc.audience.endpoint")
+		a.Config.ComponentInventoryAPIOptions.OidcAudienceEndpoint = a.v.GetString("component_inventory.oidc.audience.endpoint")
 	}
 
-	if a.Config.ComponentInventory.OidcAudienceEndpoint == "" {
+	if a.Config.ComponentInventoryAPIOptions.OidcAudienceEndpoint == "" {
 		return errors.New("component_inventory oidc.audience.endpoint not defined")
 	}
 
 	if a.v.GetString("component_inventory.oidc.client.secret") != "" {
-		a.Config.ComponentInventory.OidcClientSecret = a.v.GetString("component_inventory.oidc.client.secret")
+		a.Config.ComponentInventoryAPIOptions.OidcClientSecret = a.v.GetString("component_inventory.oidc.client.secret")
 	}
 
-	if a.Config.ComponentInventory.OidcClientSecret == "" {
+	if a.Config.ComponentInventoryAPIOptions.OidcClientSecret == "" {
 		return errors.New("component_inventory.oidc.client.secret not defined")
 	}
 
 	if a.v.GetString("component_inventory.oidc.client.id") != "" {
-		a.Config.ComponentInventory.OidcClientID = a.v.GetString("component_inventory.oidc.client.id")
+		a.Config.ComponentInventoryAPIOptions.OidcClientID = a.v.GetString("component_inventory.oidc.client.id")
 	}
 
-	if a.Config.ComponentInventory.OidcClientID == "" {
+	if a.Config.ComponentInventoryAPIOptions.OidcClientID == "" {
 		return errors.New("component_inventory.oidc.client.id not defined")
 	}
 
 	if a.v.GetString("component_inventory.oidc.client.scopes") != "" {
-		a.Config.ComponentInventory.OidcClientScopes = a.v.GetStringSlice("component_inventory.oidc.client.scopes")
+		a.Config.ComponentInventoryAPIOptions.OidcClientScopes = a.v.GetStringSlice("component_inventory.oidc.client.scopes")
 	}
 
-	if len(a.Config.ComponentInventory.OidcClientScopes) == 0 {
+	if len(a.Config.ComponentInventoryAPIOptions.OidcClientScopes) == 0 {
 		return errors.New("component_inventory oidc.client.scopes not defined")
 	}
 

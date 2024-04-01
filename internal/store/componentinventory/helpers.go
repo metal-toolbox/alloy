@@ -27,7 +27,7 @@ func NewComponentInventoryClient(ctx context.Context, cfg *app.Configuration) (c
 	if cfg == nil {
 		return nil, ErrConfigurationNil
 	}
-	cisConfig := cfg.ComponentInventory
+	cisConfig := cfg.ComponentInventoryAPIOptions
 
 	fmt.Printf("cisConfig.DisableOAuth =  %v\n", cisConfig.DisableOAuth)
 
@@ -48,7 +48,7 @@ func NewComponentInventoryWithOAuth(ctx context.Context, cfg *app.Configuration)
 	if cfg == nil {
 		return nil, ErrConfigurationNil
 	}
-	cisConfig := cfg.ComponentInventory
+	cisConfig := cfg.ComponentInventoryAPIOptions
 
 	// init retryable http client
 	retryableClient := retryablehttp.NewClient()
