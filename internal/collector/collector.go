@@ -119,7 +119,7 @@ func (c *DeviceCollector) CollectOutofbandAndUploadToCIS(ctx context.Context, as
 	}
 
 	// upload to CIS
-	if _, err = c.cisClient.UpdateInbandInventory(ctx, assetID, cisInventory); err != nil {
+	if _, err = c.cisClient.UpdateOutOfbandInventory(ctx, assetID, cisInventory); err != nil {
 		errs = multierror.Append(errs, err)
 
 		return errs
