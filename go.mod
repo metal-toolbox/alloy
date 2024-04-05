@@ -1,6 +1,6 @@
 module github.com/metal-toolbox/alloy
 
-go 1.21.1
+go 1.21.6
 
 require (
 	github.com/bmc-toolbox/bmclib/v2 v2.0.1-0.20230825151635-6cf01686c513
@@ -13,11 +13,11 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.4
 	github.com/jacobweinstock/registrar v0.4.7
 	github.com/jeremywohl/flatten v1.0.1
-	github.com/jinzhu/copier v0.3.5
+	github.com/jinzhu/copier v0.4.0
 	github.com/metal-toolbox/component-inventory v0.0.0-20240321055202-8e0ce70a267e
 	github.com/metal-toolbox/fleetdb v0.16.9
 	github.com/metal-toolbox/ironlib v0.2.15
-	github.com/metal-toolbox/rivets v1.0.1-0.20240306155602-a1508480dfee
+	github.com/metal-toolbox/rivets v1.0.3-0.20240404085830-34516b35bd8e
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/nats-io/nats.go v1.33.1
 	github.com/pkg/errors v0.9.1
@@ -90,7 +90,6 @@ require (
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mattn/go-sqlite3 v2.0.1+incompatible // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/nats-io/nkeys v0.4.7 // indirect

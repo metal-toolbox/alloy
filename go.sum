@@ -455,8 +455,8 @@ github.com/jacobweinstock/registrar v0.4.7 h1:s4dOExccgD+Pc7rJC+f3Mc3D+NXHcXUaOi
 github.com/jacobweinstock/registrar v0.4.7/go.mod h1:PWmkdGFG5/ZdCqgMo7pvB3pXABOLHc5l8oQ0sgmBNDU=
 github.com/jeremywohl/flatten v1.0.1 h1:LrsxmB3hfwJuE+ptGOijix1PIfOoKLJ3Uee/mzbgtrs=
 github.com/jeremywohl/flatten v1.0.1/go.mod h1:4AmD/VxjWcI5SRB0n6szE2A6s2fsNHDLO0nAlMHgfLQ=
-github.com/jinzhu/copier v0.3.5 h1:GlvfUwHk62RokgqVNvYsku0TATCF7bAHVwEXoBh3iJg=
-github.com/jinzhu/copier v0.3.5/go.mod h1:DfbEm0FYsaqBcKcFuvmOZb218JkPGtvSHsKg8S8hyyg=
+github.com/jinzhu/copier v0.4.0 h1:w3ciUoD19shMCRargcpm0cm91ytaBhDvuRpz1ODO/U8=
+github.com/jinzhu/copier v0.4.0/go.mod h1:DfbEm0FYsaqBcKcFuvmOZb218JkPGtvSHsKg8S8hyyg=
 github.com/jmoiron/sqlx v1.3.5 h1:vFFPA71p1o5gAeqtEAwLU4dnX2napprKtHr7PYIcN3g=
 github.com/jmoiron/sqlx v1.3.5/go.mod h1:nRVWtLre0KfCLJvgxzCsLVMogSvQ1zNJtpYr2Ccp0mQ=
 github.com/jpillora/backoff v1.0.0/go.mod h1:J/6gKK9jxlEcS3zixgDgUAsiuZ7yrSoa/FX5e0EB2j4=
@@ -529,9 +529,8 @@ github.com/mattn/go-isatty v0.0.16/go.mod h1:kYGgaQfpe5nmfYZH+SKPsOc2e4SrIfOl2e/
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
 github.com/mattn/go-sqlite3 v1.14.6/go.mod h1:NyWgC/yNuGj7Q9rpYnZvas74GogHl5/Z4A/KQRfk6bU=
+github.com/mattn/go-sqlite3 v1.14.14 h1:qZgc/Rwetq+MtyE18WhzjokPD93dNqLGNT3QJuLvBGw=
 github.com/mattn/go-sqlite3 v1.14.14/go.mod h1:NyWgC/yNuGj7Q9rpYnZvas74GogHl5/Z4A/KQRfk6bU=
-github.com/mattn/go-sqlite3 v2.0.1+incompatible h1:xQ15muvnzGBHpIpdrNi1DA5x0+TcBZzsIDwmw9uTHzw=
-github.com/mattn/go-sqlite3 v2.0.1+incompatible/go.mod h1:FPy6KqzDD04eiIsT53CuJW3U88zkxoIYsOqkbpncsNc=
 github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
 github.com/metal-toolbox/component-inventory v0.0.0-20240321055202-8e0ce70a267e h1:vJzHlEOpT4KCqnCxip8w4B3SW986qZUeb4uaUaYmONc=
 github.com/metal-toolbox/component-inventory v0.0.0-20240321055202-8e0ce70a267e/go.mod h1:yajOPqg3pbBiCnilRWwr67CtuqMp0bHBJSwm/Wzg/D0=
@@ -539,8 +538,8 @@ github.com/metal-toolbox/fleetdb v0.16.9 h1:cU8izN7tTi4dnGisP43MgK2ddtbrJJ4zLLwI
 github.com/metal-toolbox/fleetdb v0.16.9/go.mod h1:L2FavoKCdpewj759/MepRmbInSE0JpuSOMnXJho9u3o=
 github.com/metal-toolbox/ironlib v0.2.15 h1:0uLmUnS7GgRZVwTOGJ+uyUlDEkSzoD+BYvZme9/C5tk=
 github.com/metal-toolbox/ironlib v0.2.15/go.mod h1:QRGRb//lV7LR2yDIe/zmXTFYGKhltQsRol05QlHzfBw=
-github.com/metal-toolbox/rivets v1.0.1-0.20240306155602-a1508480dfee h1:9KZNAGTdhFBkgVIKIYTUJMOI2oPEDj/JR4c0lHTYscI=
-github.com/metal-toolbox/rivets v1.0.1-0.20240306155602-a1508480dfee/go.mod h1:KyxerbVyMrt9sMYulthYvxR+1Ji9kr87RCaWucxahjw=
+github.com/metal-toolbox/rivets v1.0.3-0.20240404085830-34516b35bd8e h1:EFarcZokTOhcvGvd0VQkpgvEHtlsbAy/nKSMTnbnA4Q=
+github.com/metal-toolbox/rivets v1.0.3-0.20240404085830-34516b35bd8e/go.mod h1:EMQJRT1mjIyFRXxvKNaBlz7Z4Sp88rTaGO8W18olN2I=
 github.com/microsoft/go-mssqldb v0.17.0/go.mod h1:OkoNGhGEs8EZqchVTtochlXruEhEOaO4S0d2sB5aeGQ=
 github.com/miekg/dns v1.1.26/go.mod h1:bPDLeHnStXmXAq1m/Ch/hvfNHr14JKNPMBo3VZKjuso=
 github.com/miekg/dns v1.1.41/go.mod h1:p6aan82bvRIyn+zDIv9xYNUpwa73JcSh9BKwknJysuI=
