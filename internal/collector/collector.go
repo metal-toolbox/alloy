@@ -128,14 +128,14 @@ func (c *DeviceCollector) CollectOutofbandAndUploadToCIS(ctx context.Context, as
 	return nil
 }
 
-// CollectInband querys inventory and bios configuration data for a device through the host OS
+// CollectInbandAndUploadToCIS querys inventory and bios configuration data for a device through the host OS
 // this expects Alloy is running within the alloy-inband docker image based on ironlib.
-func (c *DeviceCollector) CollectInband(ctx context.Context, asset *model.Asset, outputStdout bool) error {
+func (c *DeviceCollector) CollectInbandAndUploadToCIS(ctx context.Context, assetID string, outputStdout bool) error {
 	var errs error
 
 	// XXX: This is duplicative! The asset is fetched again prior to updating serverservice.
 	// fetch existing asset information from inventory
-	existing, err := c.repository.AssetByID(ctx, asset.ID, c.kind == model.AppKindOutOfBand)
+	existing, err := c.repository.AssetByID(ctx, assetID, c.kind == model.AppKindOutOfBand)
 	if err != nil {
 		c.log.WithError(err).Warn("getting asset by ID")
 		errs = multierror.Append(errs, err)
@@ -170,7 +170,7 @@ func (c *DeviceCollector) CollectInband(ctx context.Context, asset *model.Asset,
 		return c.prettyPrintJSON(cisInventory)
 	}
 
-	if _, err = c.cisClient.UpdateInbandInventory(ctx, asset.ID, cisInventory); err != nil {
+	if _, err = c.cisClient.UpdateInbandInventory(ctx, assetID, cisInventory); err != nil {
 		errs = multierror.Append(errs, err)
 
 		return errs
