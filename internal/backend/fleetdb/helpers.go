@@ -1,10 +1,8 @@
-package serverservice
+package fleetdb
 
 import (
 	"context"
-	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
 	"time"
@@ -12,38 +10,37 @@ import (
 	"github.com/coreos/go-oidc"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/metal-toolbox/alloy/internal/app"
-	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/oauth2/clientcredentials"
 
-	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
+	fleetdbapi "github.com/metal-toolbox/fleetdb/pkg/api/v1"
 )
 
 var (
 	// timeout for requests made by this client.
 	timeout   = 30 * time.Second
-	ErrConfig = errors.New("error in serverservice client configuration")
+	ErrConfig = errors.New("error in fleetdb client configuration")
 )
 
 // TODO move this under an interface
 
-// NewServerServiceClient instantiates and returns a serverService client
-func NewServerServiceClient(ctx context.Context, cfg *app.ServerserviceOptions, logger *logrus.Logger) (*serverserviceapi.Client, error) {
+// NewFleetDBClient instantiates and returns a serverService client
+func NewFleetDBClient(ctx context.Context, cfg *app.ServerserviceOptions, logger *logrus.Logger) (*fleetdbapi.Client, error) {
 	if cfg == nil {
 		return nil, errors.Wrap(ErrConfig, "configuration is nil")
 	}
 
 	if cfg.DisableOAuth {
-		return newServerserviceClientWithOtel(cfg, cfg.Endpoint, logger)
+		return newFleetDBClientWithOtel(cfg, cfg.Endpoint, logger)
 	}
 
-	return newServerserviceClientWithOAuthOtel(ctx, cfg, cfg.Endpoint, logger)
+	return newFleetDBClientWithOAuthOtel(ctx, cfg, cfg.Endpoint, logger)
 }
 
 // returns a serverservice retryable client with Otel
-func newServerserviceClientWithOtel(cfg *app.ServerserviceOptions, endpoint string, logger *logrus.Logger) (*serverserviceapi.Client, error) {
+func newFleetDBClientWithOtel(cfg *app.ServerserviceOptions, endpoint string, logger *logrus.Logger) (*fleetdbapi.Client, error) {
 	if cfg == nil {
 		return nil, errors.Wrap(ErrConfig, "configuration is nil")
 	}
@@ -73,7 +70,7 @@ func newServerserviceClientWithOtel(cfg *app.ServerserviceOptions, endpoint stri
 	client := retryableClient.StandardClient()
 	client.Timeout = timeout
 
-	return serverserviceapi.NewClientWithToken(
+	return fleetdbapi.NewClientWithToken(
 		"dummy",
 		endpoint,
 		client,
@@ -81,7 +78,7 @@ func newServerserviceClientWithOtel(cfg *app.ServerserviceOptions, endpoint stri
 }
 
 // returns a serverservice retryable http client with Otel and Oauth wrapped in
-func newServerserviceClientWithOAuthOtel(ctx context.Context, cfg *app.ServerserviceOptions, endpoint string, logger *logrus.Logger) (*serverserviceapi.Client, error) {
+func newFleetDBClientWithOAuthOtel(ctx context.Context, cfg *app.ServerserviceOptions, endpoint string, logger *logrus.Logger) (*fleetdbapi.Client, error) {
 	if cfg == nil {
 		return nil, errors.Wrap(ErrConfig, "configuration is nil")
 	}
@@ -126,60 +123,9 @@ func newServerserviceClientWithOAuthOtel(ctx context.Context, cfg *app.Serverser
 	client := retryableClient.StandardClient()
 	client.Timeout = timeout
 
-	return serverserviceapi.NewClientWithToken(
+	return fleetdbapi.NewClientWithToken(
 		cfg.OidcClientSecret,
 		endpoint,
 		client,
 	)
-}
-
-// serverPtrSlice returns a slice of pointers to serverserviceapi.Server
-//
-// The server service server list methods return a slice of server objects,
-// this helper method is to reduce the amount of copying of component objects (~176 bytes each) when passed around between methods and range loops,
-// while it seems like a minor optimization, it also keeps the linter happy.
-func serverPtrSlice(servers []serverserviceapi.Server) []*serverserviceapi.Server {
-	returned := make([]*serverserviceapi.Server, 0, len(servers))
-
-	// nolint:gocritic // the copying has to be done somewhere
-	for _, s := range servers {
-		s := s
-		returned = append(returned, &s)
-	}
-
-	return returned
-}
-
-func toAsset(server *serverserviceapi.Server, credential *serverserviceapi.ServerCredential, expectCredentials bool) (*model.Asset, error) {
-	if err := validateRequiredAttributes(server, credential, expectCredentials); err != nil {
-		return nil, errors.Wrap(ErrServerServiceObject, err.Error())
-	}
-
-	serverAttributes, err := serverAttributes(server.Attributes, expectCredentials)
-	if err != nil {
-		fmt.Println(err.Error())
-		return nil, errors.Wrap(ErrServerServiceObject, err.Error())
-	}
-
-	serverMetadataAttributes, err := serverMetadataAttributes(server.Attributes)
-	if err != nil {
-		return nil, errors.Wrap(ErrServerServiceObject, err.Error())
-	}
-
-	asset := &model.Asset{
-		ID:       server.UUID.String(),
-		Serial:   serverAttributes[serverSerialAttributeKey],
-		Model:    serverAttributes[serverModelAttributeKey],
-		Vendor:   serverAttributes[serverVendorAttributeKey],
-		Metadata: serverMetadataAttributes,
-		Facility: server.FacilityCode,
-	}
-
-	if credential != nil {
-		asset.BMCUsername = credential.Username
-		asset.BMCPassword = credential.Password
-		asset.BMCAddress = net.ParseIP(serverAttributes[bmcIPAddressAttributeKey])
-	}
-
-	return asset, nil
 }

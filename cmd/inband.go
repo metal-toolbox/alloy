@@ -25,16 +25,12 @@ var cmdInband = &cobra.Command{
 	Use:   "inband",
 	Short: "Collect inventory data, bios configuration data on the host",
 	Run: func(cmd *cobra.Command, _ []string) {
-		alloy, err := app.New(model.AppKindInband, model.StoreKind(storeKind), cfgFile, model.LogLevel(logLevel))
+		alloy, err := app.New(model.AppKindInband, cfgFile, model.LogLevel(logLevel))
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		if outputStdout {
-			storeKind = string(model.StoreKindMock)
-		}
-
-		if storeKind == string(model.StoreKindServerservice) && assetID == "" {
+		if assetID == "" {
 			log.Fatal("--asset-id flag required for inband command with serverservice store")
 		}
 
@@ -88,7 +84,6 @@ func collectInband(ctx context.Context, cfg *app.Configuration, logger *logrus.L
 
 	c, err := collector.NewDeviceCollector(
 		ctx,
-		model.StoreKind(storeKind),
 		model.AppKindInband,
 		cfg,
 		logger,
@@ -99,7 +94,7 @@ func collectInband(ctx context.Context, cfg *app.Configuration, logger *logrus.L
 		return
 	}
 
-	if err := c.CollectInband(ctx, &model.Asset{ID: assetID}, outputStdout); err != nil {
+	if err := c.CollectInbandAndUploadToCIS(ctx, assetID, outputStdout); err != nil {
 		logger.Error(err)
 		return
 	}

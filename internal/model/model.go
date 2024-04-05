@@ -10,8 +10,7 @@ import (
 )
 
 type (
-	AppKind   string
-	StoreKind string
+	AppKind string
 
 	InventoryMethod string
 
@@ -32,10 +31,6 @@ const (
 
 	// conditions fulfilled by this worker
 	Inventory rctypes.Kind = "inventory"
-
-	StoreKindCsv           StoreKind = "csv"
-	StoreKindServerservice StoreKind = "serverservice"
-	StoreKindMock          StoreKind = "mock"
 
 	LogLevelInfo  LogLevel = "info"
 	LogLevelDebug LogLevel = "debug"

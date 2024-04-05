@@ -38,7 +38,7 @@ type App struct {
 }
 
 // New returns a new alloy application object with the configuration loaded
-func New(appKind model.AppKind, storeKind model.StoreKind, cfgFile string, loglevel model.LogLevel) (app *App, err error) {
+func New(appKind model.AppKind, cfgFile string, loglevel model.LogLevel) (app *App, err error) {
 	switch appKind {
 	case model.AppKindInband, model.AppKindOutOfBand:
 	default:
@@ -54,7 +54,7 @@ func New(appKind model.AppKind, storeKind model.StoreKind, cfgFile string, logle
 		Logger: logrus.New(),
 	}
 
-	if err := app.LoadConfiguration(cfgFile, storeKind); err != nil {
+	if err := app.LoadConfiguration(cfgFile); err != nil {
 		return nil, err
 	}
 

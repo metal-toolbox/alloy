@@ -33,12 +33,6 @@ type Configuration struct {
 	// AppKind is either inband or outofband
 	AppKind model.AppKind `mapstructure:"app_kind"`
 
-	// StoreKind declares the type of storage repository that holds asset inventory data.
-	StoreKind model.StoreKind `mapstructure:"store_kind"`
-
-	// CSV file path when StoreKind is set to csv.
-	CsvFile string `mapstructure:"csv_file"`
-
 	// FacilityCode limits this alloy to events in a facility.
 	FacilityCode string `mapstructure:"facility_code"`
 
@@ -99,7 +93,7 @@ type ComponentInventoryAPIOptions struct {
 // LoadConfiguration loads application configuration
 //
 // Reads in the cfgFile when available and overrides from environment variables.
-func (a *App) LoadConfiguration(cfgFile string, storeKind model.StoreKind) error {
+func (a *App) LoadConfiguration(cfgFile string) error {
 	a.v.SetConfigType("yaml")
 	a.v.SetEnvPrefix(model.AppName)
 	a.v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
@@ -144,12 +138,6 @@ func (a *App) LoadConfiguration(cfgFile string, storeKind model.StoreKind) error
 		}
 	}
 
-	if storeKind == model.StoreKindServerservice {
-		if err := a.envVarServerserviceOverrides(); err != nil {
-			return errors.Wrap(ErrConfig, "serverservice env overrides error:"+err.Error())
-		}
-	}
-
 	if err := a.envVarComponentInventoryOverrides(); err != nil {
 		return errors.Wrap(ErrConfig, "component-inventory env overrides error:"+err.Error())
 	}
@@ -168,10 +156,6 @@ func (a *App) envVarAppOverrides() {
 
 	if a.v.GetDuration("collect.interval.splay") != 0 {
 		a.Config.CollectIntervalSplay = a.v.GetDuration("collect.interval.splay")
-	}
-
-	if a.v.GetString("csv.file") != "" {
-		a.Config.CsvFile = a.v.GetString("csv.file")
 	}
 }
 
@@ -283,84 +267,6 @@ func (a *App) envVarNatsOverrides() error {
 
 	if a.Config.NatsOptions.ConnectTimeout == 0 {
 		a.Config.NatsOptions.ConnectTimeout = defaultNatsConnectTimeout
-	}
-
-	return nil
-}
-
-// Server service configuration options
-
-// nolint:gocyclo // parameter validation is cyclomatic
-func (a *App) envVarServerserviceOverrides() error {
-	if a.Config.ServerserviceOptions == nil {
-		a.Config.ServerserviceOptions = &ServerserviceOptions{}
-	}
-
-	if a.v.GetString("serverservice.endpoint") != "" {
-		a.Config.ServerserviceOptions.Endpoint = a.v.GetString("serverservice.endpoint")
-	}
-
-	if a.v.GetString("serverservice.facility.code") != "" {
-		a.Config.ServerserviceOptions.FacilityCode = a.v.GetString("serverservice.facility.code")
-	}
-
-	if a.Config.ServerserviceOptions.FacilityCode == "" {
-		return errors.New("serverservice facility code not defined")
-	}
-
-	endpointURL, err := url.Parse(a.Config.ServerserviceOptions.Endpoint)
-	if err != nil {
-		return errors.New("serverservice endpoint URL error: " + err.Error())
-	}
-
-	a.Config.ServerserviceOptions.EndpointURL = endpointURL
-
-	if a.v.GetString("serverservice.disable.oauth") != "" {
-		a.Config.ServerserviceOptions.DisableOAuth = a.v.GetBool("serverservice.disable.oauth")
-	}
-
-	if a.Config.ServerserviceOptions.DisableOAuth {
-		return nil
-	}
-
-	if a.v.GetString("serverservice.oidc.issuer.endpoint") != "" {
-		a.Config.ServerserviceOptions.OidcIssuerEndpoint = a.v.GetString("serverservice.oidc.issuer.endpoint")
-	}
-
-	if a.Config.ServerserviceOptions.OidcIssuerEndpoint == "" {
-		return errors.New("serverservice oidc.issuer.endpoint not defined")
-	}
-
-	if a.v.GetString("serverservice.oidc.audience.endpoint") != "" {
-		a.Config.ServerserviceOptions.OidcAudienceEndpoint = a.v.GetString("serverservice.oidc.audience.endpoint")
-	}
-
-	if a.Config.ServerserviceOptions.OidcAudienceEndpoint == "" {
-		return errors.New("serverservice oidc.audience.endpoint not defined")
-	}
-
-	if a.v.GetString("serverservice.oidc.client.secret") != "" {
-		a.Config.ServerserviceOptions.OidcClientSecret = a.v.GetString("serverservice.oidc.client.secret")
-	}
-
-	if a.Config.ServerserviceOptions.OidcClientSecret == "" {
-		return errors.New("serverservice.oidc.client.secret not defined")
-	}
-
-	if a.v.GetString("serverservice.oidc.client.id") != "" {
-		a.Config.ServerserviceOptions.OidcClientID = a.v.GetString("serverservice.oidc.client.id")
-	}
-
-	if a.Config.ServerserviceOptions.OidcClientID == "" {
-		return errors.New("serverservice.oidc.client.id not defined")
-	}
-
-	if a.v.GetString("serverservice.oidc.client.scopes") != "" {
-		a.Config.ServerserviceOptions.OidcClientScopes = a.v.GetStringSlice("serverservice.oidc.client.scopes")
-	}
-
-	if len(a.Config.ServerserviceOptions.OidcClientScopes) == 0 {
-		return errors.New("serverservice oidc.client.scopes not defined")
 	}
 
 	return nil
