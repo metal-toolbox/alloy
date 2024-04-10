@@ -17,7 +17,7 @@ require (
 	github.com/metal-toolbox/component-inventory v0.0.0-20240321055202-8e0ce70a267e
 	github.com/metal-toolbox/fleetdb v0.16.9
 	github.com/metal-toolbox/ironlib v0.2.15
-	github.com/metal-toolbox/rivets v1.0.3-0.20240404085830-34516b35bd8e
+	github.com/metal-toolbox/rivets v1.0.3
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/nats-io/nats.go v1.33.1
 	github.com/pkg/errors v0.9.1

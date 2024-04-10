@@ -19,16 +19,15 @@ const (
 	pkgName = "internal/store"
 )
 
-// Store is an asset inventory store
+// Store is an fleetdb inventory store
 type Client struct {
 	*fleetdbapi.Client
-	logger       *logrus.Logger
-	facilityCode string
+	logger *logrus.Logger
 }
 
-// NewStore returns a serverservice store queryor to lookup and publish assets to, from the store.
-func New(ctx context.Context, _ model.AppKind, cfg *app.ServerserviceOptions, logger *logrus.Logger) (*Client, error) {
-	logger.Info("fleetdb store ctor")
+// New is a constructor method to returns a fleetdb client.
+func New(ctx context.Context, _ model.AppKind, cfg *app.FleetDBOptions, logger *logrus.Logger) (*Client, error) {
+	logger.Info("fleetdb client ctor")
 
 	apiclient, err := NewFleetDBClient(ctx, cfg, logger)
 	if err != nil {
@@ -36,9 +35,8 @@ func New(ctx context.Context, _ model.AppKind, cfg *app.ServerserviceOptions, lo
 	}
 
 	s := &Client{
-		Client:       apiclient,
-		logger:       logger,
-		facilityCode: cfg.FacilityCode,
+		Client: apiclient,
+		logger: logger,
 	}
 
 	return s, nil
@@ -46,7 +44,7 @@ func New(ctx context.Context, _ model.AppKind, cfg *app.ServerserviceOptions, lo
 
 // BMCCredentials fetches BMC credentials for login to the assert.
 func (fc *Client) BMCCredentials(ctx context.Context, id string) (*model.LoginInfo, error) {
-	ctx, span := otel.Tracer(pkgName).Start(ctx, "Serverservice.BMCCredentials")
+	ctx, span := otel.Tracer(pkgName).Start(ctx, "BMCCredentials")
 	defer span.End()
 
 	sid, err := uuid.Parse(id)
@@ -65,7 +63,7 @@ func (fc *Client) BMCCredentials(ctx context.Context, id string) (*model.LoginIn
 	// get vendor and model
 	serverAttributes, err := serverAttributes(server.Attributes, true)
 	if err != nil {
-		return nil, errors.Wrap(ErrServerServiceObject, err.Error())
+		return nil, errors.Wrap(ErrFleetDBObject, err.Error())
 	}
 
 	// get bmc credential

@@ -36,10 +36,10 @@ type Configuration struct {
 	// FacilityCode limits this alloy to events in a facility.
 	FacilityCode string `mapstructure:"facility_code"`
 
-	// ServerserviceOptions defines the serverservice client configuration parameters
+	// FleetDBOptions defines the fleetdb client configuration parameters
 	//
-	// This parameter is required when StoreKind is set to serverservice.
-	ServerserviceOptions *ServerserviceOptions `mapstructure:"serverservice"`
+	// we use FleetDB to retrieve BMC connection details
+	FleetDBOptions *FleetDBOptions `mapstructure:"fleetdb"`
 
 	// ComponentInventoryAPIOptions defines the component inventory client
 	// configuration parameters.
@@ -63,9 +63,9 @@ type Configuration struct {
 	NatsOptions *events.NatsOptions `mapstructure:"nats"`
 }
 
-// ServerserviceOptions defines configuration for the Serverservice client.
-// https://github.com/metal-toolbox/hollow-serverservice
-type ServerserviceOptions struct {
+// FleetDBOptions defines configuration for the FleetDB client.
+// https://github.com/metal-toolbox/fleetdb
+type FleetDBOptions struct {
 	EndpointURL          *url.URL
 	FacilityCode         string   `mapstructure:"facility_code"`
 	Endpoint             string   `mapstructure:"endpoint"`
@@ -88,6 +88,7 @@ type ComponentInventoryAPIOptions struct {
 	OidcClientID         string   `mapstructure:"oidc_client_id"`
 	OidcClientScopes     []string `mapstructure:"oidc_client_scopes"`
 	DisableOAuth         bool     `mapstructure:"disable_oauth"`
+	FacilityCode         string   `mapstructure:"facility_code"`
 }
 
 // LoadConfiguration loads application configuration
@@ -101,7 +102,7 @@ func (a *App) LoadConfiguration(cfgFile string) error {
 
 	// these are initialized here so viper can read in configuration from env vars
 	// once https://github.com/spf13/viper/pull/1429 is merged, this can go.
-	a.Config.ServerserviceOptions = &ServerserviceOptions{}
+	a.Config.ComponentInventoryAPIOptions = &ComponentInventoryAPIOptions{}
 	a.Config.NatsOptions = &events.NatsOptions{
 		Stream:   &events.NatsStreamOptions{},
 		Consumer: &events.NatsConsumerOptions{},
@@ -136,6 +137,10 @@ func (a *App) LoadConfiguration(cfgFile string) error {
 		if err := a.envVarNatsOverrides(); err != nil {
 			return errors.Wrap(ErrConfig, "nats env overrides error:"+err.Error())
 		}
+	}
+
+	if err := a.envVarFleetDBOverrides(); err != nil {
+		return errors.Wrap(ErrConfig, "fleetDB env overrides error:"+err.Error())
 	}
 
 	if err := a.envVarComponentInventoryOverrides(); err != nil {
@@ -267,6 +272,83 @@ func (a *App) envVarNatsOverrides() error {
 
 	if a.Config.NatsOptions.ConnectTimeout == 0 {
 		a.Config.NatsOptions.ConnectTimeout = defaultNatsConnectTimeout
+	}
+
+	return nil
+}
+
+// FleetDB configuration options
+// nolint:gocyclo // parameter validation is cyclomatic
+func (a *App) envVarFleetDBOverrides() error {
+	if a.Config.FleetDBOptions == nil {
+		a.Config.FleetDBOptions = &FleetDBOptions{}
+	}
+
+	if a.v.GetString("fleetdb.endpoint") != "" {
+		a.Config.FleetDBOptions.Endpoint = a.v.GetString("fleetdb.endpoint")
+	}
+
+	if a.v.GetString("fleetdb.facility.code") != "" {
+		a.Config.FleetDBOptions.FacilityCode = a.v.GetString("fleetdb.facility.code")
+	}
+
+	if a.Config.FleetDBOptions.FacilityCode == "" {
+		return errors.New("fleetdb facility code not defined")
+	}
+
+	endpointURL, err := url.Parse(a.Config.FleetDBOptions.Endpoint)
+	if err != nil {
+		return errors.New("fleetdb endpoint URL error: " + err.Error())
+	}
+
+	a.Config.FleetDBOptions.EndpointURL = endpointURL
+
+	if a.v.GetString("fleetdb.disable.oauth") != "" {
+		a.Config.FleetDBOptions.DisableOAuth = a.v.GetBool("fleetdb.disable.oauth")
+	}
+
+	if a.Config.FleetDBOptions.DisableOAuth {
+		return nil
+	}
+
+	if a.v.GetString("fleetdb.oidc.issuer.endpoint") != "" {
+		a.Config.FleetDBOptions.OidcIssuerEndpoint = a.v.GetString("fleetdb.oidc.issuer.endpoint")
+	}
+
+	if a.Config.FleetDBOptions.OidcIssuerEndpoint == "" {
+		return errors.New("fleetdb oidc.issuer.endpoint not defined")
+	}
+
+	if a.v.GetString("fleetdb.oidc.audience.endpoint") != "" {
+		a.Config.FleetDBOptions.OidcAudienceEndpoint = a.v.GetString("fleetdb.oidc.audience.endpoint")
+	}
+
+	if a.Config.FleetDBOptions.OidcAudienceEndpoint == "" {
+		return errors.New("fleetdb oidc.audience.endpoint not defined")
+	}
+
+	if a.v.GetString("fleetdb.oidc.client.secret") != "" {
+		a.Config.FleetDBOptions.OidcClientSecret = a.v.GetString("fleetdb.oidc.client.secret")
+	}
+
+	if a.Config.FleetDBOptions.OidcClientSecret == "" {
+		return errors.New("fleetdb.oidc.client.secret not defined")
+	}
+
+	if a.v.GetString("fleetdb.oidc.client.id") != "" {
+		a.Config.FleetDBOptions.OidcClientID = a.v.GetString("fleetdb.oidc.client.id")
+	}
+
+	if a.Config.FleetDBOptions.OidcClientID == "" {
+		return errors.New("fleetdb.oidc.client.id not defined")
+	}
+
+	if a.v.GetString("fleetdb.oidc.client.scopes") != "" {
+		a.Config.FleetDBOptions.OidcClientScopes = a.v.GetStringSlice("fleetdb.oidc.client.scopes")
+	}
+
+	if len(a.Config.FleetDBOptions.OidcClientScopes) == 0 {
+		return errors.New("fleetdb oidc.client.scopes not defined")
 	}
 
 	return nil

@@ -79,7 +79,7 @@ func New(
 		concurrency = cfg.Concurrency
 	}
 
-	fleetDBClient, err := fleetdb.New(ctx, model.AppKindOutOfBand, cfg.ServerserviceOptions, logger)
+	fleetDBClient, err := fleetdb.New(ctx, model.AppKindOutOfBand, cfg.FleetDBOptions, logger)
 	if err != nil {
 		return nil, err
 	}

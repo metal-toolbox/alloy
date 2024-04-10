@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 
 	fleetdbapi "github.com/metal-toolbox/fleetdb/pkg/api/v1"
+	consts "github.com/metal-toolbox/rivets/fleetdb"
 	"github.com/pkg/errors"
 )
 
-// serverAttributes parses the server service attribute data
+// serverAttributes parses the fleetdb attribute data
 // and returns a map containing the bmc address, server serial, vendor, model attributes
 // and optionally the BMC address and attributes.
 func serverAttributes(attributes []fleetdbapi.Attributes, wantBmcCredentials bool) (map[string]string, error) {
@@ -22,16 +23,16 @@ func serverAttributes(attributes []fleetdbapi.Attributes, wantBmcCredentials boo
 
 	for _, attribute := range attributes {
 		// bmc address attribute
-		if wantBmcCredentials && (attribute.Namespace == bmcAttributeNamespace) {
+		if wantBmcCredentials && (attribute.Namespace == consts.ServerAttributeNSBmcAddress) {
 			if err := json.Unmarshal(attribute.Data, &bmcData); err != nil {
-				return nil, errors.Wrap(ErrServerServiceObject, "bmc address attribute: "+err.Error())
+				return nil, errors.Wrap(ErrFleetDBObject, "bmc address attribute: "+err.Error())
 			}
 		}
 
 		// server vendor, model attributes
-		if attribute.Namespace == serverVendorAttributeNS {
+		if attribute.Namespace == consts.ServerAttributeNSVendor {
 			if err := json.Unmarshal(attribute.Data, &serverVendorData); err != nil {
-				return nil, errors.Wrap(ErrServerServiceObject, "server vendor attribute: "+err.Error())
+				return nil, errors.Wrap(ErrFleetDBObject, "server vendor attribute: "+err.Error())
 			}
 		}
 	}

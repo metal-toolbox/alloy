@@ -31,7 +31,7 @@ var cmdInband = &cobra.Command{
 		}
 
 		if assetID == "" {
-			log.Fatal("--asset-id flag required for inband command with serverservice store")
+			log.Fatal("--asset-id flag required for inband command with fleetdb")
 		}
 
 		// execution timeout

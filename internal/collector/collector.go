@@ -33,7 +33,7 @@ type DeviceCollector struct {
 
 // NewDeviceCollector is a constructor method to return a inventory, bios configuration data collector.
 func NewDeviceCollector(ctx context.Context, appKind model.AppKind, cfg *app.Configuration, logger *logrus.Logger) (*DeviceCollector, error) {
-	fleetDBClient, err := fleetdb.New(ctx, appKind, cfg.ServerserviceOptions, logger)
+	fleetDBClient, err := fleetdb.New(ctx, appKind, cfg.FleetDBOptions, logger)
 	if err != nil {
 		return nil, err
 	}

@@ -26,8 +26,8 @@ var (
 
 // TODO move this under an interface
 
-// NewFleetDBClient instantiates and returns a serverService client
-func NewFleetDBClient(ctx context.Context, cfg *app.ServerserviceOptions, logger *logrus.Logger) (*fleetdbapi.Client, error) {
+// NewFleetDBClient instantiates and returns a fleetdb client
+func NewFleetDBClient(ctx context.Context, cfg *app.FleetDBOptions, logger *logrus.Logger) (*fleetdbapi.Client, error) {
 	if cfg == nil {
 		return nil, errors.Wrap(ErrConfig, "configuration is nil")
 	}
@@ -39,8 +39,8 @@ func NewFleetDBClient(ctx context.Context, cfg *app.ServerserviceOptions, logger
 	return newFleetDBClientWithOAuthOtel(ctx, cfg, cfg.Endpoint, logger)
 }
 
-// returns a serverservice retryable client with Otel
-func newFleetDBClientWithOtel(cfg *app.ServerserviceOptions, endpoint string, logger *logrus.Logger) (*fleetdbapi.Client, error) {
+// returns a fleetdb retryable client with Otel
+func newFleetDBClientWithOtel(cfg *app.FleetDBOptions, endpoint string, logger *logrus.Logger) (*fleetdbapi.Client, error) {
 	if cfg == nil {
 		return nil, errors.Wrap(ErrConfig, "configuration is nil")
 	}
@@ -53,11 +53,11 @@ func newFleetDBClientWithOtel(cfg *app.ServerserviceOptions, endpoint string, lo
 		if r.StatusCode == http.StatusInternalServerError {
 			b, err := io.ReadAll(r.Body)
 			if err != nil {
-				logger.Warn("serverservice query returned 500 error, got error reading body: ", err.Error())
+				logger.Warn("fleetdb query returned 500 error, got error reading body: ", err.Error())
 				return
 			}
 
-			logger.Warn("serverservice query returned 500 error, body: ", string(b))
+			logger.Warn("fleetdb query returned 500 error, body: ", string(b))
 		}
 	}
 
@@ -77,13 +77,13 @@ func newFleetDBClientWithOtel(cfg *app.ServerserviceOptions, endpoint string, lo
 	)
 }
 
-// returns a serverservice retryable http client with Otel and Oauth wrapped in
-func newFleetDBClientWithOAuthOtel(ctx context.Context, cfg *app.ServerserviceOptions, endpoint string, logger *logrus.Logger) (*fleetdbapi.Client, error) {
+// returns a fleetdb retryable http client with Otel and Oauth wrapped in
+func newFleetDBClientWithOAuthOtel(ctx context.Context, cfg *app.FleetDBOptions, endpoint string, logger *logrus.Logger) (*fleetdbapi.Client, error) {
 	if cfg == nil {
 		return nil, errors.Wrap(ErrConfig, "configuration is nil")
 	}
 
-	logger.Info("serverservice client ctor")
+	logger.Info("fleetdb client ctor")
 
 	// init retryable http client
 	retryableClient := retryablehttp.NewClient()
