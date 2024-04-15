@@ -15,8 +15,8 @@ import (
 
 	"github.com/metal-toolbox/alloy/cmd"
 	"github.com/metal-toolbox/alloy/internal/app"
+	ci "github.com/metal-toolbox/alloy/internal/backend/componentinventory"
 	"github.com/metal-toolbox/alloy/internal/model"
-	ci "github.com/metal-toolbox/alloy/internal/store/componentinventory"
 	"github.com/metal-toolbox/alloy/types"
 )
 
@@ -130,7 +130,7 @@ var lean = &cobra.Command{
 			}
 		}
 
-		alloy, err := app.New(model.AppKindInband, model.StoreKind(""), cfgFile, model.LogLevel(""))
+		alloy, err := app.New(model.AppKindInband, cfgFile, model.LogLevel(""))
 		if err != nil {
 			log.Fatal(err)
 		}

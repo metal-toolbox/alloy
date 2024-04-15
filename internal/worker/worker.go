@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/metal-toolbox/alloy/internal/app"
+	"github.com/metal-toolbox/alloy/internal/backend/fleetdb"
 	"github.com/metal-toolbox/alloy/internal/collector"
 	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/metal-toolbox/alloy/internal/model"
-	"github.com/metal-toolbox/alloy/internal/store"
 	"github.com/metal-toolbox/alloy/internal/version"
 
 	"github.com/nats-io/nats.go"
@@ -50,17 +50,17 @@ var (
 )
 
 type Worker struct {
-	repository   store.Repository
-	stream       events.Stream
-	id           registry.ControllerID
-	cfg          *app.Configuration
-	syncWG       *sync.WaitGroup
-	logger       *logrus.Logger
-	name         string
-	facilityCode string
-	concurrency  int
-	replicaCount int
-	dispatched   int32
+	fleetDBClient *fleetdb.Client
+	stream        events.Stream
+	id            registry.ControllerID
+	cfg           *app.Configuration
+	syncWG        *sync.WaitGroup
+	logger        *logrus.Logger
+	name          string
+	facilityCode  string
+	concurrency   int
+	replicaCount  int
+	dispatched    int32
 }
 
 func New(
@@ -79,21 +79,21 @@ func New(
 		concurrency = cfg.Concurrency
 	}
 
-	repository, err := store.NewRepository(ctx, cfg.StoreKind, model.AppKindOutOfBand, cfg, logger)
+	fleetDBClient, err := fleetdb.New(ctx, model.AppKindOutOfBand, cfg.FleetDBOptions, logger)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Worker{
-		name:         id,
-		facilityCode: facilityCode,
-		replicaCount: replicaCount,
-		cfg:          cfg,
-		syncWG:       syncWG,
-		logger:       logger,
-		repository:   repository,
-		stream:       stream,
-		concurrency:  concurrency,
+		name:          id,
+		facilityCode:  facilityCode,
+		replicaCount:  replicaCount,
+		cfg:           cfg,
+		syncWG:        syncWG,
+		logger:        logger,
+		fleetDBClient: fleetDBClient,
+		stream:        stream,
+		concurrency:   concurrency,
 	}, nil
 }
 
@@ -452,7 +452,7 @@ func (w *Worker) inventoryOutofband(ctx context.Context, task *Task, doneCh chan
 
 	defer close(doneCh)
 
-	c, err := collector.NewDeviceCollectorWithStore(ctx, w.repository, w.cfg.AppKind, w.cfg, w.logger)
+	c, err := collector.NewDeviceCollectorWithStore(ctx, w.fleetDBClient, w.cfg.AppKind, w.cfg, w.logger)
 	if err != nil {
 		return errors.Wrap(errCollector, err.Error())
 	}

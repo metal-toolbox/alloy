@@ -46,12 +46,10 @@ var cmdOutofband = &cobra.Command{
 	Use:   "outofband",
 	Short: "Collect inventory data, bios configuration data through the BMC",
 	Run: func(cmd *cobra.Command, _ []string) {
-		alloy, err := app.New(model.AppKindInband, model.StoreKind(storeKind), cfgFile, model.LogLevel(logLevel))
+		alloy, err := app.New(model.AppKindInband, cfgFile, model.LogLevel(logLevel))
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		alloy.Config.CsvFile = csvFile
 
 		// profiling endpoint
 		if enableProfiling {
@@ -104,7 +102,6 @@ func runWorker(ctx context.Context, alloy *app.App) {
 func runOnAssets(ctx context.Context, alloy *app.App) {
 	c, err := collector.NewDeviceCollector(
 		ctx,
-		model.StoreKind(storeKind),
 		model.AppKindOutOfBand,
 		alloy.Config,
 		alloy.Logger,

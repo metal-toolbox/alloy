@@ -4,15 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/metal-toolbox/alloy/internal/app"
+	ci "github.com/metal-toolbox/alloy/internal/backend/componentinventory"
+	fleetdb "github.com/metal-toolbox/alloy/internal/backend/fleetdb"
 	"github.com/metal-toolbox/alloy/internal/device"
 	"github.com/metal-toolbox/alloy/internal/model"
-	"github.com/metal-toolbox/alloy/internal/store"
-	ci "github.com/metal-toolbox/alloy/internal/store/componentinventory"
-	"github.com/metal-toolbox/alloy/internal/store/serverservice"
 	"github.com/metal-toolbox/alloy/types"
 	cisclient "github.com/metal-toolbox/component-inventory/pkg/api/client"
 	"github.com/pkg/errors"
@@ -26,16 +24,16 @@ var (
 
 // DeviceCollector holds attributes to collect inventory, bios configuration data from a single device.
 type DeviceCollector struct {
-	queryor    device.Queryor
-	repository *serverservice.Store
-	cisClient  cisclient.Client
-	kind       model.AppKind
-	log        *logrus.Logger
+	queryor       device.Queryor
+	fleetDBClient *fleetdb.Client
+	cisClient     cisclient.Client
+	kind          model.AppKind
+	log           *logrus.Logger
 }
 
 // NewDeviceCollector is a constructor method to return a inventory, bios configuration data collector.
-func NewDeviceCollector(ctx context.Context, storeKind model.StoreKind, appKind model.AppKind, cfg *app.Configuration, logger *logrus.Logger) (*DeviceCollector, error) {
-	repository, err := store.NewRepository(ctx, storeKind, appKind, cfg, logger)
+func NewDeviceCollector(ctx context.Context, appKind model.AppKind, cfg *app.Configuration, logger *logrus.Logger) (*DeviceCollector, error) {
+	fleetDBClient, err := fleetdb.New(ctx, appKind, cfg.FleetDBOptions, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -51,16 +49,16 @@ func NewDeviceCollector(ctx context.Context, storeKind model.StoreKind, appKind 
 	}
 
 	return &DeviceCollector{
-		kind:       appKind,
-		queryor:    queryor,
-		cisClient:  cisClient,
-		repository: repository.(*serverservice.Store),
-		log:        logger,
+		kind:          appKind,
+		queryor:       queryor,
+		cisClient:     cisClient,
+		fleetDBClient: fleetDBClient,
+		log:           logger,
 	}, nil
 }
 
 // NewDeviceCollectorWithStore is a constructor method that accepts an initialized store repository - to return a inventory, bios configuration data collector.
-func NewDeviceCollectorWithStore(ctx context.Context, repository store.Repository, appKind model.AppKind, cfg *app.Configuration, logger *logrus.Logger) (*DeviceCollector, error) {
+func NewDeviceCollectorWithStore(ctx context.Context, fleetDBClient *fleetdb.Client, appKind model.AppKind, cfg *app.Configuration, logger *logrus.Logger) (*DeviceCollector, error) {
 	queryor, err := device.NewQueryor(appKind, logger)
 	if err != nil {
 		return nil, err
@@ -72,11 +70,11 @@ func NewDeviceCollectorWithStore(ctx context.Context, repository store.Repositor
 	}
 
 	return &DeviceCollector{
-		kind:       appKind,
-		queryor:    queryor,
-		cisClient:  cisClient,
-		repository: repository.(*serverservice.Store),
-		log:        logger,
+		kind:          appKind,
+		queryor:       queryor,
+		cisClient:     cisClient,
+		fleetDBClient: fleetDBClient,
+		log:           logger,
 	}, nil
 }
 
@@ -85,7 +83,7 @@ func (c *DeviceCollector) CollectOutofbandAndUploadToCIS(ctx context.Context, as
 	var errs error
 
 	// fetch existing asset information from inventory
-	loginInfo, err := c.repository.BMCCredentials(ctx, assetID)
+	loginInfo, err := c.fleetDBClient.BMCCredentials(ctx, assetID)
 	if err != nil {
 		errs = multierror.Append(errs, err)
 
@@ -119,7 +117,7 @@ func (c *DeviceCollector) CollectOutofbandAndUploadToCIS(ctx context.Context, as
 	}
 
 	// upload to CIS
-	if _, err = c.cisClient.UpdateOutOfbandInventory(ctx, assetID, cisInventory); err != nil {
+	if _, err = c.cisClient.UpdateInbandInventory(ctx, assetID, cisInventory); err != nil {
 		errs = multierror.Append(errs, err)
 
 		return errs
@@ -132,18 +130,6 @@ func (c *DeviceCollector) CollectOutofbandAndUploadToCIS(ctx context.Context, as
 // this expects Alloy is running within the alloy-inband docker image based on ironlib.
 func (c *DeviceCollector) CollectInbandAndUploadToCIS(ctx context.Context, assetID string, outputStdout bool) error {
 	var errs error
-
-	// XXX: This is duplicative! The asset is fetched again prior to updating serverservice.
-	// fetch existing asset information from inventory
-	existing, err := c.repository.AssetByID(ctx, assetID, c.kind == model.AppKindOutOfBand)
-	if err != nil {
-		c.log.WithError(err).Warn("getting asset by ID")
-		errs = multierror.Append(errs, err)
-	}
-
-	c.log.WithFields(logrus.Fields{
-		"found_existing": strconv.FormatBool(existing != nil),
-	}).Info("asset by id complete")
 
 	// collect inventory
 	inventory, err := c.queryor.Inventory(ctx, nil)
@@ -189,14 +175,3 @@ func (c *DeviceCollector) prettyPrintJSON(asset *types.InventoryDevice) error {
 
 	return nil
 }
-
-// AssetIterCollector is not used by anyone based on https://github.com/search?q=repo%3Ametal-toolbox%2Falloy%20AssetIterCollector&type=code
-//
-// type AssetIterCollector struct {
-// 	assetIterator AssetIterator
-// 	queryor       device.Queryor
-// 	repository    store.Repository
-// 	syncWG        *sync.WaitGroup
-// 	logger        *logrus.Logger
-// 	concurrency   int32
-// }
