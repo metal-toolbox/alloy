@@ -156,11 +156,7 @@ func (w *Worker) processEvents(ctx context.Context) {
 	msgs, err := w.stream.PullMsg(ctx, 1)
 
 	switch {
-	case err == nil:
-	case errors.Is(err, nats.ErrTimeout):
-		w.logger.WithFields(
-			logrus.Fields{"err": err.Error()},
-		).Trace("no new events")
+	case err == nil, errors.Is(err, nats.ErrTimeout):
 	default:
 		w.logger.WithFields(
 			logrus.Fields{"err": err.Error()},
