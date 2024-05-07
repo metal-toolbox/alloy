@@ -80,27 +80,26 @@ func NewDeviceCollectorWithStore(ctx context.Context, fleetDBClient *fleetdb.Cli
 
 // CollectOutofbandAndUploadToCIS querys inventory and bios configuration data for a device through its BMC.
 func (c *DeviceCollector) CollectOutofbandAndUploadToCIS(ctx context.Context, assetID string, outputStdout bool) error {
-	var errs error
-
-	// fetch existing asset information from inventory
+	// fetch existing asset information from FleetDB
 	loginInfo, err := c.fleetDBClient.BMCCredentials(ctx, assetID)
 	if err != nil {
-		errs = multierror.Append(errs, err)
-
-		return errs
+		c.log.WithField("error", err).Warn("getting BMC credentials")
+		return err
 	}
 
 	// collect inventory
 	inventory, err := c.queryor.Inventory(ctx, loginInfo)
 	if err != nil {
-		errs = multierror.Append(errs, err)
+		c.log.WithField("error", err).Warn("collecting inventory out of band")
+		return err
 	}
 
 	biosCfg, err := c.queryor.BiosConfiguration(ctx, loginInfo)
-
 	// collect BIOS configurations
 	if err != nil {
-		errs = multierror.Append(errs, err)
+		//c.log.WithField("error", err).Info("collecting bios configuration")
+		// getting the bios configuration on inventory is an elective
+		err = nil
 	}
 
 	cisInventory := &types.InventoryDevice{
@@ -109,18 +108,23 @@ func (c *DeviceCollector) CollectOutofbandAndUploadToCIS(ctx context.Context, as
 	}
 
 	if outputStdout {
-		if err != nil {
-			return err
-		}
-
 		return c.prettyPrintJSON(cisInventory)
 	}
 
-	// upload to CIS
-	if _, err = c.cisClient.UpdateInbandInventory(ctx, assetID, cisInventory); err != nil {
-		errs = multierror.Append(errs, err)
+	if inventory.BIOS.Firmware == nil {
+		c.log.Warn("BIOS firmware is nil")
+	} else {
+		c.log.WithFields(logrus.Fields{
+			"installed": inventory.BIOS.Firmware.Installed,
+		}).Info("collected bios firmware")
+	}
 
-		return errs
+	// upload to CIS
+	if _, err = c.cisClient.UpdateOutOfbandInventory(ctx, assetID, cisInventory); err != nil {
+		c.log.WithFields(logrus.Fields{
+			"error": err,
+		}).Warn("unable to update component-inventory")
+		return err
 	}
 
 	return nil
