@@ -30,7 +30,7 @@ func serverAttributes(attributes []fleetdbapi.Attributes, wantBmcCredentials boo
 		}
 
 		// server vendor, model attributes
-		if attribute.Namespace == consts.ServerAttributeNSVendor {
+		if attribute.Namespace == consts.ServerVendorAttributeNS {
 			if err := json.Unmarshal(attribute.Data, &serverVendorData); err != nil {
 				return nil, errors.Wrap(ErrFleetDBObject, "server vendor attribute: "+err.Error())
 			}

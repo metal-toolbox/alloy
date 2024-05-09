@@ -55,7 +55,7 @@ type Configuration struct {
 	// EventsBrokerKind indicates the kind of event broker configuration to enable,
 	//
 	// Supported parameter value - nats
-	EventsBorkerKind string `mapstructure:"events_broker_kind"`
+	EventsBrokerKind string `mapstructure:"events_broker_kind"`
 
 	// NatsOptions defines the NATs events broker configuration parameters.
 	//
@@ -133,14 +133,16 @@ func (a *App) LoadConfiguration(cfgFile string) error {
 
 	a.envVarAppOverrides()
 
-	if a.Config.EventsBorkerKind == "nats" {
+	if a.Config.EventsBrokerKind == "nats" {
 		if err := a.envVarNatsOverrides(); err != nil {
 			return errors.Wrap(ErrConfig, "nats env overrides error:"+err.Error())
 		}
 	}
 
-	if err := a.envVarFleetDBOverrides(); err != nil {
-		return errors.Wrap(ErrConfig, "fleetDB env overrides error:"+err.Error())
+	if a.Config.AppKind == model.AppKindOutOfBand {
+		if err := a.envVarFleetDBOverrides(); err != nil {
+			return errors.Wrap(ErrConfig, "fleetDB env overrides error:"+err.Error())
+		}
 	}
 
 	if err := a.envVarComponentInventoryOverrides(); err != nil {
