@@ -7,7 +7,7 @@ require (
 	github.com/bmc-toolbox/common v0.0.0-20231204194243-7bcbccab7116
 	github.com/bombsimon/logrusr/v2 v2.0.1
 	github.com/coreos/go-oidc v2.2.1+incompatible
-	github.com/equinix-labs/otel-init-go v0.0.7
+	github.com/equinix-labs/otel-init-go v0.0.9
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.3.1
 	github.com/hashicorp/go-multierror v1.1.1
@@ -70,7 +70,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
 	github.com/gosimple/slug v1.13.1 // indirect
 	github.com/gosimple/unidecode v1.0.1 // indirect
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.16.2 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
