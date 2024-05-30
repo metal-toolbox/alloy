@@ -1,8 +1,0 @@
-steps:
-  - trigger: "alloy-inband"
-    if: build.branch == "main" || build.tag =~ /^v[0-9]+\.[0-9]+\.[0-9]+[-staging]*\$/
-    build:
-      env:
-        ALLOY_TAG: "${BUILDKITE_TAG}"
-        ALLOY_COMMIT: "${BUILDKITE_COMMIT}"
-        ALLOY_BRANCH: "${BUILDKITE_BRANCH}"
