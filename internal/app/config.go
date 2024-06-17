@@ -275,71 +275,71 @@ func (a *App) envVarServerserviceOverrides() error {
 		a.Config.ServerserviceOptions = &ServerserviceOptions{}
 	}
 
-	if a.v.GetString("serverservice.endpoint") != "" {
-		a.Config.ServerserviceOptions.Endpoint = a.v.GetString("serverservice.endpoint")
+	if a.v.GetString("fleetdb.endpoint") != "" {
+		a.Config.ServerserviceOptions.Endpoint = a.v.GetString("fleetdb.endpoint")
 	}
 
-	if a.v.GetString("serverservice.facility.code") != "" {
-		a.Config.ServerserviceOptions.FacilityCode = a.v.GetString("serverservice.facility.code")
+	if a.v.GetString("fleetdb.facility.code") != "" {
+		a.Config.ServerserviceOptions.FacilityCode = a.v.GetString("fleetdb.facility.code")
 	}
 
 	if a.Config.ServerserviceOptions.FacilityCode == "" {
-		return errors.New("serverservice facility code not defined")
+		return errors.New("fleetdb facility code not defined")
 	}
 
 	endpointURL, err := url.Parse(a.Config.ServerserviceOptions.Endpoint)
 	if err != nil {
-		return errors.New("serverservice endpoint URL error: " + err.Error())
+		return errors.New("fleetdb endpoint URL error: " + err.Error())
 	}
 
 	a.Config.ServerserviceOptions.EndpointURL = endpointURL
 
-	if a.v.GetString("serverservice.disable.oauth") != "" {
-		a.Config.ServerserviceOptions.DisableOAuth = a.v.GetBool("serverservice.disable.oauth")
+	if a.v.GetString("fleetdb.disable.oauth") != "" {
+		a.Config.ServerserviceOptions.DisableOAuth = a.v.GetBool("fleetdb.disable.oauth")
 	}
 
 	if a.Config.ServerserviceOptions.DisableOAuth {
 		return nil
 	}
 
-	if a.v.GetString("serverservice.oidc.issuer.endpoint") != "" {
-		a.Config.ServerserviceOptions.OidcIssuerEndpoint = a.v.GetString("serverservice.oidc.issuer.endpoint")
+	if a.v.GetString("fleetdb.oidc.issuer.endpoint") != "" {
+		a.Config.ServerserviceOptions.OidcIssuerEndpoint = a.v.GetString("fleetdb.oidc.issuer.endpoint")
 	}
 
 	if a.Config.ServerserviceOptions.OidcIssuerEndpoint == "" {
-		return errors.New("serverservice oidc.issuer.endpoint not defined")
+		return errors.New("fleetdb oidc.issuer.endpoint not defined")
 	}
 
-	if a.v.GetString("serverservice.oidc.audience.endpoint") != "" {
-		a.Config.ServerserviceOptions.OidcAudienceEndpoint = a.v.GetString("serverservice.oidc.audience.endpoint")
+	if a.v.GetString("fleetdb.oidc.audience.endpoint") != "" {
+		a.Config.ServerserviceOptions.OidcAudienceEndpoint = a.v.GetString("fleetdb.oidc.audience.endpoint")
 	}
 
 	if a.Config.ServerserviceOptions.OidcAudienceEndpoint == "" {
-		return errors.New("serverservice oidc.audience.endpoint not defined")
+		return errors.New("fleetdb oidc.audience.endpoint not defined")
 	}
 
-	if a.v.GetString("serverservice.oidc.client.secret") != "" {
-		a.Config.ServerserviceOptions.OidcClientSecret = a.v.GetString("serverservice.oidc.client.secret")
+	if a.v.GetString("fleetdb.oidc.client.secret") != "" {
+		a.Config.ServerserviceOptions.OidcClientSecret = a.v.GetString("fleetdb.oidc.client.secret")
 	}
 
 	if a.Config.ServerserviceOptions.OidcClientSecret == "" {
-		return errors.New("serverservice.oidc.client.secret not defined")
+		return errors.New("fleetdb.oidc.client.secret not defined")
 	}
 
-	if a.v.GetString("serverservice.oidc.client.id") != "" {
-		a.Config.ServerserviceOptions.OidcClientID = a.v.GetString("serverservice.oidc.client.id")
+	if a.v.GetString("fleetdb.oidc.client.id") != "" {
+		a.Config.ServerserviceOptions.OidcClientID = a.v.GetString("fleetdb.oidc.client.id")
 	}
 
 	if a.Config.ServerserviceOptions.OidcClientID == "" {
-		return errors.New("serverservice.oidc.client.id not defined")
+		return errors.New("fleetdb.oidc.client.id not defined")
 	}
 
-	if a.v.GetString("serverservice.oidc.client.scopes") != "" {
-		a.Config.ServerserviceOptions.OidcClientScopes = a.v.GetStringSlice("serverservice.oidc.client.scopes")
+	if a.v.GetString("fleetdb.oidc.client.scopes") != "" {
+		a.Config.ServerserviceOptions.OidcClientScopes = a.v.GetStringSlice("fleetdb.oidc.client.scopes")
 	}
 
 	if len(a.Config.ServerserviceOptions.OidcClientScopes) == 0 {
-		return errors.New("serverservice oidc.client.scopes not defined")
+		return errors.New("fleetdb oidc.client.scopes not defined")
 	}
 
 	return nil
