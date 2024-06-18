@@ -25,8 +25,8 @@ var (
 	// TasksCompleted measures the count of workers that returned after being spawned.
 	TasksCompleted *prometheus.CounterVec
 
-	// ServerServiceAssetsRetrieved measures the count of assets retrieved from server service to collect inventory for.
-	ServerServiceAssetsRetrieved *prometheus.CounterVec
+	// FleetDBAPIAssetsRetrieved measures the count of assets retrieved from server service to collect inventory for.
+	FleetDBAPIAssetsRetrieved *prometheus.CounterVec
 
 	// AssetsSent measures the count of assets sent over the asset channel to the collector.
 	AssetsSent *prometheus.CounterVec
@@ -37,8 +37,8 @@ var (
 	// TaskQueueSize measures the number of tasks waiting for a getter worker .
 	TaskQueueSize *prometheus.GaugeVec
 
-	// ServerServiceQueryErrorCount counts the number of query errors - when querying the asset store.
-	ServerServiceQueryErrorCount *prometheus.CounterVec
+	// FleetDBAPIQueryErrorCount counts the number of query errors - when querying the asset store.
+	FleetDBAPIQueryErrorCount *prometheus.CounterVec
 
 	// OOBCollectScheduleTimestamp includes the timestamp of the next OOB collection scheduled run.
 	OOBCollectScheduleTimestamp *prometheus.GaugeVec
@@ -73,7 +73,7 @@ func init() {
 		[]string{"stage"},
 	)
 
-	ServerServiceAssetsRetrieved = promauto.NewCounterVec(
+	FleetDBAPIAssetsRetrieved = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "alloy_assets_retrieved_total",
 			Help: "A counter metric to measure the total count of assets retrieved from serverService",
@@ -106,7 +106,7 @@ func init() {
 		[]string{"stage"},
 	)
 
-	ServerServiceQueryErrorCount = promauto.NewCounterVec(
+	FleetDBAPIQueryErrorCount = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "alloy_serverservice_query_errors_total",
 			Help: "A counter metric to measure the total count of errors when the asset store.",
