@@ -1,4 +1,4 @@
-package serverservice
+package fleetdb
 
 import (
 	"net/http"
@@ -9,16 +9,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/metal-toolbox/alloy/internal/fixtures"
 	"github.com/metal-toolbox/alloy/internal/model"
+	fleetdbapi "github.com/metal-toolbox/fleetdb/pkg/api/v1"
 	"github.com/sanity-io/litter"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
 )
 
 // To refresh the fixtures used below, set dumpFixtures to true and run the test.
 // copy over the slice elements from the dumped object slice into alloy/internal/fixtures/serverservice_components_$deviceModel.go
 //
-// The object slice elements copied over will need to be changed to be of serverservice.ServerComponent
+// The object slice elements copied over will need to be changed to be of fleetdbapi.ServerComponent
 func Test_ToComponentSlice(t *testing.T) {
 	dumpFixture := false
 
@@ -42,7 +42,7 @@ func Test_ToComponentSlice(t *testing.T) {
 	mock := httptest.NewServer(handler)
 	p := testStoreInstance(t, mock.URL)
 	p.logger = logrus.New()
-	p.slugs = fixtures.ServerServiceSlugMap()
+	p.slugs = fixtures.FleetDBSlugMap()
 	p.attributeNS = serverComponentAttributeNS(model.AppKindOutOfBand)
 	p.firmwareVersionedAttributeNS = serverComponentFirmwareNS(model.AppKindOutOfBand)
 	p.statusVersionedAttributeNS = serverComponentStatusNS(model.AppKindOutOfBand)
@@ -50,22 +50,22 @@ func Test_ToComponentSlice(t *testing.T) {
 	testcases := []struct {
 		name     string
 		device   *model.Asset
-		expected []*serverserviceapi.ServerComponent
+		expected []*fleetdbapi.ServerComponent
 	}{
 		{
 			"E3C246D4INL",
 			&model.Asset{Vendor: "asrockrack", Inventory: fixtures.CopyDevice(fixtures.E3C246D4INL)},
-			componentPtrSlice(fixtures.ServerServiceE3C246D4INLcomponents),
+			componentPtrSlice(fixtures.FleetDBAPIE3C246D4INLcomponents),
 		},
 		{
 			"R6515_A",
 			&model.Asset{Vendor: "dell", Inventory: fixtures.CopyDevice(fixtures.R6515_f0c8e4ac)},
-			componentPtrSlice(fixtures.ServerServiceR6515Components_f0c8e4ac),
+			componentPtrSlice(fixtures.FleetDBAPIR6515Components_f0c8e4ac),
 		},
 		{
 			"R6515_B",
 			&model.Asset{Vendor: "dell", Inventory: fixtures.CopyDevice(fixtures.R6515_fc167440)},
-			componentPtrSlice(fixtures.ServerServiceR6515Components_fc167440),
+			componentPtrSlice(fixtures.FleetDBAPIR6515Components_fc167440),
 		},
 	}
 

@@ -1,4 +1,4 @@
-package serverservice
+package fleetdb
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
@@ -6,14 +6,14 @@ import (
 )
 
 var (
-	// stageLabel is the label included in all metrics collected by the serverservice store
-	stageLabel = prometheus.Labels{"stage": "serverservice"}
+	// stageLabel is the label included in all metrics collected by the fleetdb store
+	stageLabel = prometheus.Labels{"stage": "fleetdb"}
 
 	// metricAssetComponentsIdentified measures the count of hardware components in the device components data from the collector.
 	metricAssetComponentsIdentified *prometheus.GaugeVec
 
-	// metricServerServiceDataChanges measures the number of server component data additions, updates, deletes.
-	metricServerServiceDataChanges *prometheus.GaugeVec
+	// metricFleetDBDataChanges measures the number of server component data additions, updates, deletes.
+	metricFleetDBDataChanges *prometheus.GaugeVec
 
 	// metricInventorized count measures the number of assets inventorized - both successful and not.
 	metricInventorized *prometheus.GaugeVec
@@ -31,7 +31,7 @@ func init() {
 		[]string{"stage", "vendor", "model"},
 	)
 
-	metricServerServiceDataChanges = promauto.NewGaugeVec(
+	metricFleetDBDataChanges = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "alloy_serverservice_data_changes",
 			Help: "A gauge metric to measure the number of additions, updates, deletions to server service data",

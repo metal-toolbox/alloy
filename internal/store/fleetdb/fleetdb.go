@@ -1,4 +1,4 @@
-package serverservice
+package fleetdb
 
 import (
 	"context"
@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 
-	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
+	fleetdbapi "github.com/metal-toolbox/fleetdb/pkg/api/v1"
 )
 
 const (
@@ -30,11 +30,11 @@ const (
 
 // Store is an asset inventory store
 type Store struct {
-	*serverserviceapi.Client
+	*fleetdbapi.Client
 	logger                       *logrus.Logger
-	config                       *app.ServerserviceOptions
-	slugs                        map[string]*serverserviceapi.ServerComponentType
-	firmwares                    map[string][]*serverserviceapi.ComponentFirmwareVersion
+	config                       *app.FleetDBAPIOptions
+	slugs                        map[string]*fleetdbapi.ServerComponentType
+	firmwares                    map[string][]*fleetdbapi.ComponentFirmwareVersion
 	appKind                      model.AppKind
 	attributeNS                  string
 	firmwareVersionedAttributeNS string
@@ -42,11 +42,9 @@ type Store struct {
 	facilityCode                 string
 }
 
-// NewStore returns a serverservice store queryor to lookup and publish assets to, from the store.
-func New(ctx context.Context, appKind model.AppKind, cfg *app.ServerserviceOptions, logger *logrus.Logger) (*Store, error) {
-	logger.Info("serverservice store ctor")
-
-	apiclient, err := NewServerServiceClient(ctx, cfg, logger)
+// NewStore returns a fleetdb store queryor to lookup and publish assets to, from the store.
+func New(ctx context.Context, appKind model.AppKind, cfg *app.FleetDBAPIOptions, logger *logrus.Logger) (*Store, error) {
+	apiclient, err := NewFleetDBAPIClient(ctx, cfg, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -56,8 +54,8 @@ func New(ctx context.Context, appKind model.AppKind, cfg *app.ServerserviceOptio
 		appKind:                      appKind,
 		logger:                       logger,
 		config:                       cfg,
-		slugs:                        make(map[string]*serverserviceapi.ServerComponentType),
-		firmwares:                    make(map[string][]*serverserviceapi.ComponentFirmwareVersion),
+		slugs:                        make(map[string]*fleetdbapi.ServerComponentType),
+		firmwares:                    make(map[string][]*fleetdbapi.ComponentFirmwareVersion),
 		attributeNS:                  serverComponentAttributeNS(appKind),
 		firmwareVersionedAttributeNS: serverComponentFirmwareNS(appKind),
 		statusVersionedAttributeNS:   serverComponentStatusNS(appKind),
@@ -78,7 +76,7 @@ func New(ctx context.Context, appKind model.AppKind, cfg *app.ServerserviceOptio
 	}
 
 	if len(s.slugs) == 0 {
-		return nil, errors.Wrap(ErrSlugs, "required component slugs not found in serverservice")
+		return nil, errors.Wrap(ErrSlugs, "required component slugs not found in fleetdb")
 	}
 
 	return s, nil
@@ -86,12 +84,12 @@ func New(ctx context.Context, appKind model.AppKind, cfg *app.ServerserviceOptio
 
 // Kind returns the repository store kind.
 func (r *Store) Kind() model.StoreKind {
-	return model.StoreKindServerservice
+	return model.StoreKindFleetDB
 }
 
 // assetByID queries serverService for the hardware asset by ID and returns an Asset object
 func (r *Store) AssetByID(ctx context.Context, id string, fetchBmcCredentials bool) (*model.Asset, error) {
-	ctx, span := otel.Tracer(pkgName).Start(ctx, "Serverservice.AssetByID")
+	ctx, span := otel.Tracer(pkgName).Start(ctx, "fleetdbapi.AssetByID")
 	defer span.End()
 
 	sid, err := uuid.Parse(id)
@@ -107,13 +105,13 @@ func (r *Store) AssetByID(ctx context.Context, id string, fetchBmcCredentials bo
 		return nil, errors.Wrap(model.ErrInventoryQuery, "error querying server attributes: "+err.Error())
 	}
 
-	var credential *serverserviceapi.ServerCredential
+	var credential *fleetdbapi.ServerCredential
 
 	if fetchBmcCredentials {
 		var err error
 
 		// get bmc credential
-		credential, _, err = r.GetCredential(ctx, sid, serverserviceapi.ServerCredentialTypeBMC)
+		credential, _, err = r.GetCredential(ctx, sid, fleetdbapi.ServerCredentialTypeBMC)
 		if err != nil {
 			span.SetStatus(codes.Error, "GetCredential() failed")
 
@@ -126,7 +124,7 @@ func (r *Store) AssetByID(ctx context.Context, id string, fetchBmcCredentials bo
 
 // assetByID queries serverService for the hardware asset by ID and returns an Asset object
 func (r *Store) AssetsByOffsetLimit(ctx context.Context, offset, limit int) (assets []*model.Asset, totalAssets int, err error) {
-	ctx, span := otel.Tracer(pkgName).Start(ctx, "Serverservice.AssetByOffsetLimit")
+	ctx, span := otel.Tracer(pkgName).Start(ctx, "fleetdbapi.AssetByOffsetLimit")
 	defer span.End()
 
 	span.SetAttributes(
@@ -136,14 +134,14 @@ func (r *Store) AssetsByOffsetLimit(ctx context.Context, offset, limit int) (ass
 
 	defer span.End()
 
-	params := &serverserviceapi.ServerListParams{
+	params := &fleetdbapi.ServerListParams{
 		FacilityCode: r.facilityCode,
-		AttributeListParams: []serverserviceapi.AttributeListParams{
+		AttributeListParams: []fleetdbapi.AttributeListParams{
 			{
 				Namespace: bmcAttributeNamespace,
 			},
 		},
-		PaginationParams: &serverserviceapi.PaginationParams{
+		PaginationParams: &fleetdbapi.PaginationParams{
 			Limit: limit,
 			Page:  offset,
 		},
@@ -161,7 +159,7 @@ func (r *Store) AssetsByOffsetLimit(ctx context.Context, offset, limit int) (ass
 
 	// collect bmc secrets and structure as alloy asset
 	for _, server := range serverPtrSlice(servers) {
-		credential, _, err := r.GetCredential(ctx, server.UUID, serverserviceapi.ServerCredentialTypeBMC)
+		credential, _, err := r.GetCredential(ctx, server.UUID, fleetdbapi.ServerCredentialTypeBMC)
 		if err != nil {
 			span.SetStatus(codes.Error, "GetCredential() failed")
 
@@ -180,9 +178,9 @@ func (r *Store) AssetsByOffsetLimit(ctx context.Context, offset, limit int) (ass
 	return assets, int(response.TotalRecordCount), nil
 }
 
-// AssetUpdate inserts/updates the asset data in the serverservice store
+// AssetUpdate inserts/updates the asset data in the fleetdb store
 func (r *Store) AssetUpdate(ctx context.Context, asset *model.Asset) error {
-	ctx, span := otel.Tracer(pkgName).Start(ctx, "Serverservice.AssetUpdate")
+	ctx, span := otel.Tracer(pkgName).Start(ctx, "fleetdbapi.AssetUpdate")
 	defer span.End()
 
 	if asset == nil {
@@ -207,7 +205,7 @@ func (r *Store) AssetUpdate(ctx context.Context, asset *model.Asset) error {
 		span.SetStatus(codes.Error, "Get() server failed")
 
 		// count error
-		metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
+		metrics.FleetDBAPIQueryErrorCount.With(stageLabel).Inc()
 
 		return errors.Wrap(model.ErrInventoryQuery, err.Error())
 	}
@@ -253,7 +251,7 @@ func (r *Store) AssetUpdate(ctx context.Context, asset *model.Asset) error {
 	return nil
 }
 
-func (r *Store) publishBiosConfig(ctx context.Context, asset *model.Asset, server *serverserviceapi.Server) error {
+func (r *Store) publishBiosConfig(ctx context.Context, asset *model.Asset, server *fleetdbapi.Server) error {
 	// Nothing to publish
 	if len(asset.BiosConfig) == 0 {
 		r.logger.WithFields(logrus.Fields{
@@ -271,7 +269,7 @@ func (r *Store) publishBiosConfig(ctx context.Context, asset *model.Asset, serve
 	return r.createUpdateServerBIOSConfiguration(ctx, server.UUID, asset.BiosConfig)
 }
 
-func (r *Store) publishInventory(ctx context.Context, asset *model.Asset, server *serverserviceapi.Server) error {
+func (r *Store) publishInventory(ctx context.Context, asset *model.Asset, server *fleetdbapi.Server) error {
 	// create/update server bmc error attributes - for out of band data collection
 	if r.appKind == model.AppKindOutOfBand && len(asset.Errors) > 0 {
 		if err := r.createUpdateServerBMCErrorAttributes(
@@ -315,7 +313,7 @@ func (r *Store) publishInventory(ctx context.Context, asset *model.Asset, server
 //
 // nolint:gocyclo // the method caries out all steps to have device data compared and registered, for now its accepted as cyclomatic.
 func (r *Store) createUpdateServerComponents(ctx context.Context, serverID uuid.UUID, device *model.Asset) error {
-	ctx, span := otel.Tracer(pkgName).Start(ctx, "Serverservice.createUpdateServerComponents")
+	ctx, span := otel.Tracer(pkgName).Start(ctx, "fleetdbapi.createUpdateServerComponents")
 	defer span.End()
 
 	if device.Inventory == nil {
@@ -337,10 +335,10 @@ func (r *Store) createUpdateServerComponents(ctx context.Context, serverID uuid.
 	).Add(float64(len(newInventory)))
 
 	// retrieve current inventory from server service
-	currentInventory, _, err := r.GetComponents(ctx, serverID, &serverserviceapi.PaginationParams{})
+	currentInventory, _, err := r.GetComponents(ctx, serverID, &fleetdbapi.PaginationParams{})
 	if err != nil {
 		// count error
-		metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
+		metrics.FleetDBAPIQueryErrorCount.With(stageLabel).Inc()
 
 		// set span status
 		span.SetStatus(codes.Error, "GetComponents() failed")
@@ -377,7 +375,7 @@ func (r *Store) createUpdateServerComponents(ctx context.Context, serverID uuid.
 	// apply added component changes
 	if len(add) > 0 {
 		// count components added
-		metricServerServiceDataChanges.With(
+		metricFleetDBDataChanges.With(
 			metrics.AddLabels(
 				stageLabel,
 				prometheus.Labels{
@@ -389,7 +387,7 @@ func (r *Store) createUpdateServerComponents(ctx context.Context, serverID uuid.
 		_, err = r.CreateComponents(ctx, serverID, add)
 		if err != nil {
 			// count error
-			metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
+			metrics.FleetDBAPIQueryErrorCount.With(stageLabel).Inc()
 
 			// set span status
 			span.SetStatus(codes.Error, "CreateComponents() failed")
@@ -401,7 +399,7 @@ func (r *Store) createUpdateServerComponents(ctx context.Context, serverID uuid.
 	// apply updated component changes
 	if len(update) > 0 {
 		// count components updated
-		metricServerServiceDataChanges.With(
+		metricFleetDBDataChanges.With(
 			metrics.AddLabels(
 				stageLabel,
 				prometheus.Labels{
@@ -413,7 +411,7 @@ func (r *Store) createUpdateServerComponents(ctx context.Context, serverID uuid.
 		_, err = r.UpdateComponents(ctx, serverID, update)
 		if err != nil {
 			// count error
-			metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
+			metrics.FleetDBAPIQueryErrorCount.With(stageLabel).Inc()
 
 			// set span status
 			span.SetStatus(codes.Error, "UpdateComponents() failed")
@@ -432,7 +430,7 @@ func (r *Store) createUpdateServerComponents(ctx context.Context, serverID uuid.
 	// then the component may be eligible for removal.
 	if len(remove) > 0 {
 		// count components removed
-		metricServerServiceDataChanges.With(
+		metricFleetDBDataChanges.With(
 			metrics.AddLabels(
 				stageLabel,
 				prometheus.Labels{
@@ -467,7 +465,7 @@ func diffFilter(_ []string, _ reflect.Type, field reflect.StructField) bool {
 
 // serverServiceChangeList compares the current vs newer slice of server components
 // and returns 3 lists - add, update, remove.
-func serverServiceChangeList(_ context.Context, currentObjs, newObjs []*serverserviceapi.ServerComponent) (add, update, remove serverserviceapi.ServerComponentSlice, err error) {
+func serverServiceChangeList(_ context.Context, currentObjs, newObjs []*fleetdbapi.ServerComponent) (add, update, remove fleetdbapi.ServerComponentSlice, err error) {
 	// 1. list updated and removed objects
 	for _, currentObj := range currentObjs {
 		// changeObj is the component changes to be registered
@@ -505,7 +503,7 @@ func serverServiceChangeList(_ context.Context, currentObjs, newObjs []*serverse
 	return add, update, remove, nil
 }
 
-func serverServiceComponentsUpdated(currentObj, newObj *serverserviceapi.ServerComponent) (*serverserviceapi.ServerComponent, error) {
+func serverServiceComponentsUpdated(currentObj, newObj *fleetdbapi.ServerComponent) (*fleetdbapi.ServerComponent, error) {
 	differ, err := r3diff.NewDiffer(r3diff.Filter(diffFilter))
 	if err != nil {
 		return nil, err
@@ -557,14 +555,14 @@ func serverServiceComponentsUpdated(currentObj, newObj *serverserviceapi.ServerC
 }
 
 func (r *Store) cacheServerComponentFirmwares(ctx context.Context) error {
-	ctx, span := otel.Tracer(pkgName).Start(ctx, "Serverservice.cacheServerComponentFirmwares")
+	ctx, span := otel.Tracer(pkgName).Start(ctx, "fleetdbapi.cacheServerComponentFirmwares")
 	defer span.End()
 
-	// Query ServerService for all firmware
+	// Query FleetDB for all firmware
 	firmwares, _, err := r.ListServerComponentFirmware(ctx, nil)
 	if err != nil {
 		// count error
-		metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
+		metrics.FleetDBAPIQueryErrorCount.With(stageLabel).Inc()
 
 		// set span status
 		span.SetStatus(codes.Error, "ListServerComponentFirmware() failed")
@@ -581,13 +579,13 @@ func (r *Store) cacheServerComponentFirmwares(ctx context.Context) error {
 }
 
 func (r *Store) cacheServerComponentTypes(ctx context.Context) error {
-	ctx, span := otel.Tracer(pkgName).Start(ctx, "Serverservice.cacheServerComponentTypes")
+	ctx, span := otel.Tracer(pkgName).Start(ctx, "fleetdbapi.cacheServerComponentTypes")
 	defer span.End()
 
 	serverComponentTypes, _, err := r.ListServerComponentTypes(ctx, nil)
 	if err != nil {
 		// count error
-		metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
+		metrics.FleetDBAPIQueryErrorCount.With(stageLabel).Inc()
 
 		// set span status
 		span.SetStatus(codes.Error, "ListServerComponentTypes() failed")
@@ -603,13 +601,13 @@ func (r *Store) cacheServerComponentTypes(ctx context.Context) error {
 }
 
 func (r *Store) createServerComponentTypes(ctx context.Context) error {
-	ctx, span := otel.Tracer(pkgName).Start(ctx, "Serverservice.createServerComponentTypes")
+	ctx, span := otel.Tracer(pkgName).Start(ctx, "fleetdbapi.createServerComponentTypes")
 	defer span.End()
 
 	existing, _, err := r.ListServerComponentTypes(ctx, nil)
 	if err != nil {
 		// count error
-		metrics.ServerServiceQueryErrorCount.With(stageLabel).Inc()
+		metrics.FleetDBAPIQueryErrorCount.With(stageLabel).Inc()
 
 		// set span status
 		span.SetStatus(codes.Error, "ListServerComponentTypes() failed")
@@ -644,7 +642,7 @@ func (r *Store) createServerComponentTypes(ctx context.Context) error {
 	}
 
 	for _, slug := range componentSlugs {
-		sct := serverserviceapi.ServerComponentType{
+		sct := fleetdbapi.ServerComponentType{
 			Name: slug,
 			Slug: strings.ToLower(slug),
 		}
