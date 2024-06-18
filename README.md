@@ -21,38 +21,38 @@ b. build osx executable
 #### Run - `outofband`
 
 Assets are fetched from a store, this is defined by the by the `-store` flag,
-the accepted `-store` flag parameters are `csv`, `serverservice`, `mock`.
+the accepted `-store` flag parameters are `csv`, `fleetdb`, `mock`.
 
 for see [examples](examples/assets.csv).
 
-##### `Serverservice` store
+##### `FleetDB` store
 
 ```mermaid
 graph TD
-  a((Alloy))-- 1. read BMC creds -->ss[(Serverservice)]
-  a((Alloy))-- 3. store/update data -->ss[(Serverservice)]
+  a((Alloy))-- 1. read BMC creds -->ss[(FleetDB)]
+  a((Alloy))-- 3. store/update data -->ss[(FleetDB)]
   a((Alloy))-- 2. collect data -->sa(ServerA BMC)
   a((Alloy))-- 2. collect data -->sb(ServerB BMC)
 ```
 
-For this store, Alloy expects `serverservice` credentials and configuration,
-this can be set through env vars, for an example see [serverservice.env](./examples/serverservice.env)
+For this store, Alloy expects `fleetdb` credentials and configuration,
+this can be set through env vars, for an example see [fleetdbapi.env](./examples/fleetdbapi.env)
 
-1. Collect data for asset in `serverservice` inventory store, dump collected data to stdout.
+1. Collect data for asset in `fleetdb` inventory store, dump collected data to stdout.
 
 ```
-alloy outofband --store serverservice --asset-ids <Serverservice asset ID>  --output-stdout
+alloy outofband --store fleetdb --asset-ids <FleetDB asset ID>  --output-stdout
 ```
 
-2. Collect data for asset in `serverservice` inventory store, update `serverservice` with the collected information.
+2. Collect data for asset in `fleetdb` inventory store, update `fleetdb` with the collected information.
 ```
-alloy outofband --store serverservice --asset-ids <Serverservice asset ID>
+alloy outofband --store fleetdb --asset-ids <FleetDB asset ID>
 ```
 
 ##### `CSV` store
 
 The CSV store is an sample inventory store implementation, that can be used to collect data on assets
-listed in the csv, without having to run `serverservice`.
+listed in the csv, without having to run `fleetdb`.
 
 Note: this store is only supported for `outofband` commands.
 
@@ -67,14 +67,14 @@ Inband inventory collection requires various OS based utilites provided by [iron
 
 ```mermaid
 graph TD
-  a((Alloy))-- 1. Lookup asset -->ss[(Serverservice)]
-  a((Alloy))-- 3. store/update data -->ss[(Serverservice)]
+  a((Alloy))-- 1. Lookup asset -->ss[(FleetDB)]
+  a((Alloy))-- 3. store/update data -->ss[(FleetDB)]
   a((Alloy))-- 2. collect through host OS utils -->s(Server host OS)
 ```
 
 
 ```
-alloy inband --store serverservice --asset-id <serverservice server ID> --log-level trace
+alloy inband --store fleetdb --asset-id <FleetDB server ID> --log-level trace
 ```
 
 ### Metrics and traces
@@ -111,7 +111,7 @@ Flags:
   -h, --help               help for alloy
       --log-level string   set logging level - debug, trace (default "info")
       --output-stdout      Output collected data to STDOUT instead of the store
-      --store string       The inventory store kind (serverservice, csv) (default "mock")
+      --store string       The inventory store kind (fleetdb, csv) (default "mock")
 
 Use "alloy [command] --help" for more information about a command.
 ```

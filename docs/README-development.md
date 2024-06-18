@@ -1,6 +1,6 @@
 ### Alloy software components
 
-Check out the [sandbox](https://github.com/metal-toolbox/sandbox) repository to run Alloy along with Serverservice.
+Check out the [sandbox](https://github.com/metal-toolbox/sandbox) repository to run Alloy along with fleetdbapi.
 
 Alloy is internally composed of two main components the `Collector` and the `Controller`,
 the store is a backend repository of inventory assets.
