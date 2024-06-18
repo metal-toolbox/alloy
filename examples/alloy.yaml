@@ -2,9 +2,9 @@ log_level: debug
 app_kind: inband
 collector_outofband:
   concurrency: 5
-store_kind: serverservice
-serverservice:
-  endpoint: http://serverservice:8000
+store_kind: fleetdb
+fleetdb:
+  endpoint: http://fleetdb:8000
   disable_oauth: true
   facility_code: dc13
 events_broker_kind: nats
