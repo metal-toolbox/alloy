@@ -57,7 +57,7 @@ func (s *AssetIterator) IterInBatches(ctx context.Context, batchSize int, pauser
 	if err != nil {
 		// count serverService query errors
 		if errors.Is(err, ErrFetcherQuery) {
-			metrics.ServerServiceQueryErrorCount.With(stageLabelFetcher).Inc()
+			metrics.FleetDBAPIQueryErrorCount.With(stageLabelFetcher).Inc()
 		}
 
 		s.logger.WithError(err).Error(ErrFetcherQuery)
@@ -66,7 +66,7 @@ func (s *AssetIterator) IterInBatches(ctx context.Context, batchSize int, pauser
 	}
 
 	// count assets retrieved
-	metrics.ServerServiceAssetsRetrieved.With(stageLabelFetcher).Add(float64(len(assets)))
+	metrics.FleetDBAPIAssetsRetrieved.With(stageLabelFetcher).Add(float64(len(assets)))
 
 	// submit the assets collected in the first request
 	for _, asset := range assets {
@@ -107,7 +107,7 @@ func (s *AssetIterator) IterInBatches(ctx context.Context, batchSize int, pauser
 		assets, _, err := s.store.AssetsByOffsetLimit(ctx, offset, limit)
 		if err != nil {
 			if errors.Is(err, ErrFetcherQuery) {
-				metrics.ServerServiceQueryErrorCount.With(stageLabelFetcher).Inc()
+				metrics.FleetDBAPIQueryErrorCount.With(stageLabelFetcher).Inc()
 			}
 
 			s.logger.WithError(err).Warn(ErrFetcherQuery)
@@ -125,7 +125,7 @@ func (s *AssetIterator) IterInBatches(ctx context.Context, batchSize int, pauser
 		}
 
 		// count assets retrieved
-		metrics.ServerServiceAssetsRetrieved.With(stageLabelFetcher).Add(float64(len(assets)))
+		metrics.FleetDBAPIAssetsRetrieved.With(stageLabelFetcher).Add(float64(len(assets)))
 
 		for _, asset := range assets {
 			s.assetCh <- asset

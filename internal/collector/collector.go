@@ -137,7 +137,7 @@ func (c *DeviceCollector) CollectOutofband(ctx context.Context, asset *model.Ass
 func (c *DeviceCollector) CollectInband(ctx context.Context, asset *model.Asset, outputStdout bool) error {
 	var errs error
 
-	// XXX: This is duplicative! The asset is fetched again prior to updating serverservice.
+	// XXX: This is duplicative! The asset is fetched again prior to updating fleetdbapi.
 	// fetch existing asset information from inventory
 	existing, err := c.repository.AssetByID(ctx, asset.ID, c.kind == model.AppKindOutOfBand)
 	if err != nil {
