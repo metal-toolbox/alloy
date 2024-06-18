@@ -1,4 +1,4 @@
-package serverservice
+package fleetdb
 
 import (
 	"context"
@@ -12,16 +12,16 @@ import (
 	"github.com/bmc-toolbox/common"
 	"github.com/metal-toolbox/alloy/internal/fixtures"
 	"github.com/metal-toolbox/alloy/internal/model"
+	fleetdbapi "github.com/metal-toolbox/fleetdb/pkg/api/v1"
 	"github.com/stretchr/testify/assert"
-	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
 )
 
 func Test_validateRequiredAttributes(t *testing.T) {
 	// nolint:govet // ignore struct alignment in test
 	cases := []struct {
 		name              string
-		server            *serverserviceapi.Server
-		secret            *serverserviceapi.ServerCredential
+		server            *fleetdbapi.Server
+		secret            *fleetdbapi.ServerCredential
 		expectCredentials bool
 		expectedErr       string
 	}{
@@ -34,29 +34,29 @@ func Test_validateRequiredAttributes(t *testing.T) {
 		},
 		{
 			"server credential object nil",
-			&serverserviceapi.Server{},
+			&fleetdbapi.Server{},
 			nil,
 			true,
 			"server credential object nil",
 		},
 		{
 			"server attributes slice empty",
-			&serverserviceapi.Server{},
-			&serverserviceapi.ServerCredential{},
+			&fleetdbapi.Server{},
+			&fleetdbapi.ServerCredential{},
 			true,
 			"server attributes slice empty",
 		},
 		{
 			"BMC password field empty",
-			&serverserviceapi.Server{Attributes: []serverserviceapi.Attributes{{Namespace: bmcAttributeNamespace}}},
-			&serverserviceapi.ServerCredential{Username: "foo", Password: ""},
+			&fleetdbapi.Server{Attributes: []fleetdbapi.Attributes{{Namespace: bmcAttributeNamespace}}},
+			&fleetdbapi.ServerCredential{Username: "foo", Password: ""},
 			true,
 			"BMC password field empty",
 		},
 		{
 			"BMC username field empty",
-			&serverserviceapi.Server{Attributes: []serverserviceapi.Attributes{{Namespace: bmcAttributeNamespace}}},
-			&serverserviceapi.ServerCredential{Username: "", Password: "123"},
+			&fleetdbapi.Server{Attributes: []fleetdbapi.Attributes{{Namespace: bmcAttributeNamespace}}},
+			&fleetdbapi.ServerCredential{Username: "", Password: "123"},
 			true,
 			"BMC username field empty",
 		},
@@ -78,49 +78,49 @@ func Test_validateRequiredAttributes(t *testing.T) {
 func Test_toAsset(t *testing.T) {
 	cases := []struct {
 		name          string
-		server        *serverserviceapi.Server
-		secret        *serverserviceapi.ServerCredential
+		server        *fleetdbapi.Server
+		secret        *fleetdbapi.ServerCredential
 		expectedAsset *model.Asset
 		expectedErr   string
 	}{
 		{
 			"Expected attributes empty raises error",
-			&serverserviceapi.Server{
-				Attributes: []serverserviceapi.Attributes{
+			&fleetdbapi.Server{
+				Attributes: []fleetdbapi.Attributes{
 					{
 						Namespace: "invalid",
 					},
 				},
 			},
-			&serverserviceapi.ServerCredential{Username: "foo", Password: "bar"},
+			&fleetdbapi.ServerCredential{Username: "foo", Password: "bar"},
 			nil,
 			"expected server attributes with BMC address, got none",
 		},
 		{
 			"Attributes missing BMC IP Address raises error",
-			&serverserviceapi.Server{
-				Attributes: []serverserviceapi.Attributes{
+			&fleetdbapi.Server{
+				Attributes: []fleetdbapi.Attributes{
 					{
 						Namespace: bmcAttributeNamespace,
 						Data:      []byte(`{"namespace":"foo"}`),
 					},
 				},
 			},
-			&serverserviceapi.ServerCredential{Username: "user", Password: "hunter2"},
+			&fleetdbapi.ServerCredential{Username: "user", Password: "hunter2"},
 			nil,
 			"expected BMC address attribute empty",
 		},
 		{
 			"Valid server, secret objects returns *model.Asset object",
-			&serverserviceapi.Server{
-				Attributes: []serverserviceapi.Attributes{
+			&fleetdbapi.Server{
+				Attributes: []fleetdbapi.Attributes{
 					{
 						Namespace: bmcAttributeNamespace,
 						Data:      []byte(`{"address":"127.0.0.1"}`),
 					},
 				},
 			},
-			&serverserviceapi.ServerCredential{Username: "user", Password: "hunter2"},
+			&fleetdbapi.ServerCredential{Username: "user", Password: "hunter2"},
 			&model.Asset{
 				ID:          "00000000-0000-0000-0000-000000000000",
 				Vendor:      "unknown",
@@ -275,7 +275,7 @@ func Test_vendorDataUpdate(t *testing.T) {
 	}
 }
 
-func assertComponentAttributes(t *testing.T, obj *serverserviceapi.ServerComponent, expectedVersion string) {
+func assertComponentAttributes(t *testing.T, obj *fleetdbapi.ServerComponent, expectedVersion string) {
 	t.Helper()
 
 	assert.NotNil(t, obj)
@@ -300,13 +300,13 @@ func rawVersionAttributeFirmwareEquals(t *testing.T, expectedVersion string, raw
 	return va.Firmware.Installed == expectedVersion
 }
 
-func Test_ServerServiceChangeList(t *testing.T) {
-	components := fixtures.CopyServerServiceComponentSlice(fixtures.ServerServiceR6515Components_fc167440)
+func Test_FleetDBAPIChangeList(t *testing.T) {
+	components := fixtures.CopyFleetDBComponentSlice(fixtures.FleetDBAPIR6515Components_fc167440)
 
 	// nolint:govet // struct alignment kept for readability
 	testcases := []struct {
 		name            string // test name
-		current         []*serverserviceapi.ServerComponent
+		current         []*fleetdbapi.ServerComponent
 		expectedUpdate  int
 		expectedAdd     int
 		expectedRemove  int
@@ -318,7 +318,7 @@ func Test_ServerServiceChangeList(t *testing.T) {
 	}{
 		{
 			"no changes in component lists",
-			componentPtrSlice(fixtures.CopyServerServiceComponentSlice(components)),
+			componentPtrSlice(fixtures.CopyFleetDBComponentSlice(components)),
 			0,
 			0,
 			0,
@@ -330,7 +330,7 @@ func Test_ServerServiceChangeList(t *testing.T) {
 		},
 		{
 			"updated component part of update slice",
-			componentPtrSlice(fixtures.CopyServerServiceComponentSlice(components)),
+			componentPtrSlice(fixtures.CopyFleetDBComponentSlice(components)),
 			1,
 			0,
 			0,
@@ -342,7 +342,7 @@ func Test_ServerServiceChangeList(t *testing.T) {
 		},
 		{
 			"added component part of add slice",
-			componentPtrSlice(fixtures.CopyServerServiceComponentSlice(components)),
+			componentPtrSlice(fixtures.CopyFleetDBComponentSlice(components)),
 			0,
 			1,
 			0,
@@ -354,7 +354,7 @@ func Test_ServerServiceChangeList(t *testing.T) {
 		},
 		{
 			"component removed from slice",
-			componentPtrSlice(fixtures.CopyServerServiceComponentSlice(components)),
+			componentPtrSlice(fixtures.CopyFleetDBComponentSlice(components)),
 			0,
 			0,
 			1,
@@ -368,7 +368,7 @@ func Test_ServerServiceChangeList(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			newObjs := componentPtrSlice(fixtures.CopyServerServiceComponentSlice(fixtures.ServerServiceR6515Components_fc167440))
+			newObjs := componentPtrSlice(fixtures.CopyFleetDBComponentSlice(fixtures.FleetDBAPIR6515Components_fc167440))
 
 			switch {
 			case tc.expectedAdd > 0:

@@ -1,4 +1,4 @@
-package serverservice
+package fleetdb
 
 import (
 	"context"
@@ -18,19 +18,19 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/oauth2/clientcredentials"
 
-	serverserviceapi "go.hollow.sh/serverservice/pkg/api/v1"
+	fleetdbapi "github.com/metal-toolbox/fleetdb/pkg/api/v1"
 )
 
 var (
 	// timeout for requests made by this client.
 	timeout   = 30 * time.Second
-	ErrConfig = errors.New("error in serverservice client configuration")
+	ErrConfig = errors.New("error in fleetdb client configuration")
 )
 
 // TODO move this under an interface
 
-// NewServerServiceClient instantiates and returns a serverService client
-func NewServerServiceClient(ctx context.Context, cfg *app.ServerserviceOptions, logger *logrus.Logger) (*serverserviceapi.Client, error) {
+// NewFleetDBAPIClient instantiates and returns a serverService client
+func NewFleetDBAPIClient(ctx context.Context, cfg *app.FleetDBAPIOptions, logger *logrus.Logger) (*fleetdbapi.Client, error) {
 	if cfg == nil {
 		return nil, errors.Wrap(ErrConfig, "configuration is nil")
 	}
@@ -42,8 +42,8 @@ func NewServerServiceClient(ctx context.Context, cfg *app.ServerserviceOptions, 
 	return newServerserviceClientWithOAuthOtel(ctx, cfg, cfg.Endpoint, logger)
 }
 
-// returns a serverservice retryable client with Otel
-func newServerserviceClientWithOtel(cfg *app.ServerserviceOptions, endpoint string, logger *logrus.Logger) (*serverserviceapi.Client, error) {
+// returns a fleetdb retryable client with Otel
+func newServerserviceClientWithOtel(cfg *app.FleetDBAPIOptions, endpoint string, logger *logrus.Logger) (*fleetdbapi.Client, error) {
 	if cfg == nil {
 		return nil, errors.Wrap(ErrConfig, "configuration is nil")
 	}
@@ -56,11 +56,11 @@ func newServerserviceClientWithOtel(cfg *app.ServerserviceOptions, endpoint stri
 		if r.StatusCode == http.StatusInternalServerError {
 			b, err := io.ReadAll(r.Body)
 			if err != nil {
-				logger.Warn("serverservice query returned 500 error, got error reading body: ", err.Error())
+				logger.Warn("fleetdb query returned 500 error, got error reading body: ", err.Error())
 				return
 			}
 
-			logger.Warn("serverservice query returned 500 error, body: ", string(b))
+			logger.Warn("fleetdb query returned 500 error, body: ", string(b))
 		}
 	}
 
@@ -73,20 +73,18 @@ func newServerserviceClientWithOtel(cfg *app.ServerserviceOptions, endpoint stri
 	client := retryableClient.StandardClient()
 	client.Timeout = timeout
 
-	return serverserviceapi.NewClientWithToken(
+	return fleetdbapi.NewClientWithToken(
 		"dummy",
 		endpoint,
 		client,
 	)
 }
 
-// returns a serverservice retryable http client with Otel and Oauth wrapped in
-func newServerserviceClientWithOAuthOtel(ctx context.Context, cfg *app.ServerserviceOptions, endpoint string, logger *logrus.Logger) (*serverserviceapi.Client, error) {
+// returns a fleetdb retryable http client with Otel and Oauth wrapped in
+func newServerserviceClientWithOAuthOtel(ctx context.Context, cfg *app.FleetDBAPIOptions, endpoint string, _ *logrus.Logger) (*fleetdbapi.Client, error) {
 	if cfg == nil {
 		return nil, errors.Wrap(ErrConfig, "configuration is nil")
 	}
-
-	logger.Info("serverservice client ctor")
 
 	// init retryable http client
 	retryableClient := retryablehttp.NewClient()
@@ -126,20 +124,20 @@ func newServerserviceClientWithOAuthOtel(ctx context.Context, cfg *app.Serverser
 	client := retryableClient.StandardClient()
 	client.Timeout = timeout
 
-	return serverserviceapi.NewClientWithToken(
+	return fleetdbapi.NewClientWithToken(
 		cfg.OidcClientSecret,
 		endpoint,
 		client,
 	)
 }
 
-// serverPtrSlice returns a slice of pointers to serverserviceapi.Server
+// serverPtrSlice returns a slice of pointers to fleetdbapi.Server
 //
 // The server service server list methods return a slice of server objects,
 // this helper method is to reduce the amount of copying of component objects (~176 bytes each) when passed around between methods and range loops,
 // while it seems like a minor optimization, it also keeps the linter happy.
-func serverPtrSlice(servers []serverserviceapi.Server) []*serverserviceapi.Server {
-	returned := make([]*serverserviceapi.Server, 0, len(servers))
+func serverPtrSlice(servers []fleetdbapi.Server) []*fleetdbapi.Server {
+	returned := make([]*fleetdbapi.Server, 0, len(servers))
 
 	// nolint:gocritic // the copying has to be done somewhere
 	for _, s := range servers {
@@ -150,20 +148,20 @@ func serverPtrSlice(servers []serverserviceapi.Server) []*serverserviceapi.Serve
 	return returned
 }
 
-func toAsset(server *serverserviceapi.Server, credential *serverserviceapi.ServerCredential, expectCredentials bool) (*model.Asset, error) {
+func toAsset(server *fleetdbapi.Server, credential *fleetdbapi.ServerCredential, expectCredentials bool) (*model.Asset, error) {
 	if err := validateRequiredAttributes(server, credential, expectCredentials); err != nil {
-		return nil, errors.Wrap(ErrServerServiceObject, err.Error())
+		return nil, errors.Wrap(ErrFleetDBAPIObject, err.Error())
 	}
 
 	serverAttributes, err := serverAttributes(server.Attributes, expectCredentials)
 	if err != nil {
 		fmt.Println(err.Error())
-		return nil, errors.Wrap(ErrServerServiceObject, err.Error())
+		return nil, errors.Wrap(ErrFleetDBAPIObject, err.Error())
 	}
 
 	serverMetadataAttributes, err := serverMetadataAttributes(server.Attributes)
 	if err != nil {
-		return nil, errors.Wrap(ErrServerServiceObject, err.Error())
+		return nil, errors.Wrap(ErrFleetDBAPIObject, err.Error())
 	}
 
 	asset := &model.Asset{
