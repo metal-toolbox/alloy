@@ -34,8 +34,8 @@ var cmdInband = &cobra.Command{
 			storeKind = string(model.StoreKindMock)
 		}
 
-		if storeKind == string(model.StoreKindServerservice) && assetID == "" {
-			log.Fatal("--asset-id flag required for inband command with serverservice store")
+		if storeKind == string(model.StoreKindFleetDB) && assetID == "" {
+			log.Fatal("--asset-id flag required for inband command with fleetdb store")
 		}
 
 		// execution timeout
@@ -109,7 +109,7 @@ func collectInband(ctx context.Context, cfg *app.Configuration, logger *logrus.L
 
 // install command flags
 func init() {
-	cmdInband.PersistentFlags().StringVarP(&assetID, "asset-id", "", "", "The asset identifier - required when store is set to serverservice")
+	cmdInband.PersistentFlags().StringVarP(&assetID, "asset-id", "", "", "The asset identifier - required when store is set to fleetdb")
 	cmdInband.PersistentFlags().DurationVar(&inbandTimeout, "timeout", 1*time.Minute, "timeout inventory collection if the duration exceeds the given parameter, accepted values are int time.Duration string format - 12h, 5d...")
 
 	rootCmd.AddCommand(cmdInband)
