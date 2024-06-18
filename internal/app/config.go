@@ -42,10 +42,10 @@ type Configuration struct {
 	// FacilityCode limits this alloy to events in a facility.
 	FacilityCode string `mapstructure:"facility_code"`
 
-	// ServerserviceOptions defines the serverservice client configuration parameters
+	// FleetDBAPIOptions defines the fleetdb API client configuration parameters
 	//
-	// This parameter is required when StoreKind is set to serverservice.
-	ServerserviceOptions *ServerserviceOptions `mapstructure:"serverservice"`
+	// This parameter is required when StoreKind is set to fleetdb.
+	FleetDBAPIOptions *FleetDBAPIOptions `mapstructure:"fleetdb"`
 
 	// Controller Out of band collector concurrency
 	Concurrency int `mapstructure:"concurrency"`
@@ -65,9 +65,9 @@ type Configuration struct {
 	NatsOptions *events.NatsOptions `mapstructure:"nats"`
 }
 
-// ServerserviceOptions defines configuration for the Serverservice client.
-// https://github.com/metal-toolbox/hollow-serverservice
-type ServerserviceOptions struct {
+// FleetDBAPIOptions defines configuration for the fleetdb client.
+// https://github.com/metal-toolbox/fleetdb
+type FleetDBAPIOptions struct {
 	EndpointURL          *url.URL
 	FacilityCode         string   `mapstructure:"facility_code"`
 	Endpoint             string   `mapstructure:"endpoint"`
@@ -90,7 +90,7 @@ func (a *App) LoadConfiguration(cfgFile string, storeKind model.StoreKind) error
 
 	// these are initialized here so viper can read in configuration from env vars
 	// once https://github.com/spf13/viper/pull/1429 is merged, this can go.
-	a.Config.ServerserviceOptions = &ServerserviceOptions{}
+	a.Config.FleetDBAPIOptions = &FleetDBAPIOptions{}
 	a.Config.NatsOptions = &events.NatsOptions{
 		Stream:   &events.NatsStreamOptions{},
 		Consumer: &events.NatsConsumerOptions{},
@@ -127,9 +127,9 @@ func (a *App) LoadConfiguration(cfgFile string, storeKind model.StoreKind) error
 		}
 	}
 
-	if storeKind == model.StoreKindServerservice {
-		if err := a.envVarServerserviceOverrides(); err != nil {
-			return errors.Wrap(ErrConfig, "serverservice env overrides error:"+err.Error())
+	if storeKind == model.StoreKindFleetDB {
+		if err := a.envVarFleetDBAPIOverrides(); err != nil {
+			return errors.Wrap(ErrConfig, "fleetdb env overrides error:"+err.Error())
 		}
 	}
 
@@ -270,75 +270,75 @@ func (a *App) envVarNatsOverrides() error {
 // Server service configuration options
 
 // nolint:gocyclo // parameter validation is cyclomatic
-func (a *App) envVarServerserviceOverrides() error {
-	if a.Config.ServerserviceOptions == nil {
-		a.Config.ServerserviceOptions = &ServerserviceOptions{}
+func (a *App) envVarFleetDBAPIOverrides() error {
+	if a.Config.FleetDBAPIOptions == nil {
+		a.Config.FleetDBAPIOptions = &FleetDBAPIOptions{}
 	}
 
 	if a.v.GetString("fleetdb.endpoint") != "" {
-		a.Config.ServerserviceOptions.Endpoint = a.v.GetString("fleetdb.endpoint")
+		a.Config.FleetDBAPIOptions.Endpoint = a.v.GetString("fleetdb.endpoint")
 	}
 
 	if a.v.GetString("fleetdb.facility.code") != "" {
-		a.Config.ServerserviceOptions.FacilityCode = a.v.GetString("fleetdb.facility.code")
+		a.Config.FleetDBAPIOptions.FacilityCode = a.v.GetString("fleetdb.facility.code")
 	}
 
-	if a.Config.ServerserviceOptions.FacilityCode == "" {
+	if a.Config.FleetDBAPIOptions.FacilityCode == "" {
 		return errors.New("fleetdb facility code not defined")
 	}
 
-	endpointURL, err := url.Parse(a.Config.ServerserviceOptions.Endpoint)
+	endpointURL, err := url.Parse(a.Config.FleetDBAPIOptions.Endpoint)
 	if err != nil {
 		return errors.New("fleetdb endpoint URL error: " + err.Error())
 	}
 
-	a.Config.ServerserviceOptions.EndpointURL = endpointURL
+	a.Config.FleetDBAPIOptions.EndpointURL = endpointURL
 
 	if a.v.GetString("fleetdb.disable.oauth") != "" {
-		a.Config.ServerserviceOptions.DisableOAuth = a.v.GetBool("fleetdb.disable.oauth")
+		a.Config.FleetDBAPIOptions.DisableOAuth = a.v.GetBool("fleetdb.disable.oauth")
 	}
 
-	if a.Config.ServerserviceOptions.DisableOAuth {
+	if a.Config.FleetDBAPIOptions.DisableOAuth {
 		return nil
 	}
 
 	if a.v.GetString("fleetdb.oidc.issuer.endpoint") != "" {
-		a.Config.ServerserviceOptions.OidcIssuerEndpoint = a.v.GetString("fleetdb.oidc.issuer.endpoint")
+		a.Config.FleetDBAPIOptions.OidcIssuerEndpoint = a.v.GetString("fleetdb.oidc.issuer.endpoint")
 	}
 
-	if a.Config.ServerserviceOptions.OidcIssuerEndpoint == "" {
+	if a.Config.FleetDBAPIOptions.OidcIssuerEndpoint == "" {
 		return errors.New("fleetdb oidc.issuer.endpoint not defined")
 	}
 
 	if a.v.GetString("fleetdb.oidc.audience.endpoint") != "" {
-		a.Config.ServerserviceOptions.OidcAudienceEndpoint = a.v.GetString("fleetdb.oidc.audience.endpoint")
+		a.Config.FleetDBAPIOptions.OidcAudienceEndpoint = a.v.GetString("fleetdb.oidc.audience.endpoint")
 	}
 
-	if a.Config.ServerserviceOptions.OidcAudienceEndpoint == "" {
+	if a.Config.FleetDBAPIOptions.OidcAudienceEndpoint == "" {
 		return errors.New("fleetdb oidc.audience.endpoint not defined")
 	}
 
 	if a.v.GetString("fleetdb.oidc.client.secret") != "" {
-		a.Config.ServerserviceOptions.OidcClientSecret = a.v.GetString("fleetdb.oidc.client.secret")
+		a.Config.FleetDBAPIOptions.OidcClientSecret = a.v.GetString("fleetdb.oidc.client.secret")
 	}
 
-	if a.Config.ServerserviceOptions.OidcClientSecret == "" {
+	if a.Config.FleetDBAPIOptions.OidcClientSecret == "" {
 		return errors.New("fleetdb.oidc.client.secret not defined")
 	}
 
 	if a.v.GetString("fleetdb.oidc.client.id") != "" {
-		a.Config.ServerserviceOptions.OidcClientID = a.v.GetString("fleetdb.oidc.client.id")
+		a.Config.FleetDBAPIOptions.OidcClientID = a.v.GetString("fleetdb.oidc.client.id")
 	}
 
-	if a.Config.ServerserviceOptions.OidcClientID == "" {
+	if a.Config.FleetDBAPIOptions.OidcClientID == "" {
 		return errors.New("fleetdb.oidc.client.id not defined")
 	}
 
 	if a.v.GetString("fleetdb.oidc.client.scopes") != "" {
-		a.Config.ServerserviceOptions.OidcClientScopes = a.v.GetStringSlice("fleetdb.oidc.client.scopes")
+		a.Config.FleetDBAPIOptions.OidcClientScopes = a.v.GetStringSlice("fleetdb.oidc.client.scopes")
 	}
 
-	if len(a.Config.ServerserviceOptions.OidcClientScopes) == 0 {
+	if len(a.Config.FleetDBAPIOptions.OidcClientScopes) == 0 {
 		return errors.New("fleetdb oidc.client.scopes not defined")
 	}
 

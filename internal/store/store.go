@@ -6,8 +6,8 @@ import (
 	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/metal-toolbox/alloy/internal/store/csv"
+	"github.com/metal-toolbox/alloy/internal/store/fleetdb"
 	"github.com/metal-toolbox/alloy/internal/store/mock"
-	"github.com/metal-toolbox/alloy/internal/store/serverservice"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -31,8 +31,8 @@ type Repository interface {
 
 func NewRepository(ctx context.Context, storeKind model.StoreKind, appKind model.AppKind, cfg *app.Configuration, logger *logrus.Logger) (Repository, error) {
 	switch storeKind {
-	case model.StoreKindServerservice:
-		return serverservice.New(ctx, appKind, cfg.ServerserviceOptions, logger)
+	case model.StoreKindFleetDB:
+		return fleetdb.New(ctx, appKind, cfg.FleetDBAPIOptions, logger)
 
 	case model.StoreKindCsv:
 		return csv.New(ctx, cfg.CsvFile, logger)
