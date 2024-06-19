@@ -423,7 +423,8 @@ func (r *Store) psus(deviceVendor string, psus []*common.PSU) []*fleetdbapi.Serv
 	components := make([]*fleetdbapi.ServerComponent, 0, len(psus))
 
 	for idx, c := range psus {
-		if strings.TrimSpace(c.Serial) == "" {
+		trimedSerial := strings.TrimSpace(c.Serial)
+		if trimedSerial == "" || strings.Contains(trimedSerial, "To Be Filled By O.E.M.") {
 			c.Serial = strconv.Itoa(idx)
 		}
 
