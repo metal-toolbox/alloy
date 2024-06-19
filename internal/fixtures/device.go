@@ -1020,6 +1020,30 @@ var (
 				ID:                 "",
 				PowerCapacityWatts: 550,
 			},
+			&common.PSU{
+				Common: common.Common{
+					Oem:         false,
+					Description: "PS2 Status",
+					Vendor:      "DELL",
+					Model:       "PWR SPLY,550W,RDNT,DELTA",
+					Serial:      "To Be Filled By O.E.M.",
+					ProductName: "",
+					Firmware: &common.Firmware{
+						Installed:  "00.0C.7D",
+						Available:  "",
+						SoftwareID: "",
+						Previous:   nil,
+					},
+					Status: &common.Status{
+						Health:         "OK",
+						State:          "Enabled",
+						PostCode:       0,
+						PostCodeStatus: "",
+					},
+				},
+				ID:                 "",
+				PowerCapacityWatts: 550,
+			},
 		},
 		Enclosures: []*common.Enclosure{
 			&common.Enclosure{
