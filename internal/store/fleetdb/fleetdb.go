@@ -142,8 +142,9 @@ func (r *Store) AssetsByOffsetLimit(ctx context.Context, offset, limit int) (ass
 			},
 		},
 		PaginationParams: &fleetdbapi.PaginationParams{
-			Limit: limit,
-			Page:  offset,
+			Limit:   limit,
+			Page:    offset,
+			Preload: true,
 		},
 	}
 
