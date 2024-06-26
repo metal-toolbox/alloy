@@ -398,8 +398,9 @@ func (r *Store) createUpdateServerComponents(ctx context.Context, serverID uuid.
 						component := &add[i] // Use pointer to the component
 						if component.Serial == match[1] {
 							r.logger.WithFields(logrus.Fields{
-								"device inventory": device.Inventory,
-							}).Error(err)
+								"create-components": add,
+								"err":               err.Error(),
+							}).Error("create components returned duplicate key error")
 							break
 						}
 					}
