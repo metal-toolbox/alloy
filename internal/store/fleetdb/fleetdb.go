@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/bmc-toolbox/common"
@@ -387,6 +388,23 @@ func (r *Store) createUpdateServerComponents(ctx context.Context, serverID uuid.
 
 		_, err = r.CreateComponents(ctx, serverID, add)
 		if err != nil {
+			// Log the specific component if it causes duplicate key error.
+			if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+				pattern := `serial, server_component_type_id\)=\('.*', '([^']*)', '.*'\)`
+				re := regexp.MustCompile(pattern)
+				match := re.FindStringSubmatch(err.Error())
+				if len(match) > 1 {
+					for i := range add {
+						component := &add[i] // Use pointer to the component
+						if component.Serial == match[1] {
+							r.logger.WithFields(logrus.Fields{
+								"device inventory": device.Inventory,
+							}).Error(err)
+							break
+						}
+					}
+				}
+			}
 			// count error
 			metrics.FleetDBAPIQueryErrorCount.With(stageLabel).Inc()
 

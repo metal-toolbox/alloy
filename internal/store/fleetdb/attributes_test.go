@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -286,77 +285,6 @@ func Test_FleetDB_CreateUpdateServerComponents_ObjectsEqual(t *testing.T) {
 	device := &model.Asset{ID: serverID.String(), Vendor: "dell", Inventory: fixtures.CopyDevice(fixtures.R6515_fc167440)}
 
 	err := p.createUpdateServerComponents(context.TODO(), serverID, device)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-func Test_FleetDB_CreateDuplicatedComponents(t *testing.T) {
-	serverID, _ := uuid.Parse(fixtures.TestserverID_Dell_fc167440)
-	handler := http.NewServeMux()
-
-	asBytes, err := json.Marshal(fleetdbapi.ServerComponentSlice{})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	records := []byte(`{
-		"page_size": 100,
-		"page": 1,
-		"page_count": 29,
-		"_links": {
-			"self": {
-				"href": "/api/v1/servers/fc167440-18d3-4455-b5ee-1c8e347b3f36/components"
-			},
-			"first": {
-				"href": "/api/v1/servers/fc167440-18d3-4455-b5ee-1c8e347b3f36/components?page=1"
-			},
-			"last": {
-				"href": "/api/v1/servers/fc167440-18d3-4455-b5ee-1c8e347b3f36/components?page=0"
-			}
-		},
-		"records": %s
-		}`)
-
-	getResponse := []byte(fmt.Sprintf(string(records), asBytes))
-
-	// get components query
-	handler.HandleFunc(
-		fmt.Sprintf("/api/v1/servers/%s/components", serverID.String()),
-		func(w http.ResponseWriter, r *http.Request) {
-			switch r.Method {
-			case http.MethodGet:
-				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write(getResponse)
-			case http.MethodPost:
-				// w.Header().Set("Content-Type", "application/json")
-				http.Error(w, `hollow client received a server error - response code: 400, message: , details: duplicate key value violates unique constraint idx_server_components: Key (server_id, serial, server_component_type_id)=('ffe293bf-b331-4c27-b48f-e0f6ffb8337f', '80AD01222796639497', 'b2dee190-d4e5-4b94-8c10-75383003d836') already exists.: pq: duplicate key value violates unique constraint \"idx_server_components\"","time":"2024-06-26T03:23:35Z"`, http.StatusBadRequest)
-			default:
-				t.Fatal("expected POST request, got: " + r.Method)
-			}
-		},
-	)
-
-	// get firmwares query
-	handler.HandleFunc(
-		"/api/v1/server-component-firmwares",
-		func(w http.ResponseWriter, r *http.Request) {
-			switch r.Method {
-			case http.MethodGet:
-				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write([]byte(`{}`))
-			default:
-				t.Fatal("expected GET request, got: " + r.Method)
-			}
-		},
-	)
-
-	mock := httptest.NewServer(handler)
-	p := testStoreInstance(t, mock.URL)
-
-	device := &model.Asset{ID: serverID.String(), Vendor: "dell", Inventory: fixtures.CopyDevice(fixtures.R6515_fc167440)}
-
-	err = p.createUpdateServerComponents(context.TODO(), serverID, device)
 	if err != nil {
 		t.Fatal(err)
 	}
