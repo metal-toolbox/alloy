@@ -387,6 +387,12 @@ func (r *Store) createUpdateServerComponents(ctx context.Context, serverID uuid.
 
 		_, err = r.CreateComponents(ctx, serverID, add)
 		if err != nil {
+			if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+				r.logger.WithFields(logrus.Fields{
+					"create-components": add,
+					"err":               err.Error(),
+				}).Error("create components returned duplicate key error")
+			}
 			// count error
 			metrics.FleetDBAPIQueryErrorCount.With(stageLabel).Inc()
 
@@ -411,6 +417,10 @@ func (r *Store) createUpdateServerComponents(ctx context.Context, serverID uuid.
 
 		_, err = r.UpdateComponents(ctx, serverID, update)
 		if err != nil {
+			r.logger.WithFields(logrus.Fields{
+				"update-components": update,
+				"err":               err.Error(),
+			}).Error("update components returned error")
 			// count error
 			metrics.FleetDBAPIQueryErrorCount.With(stageLabel).Inc()
 
