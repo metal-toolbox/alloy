@@ -3,5 +3,7 @@ FROM $IRONLIB_IMAGE
 
 COPY alloy /usr/sbin/alloy
 RUN chmod +x /usr/sbin/alloy
+COPY task.sh task.sh
+RUN chmod +x ./task.sh
 
-ENTRYPOINT ["/bin/bash", "-l", "-c"]
+ENTRYPOINT ["./task.sh"]
