@@ -742,7 +742,7 @@ func Test_FleetDB_CreateUpdateServerBMCErrorAttributes_NoErrorsNoChanges(t *test
 	// get components query
 	handler.HandleFunc(
 		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), serverBMCErrorsAttributeNS),
-		func(w http.ResponseWriter, r *http.Request) {
+		func(_ http.ResponseWriter, r *http.Request) {
 			t.Fatal("expected no request, got: " + r.Method)
 		},
 	)
@@ -765,7 +765,7 @@ func Test_FleetDB_CreateUpdateServerBMCErrorAttributes_HasErrorsNoChanges(t *tes
 	// get components query
 	handler.HandleFunc(
 		fmt.Sprintf("/api/v1/servers/%s/attributes/%s", serverID.String(), serverBMCErrorsAttributeNS),
-		func(w http.ResponseWriter, r *http.Request) {
+		func(_ http.ResponseWriter, r *http.Request) {
 			t.Fatal("expected no request, got: " + r.Method)
 		},
 	)

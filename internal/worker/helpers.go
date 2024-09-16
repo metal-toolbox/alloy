@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/metal-toolbox/alloy/internal/metrics"
-	"github.com/pkg/errors"
 	"github.com/metal-toolbox/rivets/events"
+	"github.com/pkg/errors"
 
 	rctypes "github.com/metal-toolbox/rivets/condition"
 )

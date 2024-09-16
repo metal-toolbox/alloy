@@ -8,9 +8,9 @@ import (
 
 	"github.com/jeremywohl/flatten"
 	"github.com/metal-toolbox/alloy/internal/model"
+	"github.com/metal-toolbox/rivets/events"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
-	"github.com/metal-toolbox/rivets/events"
 )
 
 var (

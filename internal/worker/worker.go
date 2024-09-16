@@ -19,9 +19,9 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 
-	"github.com/sirupsen/logrus"
 	"github.com/metal-toolbox/rivets/events"
 	"github.com/metal-toolbox/rivets/events/registry"
+	"github.com/sirupsen/logrus"
 
 	rctypes "github.com/metal-toolbox/rivets/condition"
 )

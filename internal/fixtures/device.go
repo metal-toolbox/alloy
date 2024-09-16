@@ -64,7 +64,7 @@ var (
 				},
 				ID: "",
 				NICPorts: []*common.NICPort{
-					&common.NICPort{
+					{
 						SpeedBits:  0,
 						PhysicalID: "",
 						BusInfo:    "",
@@ -288,7 +288,7 @@ var (
 					Available:  "",
 					SoftwareID: "159",
 					Previous: []*common.Firmware{
-						&common.Firmware{
+						{
 							Installed:  "2.2.4",
 							Available:  "",
 							SoftwareID: "159",
@@ -317,7 +317,7 @@ var (
 					Available:  "",
 					SoftwareID: "25227",
 					Previous: []*common.Firmware{
-						&common.Firmware{
+						{
 							Installed:  "4.40.00.00",
 							Available:  "",
 							SoftwareID: "25227",
@@ -374,7 +374,7 @@ var (
 			},
 		},
 		TPMs: []*common.TPM{
-			&common.TPM{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "",
@@ -403,7 +403,7 @@ var (
 		},
 		GPUs: []*common.GPU{},
 		CPUs: []*common.CPU{
-			&common.CPU{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "Represents the properties of a Processor attached to this System",
@@ -433,7 +433,7 @@ var (
 			},
 		},
 		Memory: []*common.Memory{
-			&common.Memory{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "DIMM A7",
@@ -457,7 +457,7 @@ var (
 				PartNumber:   "HMA81GR7CJR8N-XN",
 				ClockSpeedHz: 3200,
 			},
-			&common.Memory{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "DIMM A8",
@@ -481,7 +481,7 @@ var (
 				PartNumber:   "HMA81GR7CJR8N-XN",
 				ClockSpeedHz: 3200,
 			},
-			&common.Memory{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "DIMM A4",
@@ -505,7 +505,7 @@ var (
 				PartNumber:   "HMA81GR7CJR8N-XN",
 				ClockSpeedHz: 3200,
 			},
-			&common.Memory{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "DIMM A2",
@@ -529,7 +529,7 @@ var (
 				PartNumber:   "HMA81GR7CJR8N-XN",
 				ClockSpeedHz: 3200,
 			},
-			&common.Memory{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "DIMM A5",
@@ -553,7 +553,7 @@ var (
 				PartNumber:   "HMA81GR7CJR8N-XN",
 				ClockSpeedHz: 3200,
 			},
-			&common.Memory{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "DIMM A6",
@@ -577,7 +577,7 @@ var (
 				PartNumber:   "HMA81GR7CJR8N-XN",
 				ClockSpeedHz: 3200,
 			},
-			&common.Memory{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "DIMM A1",
@@ -601,7 +601,7 @@ var (
 				PartNumber:   "HMA81GR7CJR8N-XN",
 				ClockSpeedHz: 3200,
 			},
-			&common.Memory{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "DIMM A3",
@@ -627,7 +627,7 @@ var (
 			},
 		},
 		NICs: []*common.NIC{
-			&common.NIC{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "Embedded NIC 1 Port 1 Partition 1",
@@ -658,7 +658,7 @@ var (
 					},
 				},
 			},
-			&common.NIC{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "NIC in Slot 3 Port 1 Partition 1",
@@ -694,7 +694,7 @@ var (
 			},
 		},
 		Drives: []*common.Drive{
-			&common.Drive{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "Disk 1 in Backplane 1 of Integrated Storage Controller 1",
@@ -732,7 +732,7 @@ var (
 				CapableSpeedGbps:    6,
 				NegotiatedSpeedGbps: 6,
 			},
-			&common.Drive{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "Disk 0 in Backplane 1 of Integrated Storage Controller 1",
@@ -770,7 +770,7 @@ var (
 				CapableSpeedGbps:    6,
 				NegotiatedSpeedGbps: 6,
 			},
-			&common.Drive{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "Disk 0 on AHCI Controller in slot 2",
@@ -808,7 +808,7 @@ var (
 				CapableSpeedGbps:    6,
 				NegotiatedSpeedGbps: 6,
 			},
-			&common.Drive{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "Disk 1 on AHCI Controller in slot 2",
@@ -848,7 +848,7 @@ var (
 			},
 		},
 		StorageControllers: []*common.StorageController{
-			&common.StorageController{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "Dell HBA330 Mini",
@@ -880,7 +880,7 @@ var (
 				BusInfo:                      "",
 				SpeedGbps:                    12,
 			},
-			&common.StorageController{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "BOSS-S1",
@@ -912,7 +912,7 @@ var (
 				BusInfo:                      "",
 				SpeedGbps:                    6,
 			},
-			&common.StorageController{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "FCH SATA Controller [AHCI mode]",
@@ -941,7 +941,7 @@ var (
 				BusInfo:                      "",
 				SpeedGbps:                    0,
 			},
-			&common.StorageController{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "FCH SATA Controller [AHCI mode]",
@@ -972,7 +972,7 @@ var (
 			},
 		},
 		PSUs: []*common.PSU{
-			&common.PSU{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "PS1 Status",
@@ -996,7 +996,7 @@ var (
 				ID:                 "",
 				PowerCapacityWatts: 550,
 			},
-			&common.PSU{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "PS2 Status",
@@ -1020,7 +1020,7 @@ var (
 				ID:                 "",
 				PowerCapacityWatts: 550,
 			},
-			&common.PSU{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "PS2 Status",
@@ -1046,7 +1046,7 @@ var (
 			},
 		},
 		Enclosures: []*common.Enclosure{
-			&common.Enclosure{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "It represents the properties for physical components for any system.It represent racks, rackmount servers, blades, standalone, modular systems,enclosures, and all other containers.The non-cpu/device centric parts of the schema are all accessed either directly or indirectly through this resource.",
@@ -1071,7 +1071,7 @@ var (
 				ChassisType: "RackMount",
 				Firmware:    nil,
 			},
-			&common.Enclosure{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "Backplane 1 on Connector 0 of Integrated Storage Controller 1",
@@ -1096,7 +1096,7 @@ var (
 				ChassisType: "StorageEnclosure",
 				Firmware:    nil,
 			},
-			&common.Enclosure{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "PCIe SSD Backplane 1",
@@ -1150,7 +1150,7 @@ var (
 					Available:  "",
 					SoftwareID: "159",
 					Previous: []*common.Firmware{
-						&common.Firmware{
+						{
 							Installed:  "2.2.4",
 							Available:  "",
 							SoftwareID: "159",
@@ -1179,7 +1179,7 @@ var (
 					Available:  "",
 					SoftwareID: "25227",
 					Previous: []*common.Firmware{
-						&common.Firmware{
+						{
 							Installed:  "4.40.00.00",
 							Available:  "",
 							SoftwareID: "25227",
@@ -1214,7 +1214,7 @@ var (
 			PhysicalID: "",
 		},
 		CPLDs: []*common.CPLD{
-			&common.CPLD{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "System CPLD",
@@ -1236,7 +1236,7 @@ var (
 			},
 		},
 		TPMs: []*common.TPM{
-			&common.TPM{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "",
@@ -1265,7 +1265,7 @@ var (
 		},
 		GPUs: []*common.GPU{},
 		CPUs: []*common.CPU{
-			&common.CPU{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "Represents the properties of a Processor attached to this System",
@@ -1295,7 +1295,7 @@ var (
 			},
 		},
 		Memory: []*common.Memory{
-			&common.Memory{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "DIMM A7",
@@ -1319,7 +1319,7 @@ var (
 				PartNumber:   "HMA81GR7CJR8N-XN",
 				ClockSpeedHz: 3200000000,
 			},
-			&common.Memory{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "DIMM A8",
@@ -1343,7 +1343,7 @@ var (
 				PartNumber:   "HMA81GR7CJR8N-XN",
 				ClockSpeedHz: 3200000000,
 			},
-			&common.Memory{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "DIMM A4",
@@ -1367,7 +1367,7 @@ var (
 				PartNumber:   "HMA81GR7CJR8N-XN",
 				ClockSpeedHz: 3200000000,
 			},
-			&common.Memory{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "DIMM A2",
@@ -1391,7 +1391,7 @@ var (
 				PartNumber:   "HMA81GR7CJR8N-XN",
 				ClockSpeedHz: 3200000000,
 			},
-			&common.Memory{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "DIMM A5",
@@ -1415,7 +1415,7 @@ var (
 				PartNumber:   "HMA81GR7CJR8N-XN",
 				ClockSpeedHz: 3200000000,
 			},
-			&common.Memory{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "DIMM A6",
@@ -1439,7 +1439,7 @@ var (
 				PartNumber:   "HMA81GR7CJR8N-XN",
 				ClockSpeedHz: 3200000000,
 			},
-			&common.Memory{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "DIMM A1",
@@ -1463,7 +1463,7 @@ var (
 				PartNumber:   "HMA81GR7CJR8N-XN",
 				ClockSpeedHz: 3200000000,
 			},
-			&common.Memory{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "DIMM A3",
@@ -1489,7 +1489,7 @@ var (
 			},
 		},
 		NICs: []*common.NIC{
-			&common.NIC{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "Embedded NIC 1 Port 1 Partition 1",
@@ -1520,7 +1520,7 @@ var (
 					},
 				},
 			},
-			&common.NIC{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "NIC in Slot 3 Port 1 Partition 1",
@@ -1556,7 +1556,7 @@ var (
 			},
 		},
 		Drives: []*common.Drive{
-			&common.Drive{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "Disk 1 in Backplane 1 of Integrated Storage Controller 1",
@@ -1594,7 +1594,7 @@ var (
 				CapableSpeedGbps:    6,
 				NegotiatedSpeedGbps: 6,
 			},
-			&common.Drive{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "Disk 0 in Backplane 1 of Integrated Storage Controller 1",
@@ -1632,7 +1632,7 @@ var (
 				CapableSpeedGbps:    6,
 				NegotiatedSpeedGbps: 6,
 			},
-			&common.Drive{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "Disk 0 on AHCI Controller in slot 2",
@@ -1667,7 +1667,7 @@ var (
 				CapableSpeedGbps:    0,
 				NegotiatedSpeedGbps: 0,
 			},
-			&common.Drive{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "Disk 1 on AHCI Controller in slot 2",
@@ -1704,7 +1704,7 @@ var (
 			},
 		},
 		StorageControllers: []*common.StorageController{
-			&common.StorageController{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "Dell HBA330 Mini",
@@ -1736,7 +1736,7 @@ var (
 				BusInfo:                      "",
 				SpeedGbps:                    12,
 			},
-			&common.StorageController{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "BOSS-S1",
@@ -1768,7 +1768,7 @@ var (
 				BusInfo:                      "",
 				SpeedGbps:                    6,
 			},
-			&common.StorageController{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "FCH SATA Controller [AHCI mode]",
@@ -1797,7 +1797,7 @@ var (
 				BusInfo:                      "",
 				SpeedGbps:                    0,
 			},
-			&common.StorageController{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "FCH SATA Controller [AHCI mode]",
@@ -1828,7 +1828,7 @@ var (
 			},
 		},
 		PSUs: []*common.PSU{
-			&common.PSU{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "PS1 Status",
@@ -1852,7 +1852,7 @@ var (
 				ID:                 "",
 				PowerCapacityWatts: 550,
 			},
-			&common.PSU{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "PS2 Status",
@@ -1878,7 +1878,7 @@ var (
 			},
 		},
 		Enclosures: []*common.Enclosure{
-			&common.Enclosure{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "It represents the properties for physical components for any system.It represent racks, rackmount servers, blades, standalone, modular systems,enclosures, and all other containers.The non-cpu/device centric parts of the schema are all accessed either directly or indirectly through this resource.",
@@ -1903,7 +1903,7 @@ var (
 				ChassisType: "RackMount",
 				Firmware:    nil,
 			},
-			&common.Enclosure{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "Backplane 1 on Connector 0 of Integrated Storage Controller 1",
@@ -1928,7 +1928,7 @@ var (
 				ChassisType: "StorageEnclosure",
 				Firmware:    nil,
 			},
-			&common.Enclosure{
+			{
 				Common: common.Common{
 					Oem:         false,
 					Description: "PCIe SSD Backplane 1",
