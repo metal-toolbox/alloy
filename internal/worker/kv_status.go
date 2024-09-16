@@ -16,8 +16,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	rctypes "github.com/metal-toolbox/rivets/condition"
-	"go.hollow.sh/toolbox/events"
-	"go.hollow.sh/toolbox/events/pkg/kv"
+	"github.com/metal-toolbox/rivets/events"
+	"github.com/metal-toolbox/rivets/events/pkg/kv"
 )
 
 var (

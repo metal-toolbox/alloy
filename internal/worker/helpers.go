@@ -6,7 +6,7 @@ import (
 
 	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/pkg/errors"
-	"go.hollow.sh/toolbox/events"
+	"github.com/metal-toolbox/rivets/events"
 
 	rctypes "github.com/metal-toolbox/rivets/condition"
 )

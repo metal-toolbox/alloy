@@ -20,8 +20,8 @@ import (
 	"go.opentelemetry.io/otel"
 
 	"github.com/sirupsen/logrus"
-	"go.hollow.sh/toolbox/events"
-	"go.hollow.sh/toolbox/events/registry"
+	"github.com/metal-toolbox/rivets/events"
+	"github.com/metal-toolbox/rivets/events/registry"
 
 	rctypes "github.com/metal-toolbox/rivets/condition"
 )

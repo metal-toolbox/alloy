@@ -12,7 +12,7 @@ import (
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/metal-toolbox/alloy/internal/worker"
 	"github.com/spf13/cobra"
-	"go.hollow.sh/toolbox/events"
+	"github.com/metal-toolbox/rivets/events"
 	"golang.org/x/net/context"
 )
 
