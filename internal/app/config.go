@@ -10,7 +10,7 @@ import (
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
-	"go.hollow.sh/toolbox/events"
+	"github.com/metal-toolbox/rivets/events"
 )
 
 var (
