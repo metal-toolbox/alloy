@@ -17,7 +17,7 @@ var (
 			Model:  "",
 			Serial: "0",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -91,7 +91,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
@@ -143,7 +143,7 @@ var (
 			Model:  "E3C246D4I-NL",
 			Serial: "196231220000153",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -232,7 +232,7 @@ var (
 			Model:  "18ASF2G72HZ-2G6E1",
 			Serial: "F0F9053F",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -420,7 +420,7 @@ var (
 			Model:  "18ASF2G72HZ-2G6E1",
 			Serial: "F0F90894",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -608,7 +608,7 @@ var (
 			Model:  "Ethernet Controller X710 for 10GbE SFP+",
 			Serial: "b4:96:91:70:26:c8",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						91,
@@ -893,7 +893,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
@@ -947,7 +947,7 @@ var (
 			Model:  "INTEL SSDSC2KB48",
 			Serial: "PHYF001300HB480BGN",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -1080,7 +1080,7 @@ var (
 			Model:  "INTEL SSDSC2KB48",
 			Serial: "PHYF001209KL480BGN",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -1213,7 +1213,7 @@ var (
 			Model:  "Intel(R) Xeon(R) E-2278G CPU @ 3.40GHz",
 			Serial: "0",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -1371,7 +1371,7 @@ var (
 			Model:  "Cannon Lake PCH SATA AHCI Controller",
 			Serial: "0",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,

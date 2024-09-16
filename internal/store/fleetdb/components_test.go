@@ -88,7 +88,7 @@ func Test_ToComponentSlice(t *testing.T) {
 			}
 
 			if dumpFixture {
-				filterFunc := func(f reflect.StructField, v reflect.Value) bool {
+				filterFunc := func(f reflect.StructField, _ reflect.Value) bool {
 					switch f.Name {
 					case "ServerUUID", "UUID", "CreatedAt", "UpdatedAt", "LastReportedAt":
 						return false

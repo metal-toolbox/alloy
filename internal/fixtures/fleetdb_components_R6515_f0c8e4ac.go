@@ -18,7 +18,7 @@ var (
 			Model:  "",
 			Serial: "0",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -78,7 +78,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
@@ -231,7 +231,7 @@ var (
 			Model:  "PowerEdge R6515",
 			Serial: "0",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -259,7 +259,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
@@ -451,7 +451,7 @@ var (
 					},
 					Tally: 0,
 				},
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -514,7 +514,7 @@ var (
 			Model:  "",
 			Serial: "53737518",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -631,7 +631,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -694,7 +694,7 @@ var (
 			Model:  "",
 			Serial: "537374F7",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -811,7 +811,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -874,7 +874,7 @@ var (
 			Model:  "",
 			Serial: "53737489",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -991,7 +991,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -1054,7 +1054,7 @@ var (
 			Model:  "",
 			Serial: "537374FE",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -1171,7 +1171,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -1234,7 +1234,7 @@ var (
 			Model:  "",
 			Serial: "537374F0",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -1351,7 +1351,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -1414,7 +1414,7 @@ var (
 			Model:  "",
 			Serial: "5373745B",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -1531,7 +1531,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -1594,7 +1594,7 @@ var (
 			Model:  "",
 			Serial: "53737450",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -1711,7 +1711,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -1774,7 +1774,7 @@ var (
 			Model:  "",
 			Serial: "53737520",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -1891,7 +1891,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -1954,7 +1954,7 @@ var (
 			Model:  "",
 			Serial: "0",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						91,
@@ -2029,7 +2029,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
@@ -2070,7 +2070,7 @@ var (
 					},
 					Tally: 0,
 				},
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -2133,7 +2133,7 @@ var (
 			Model:  "Intel(R) 10GbE 2P X710 Adapter",
 			Serial: "MYFLMIT04P00HQ",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						91,
@@ -2245,7 +2245,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
@@ -2401,7 +2401,7 @@ var (
 					},
 					Tally: 0,
 				},
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -2464,7 +2464,7 @@ var (
 			Model:  "MTFDDAK480TDC",
 			Serial: "201827F5890A",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -2761,7 +2761,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
@@ -2902,7 +2902,7 @@ var (
 					},
 					Tally: 0,
 				},
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -2965,7 +2965,7 @@ var (
 			Model:  "MTFDDAK480TDC",
 			Serial: "201827F58A0E",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -3262,7 +3262,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
@@ -3403,7 +3403,7 @@ var (
 					},
 					Tally: 0,
 				},
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -3466,7 +3466,7 @@ var (
 			Model:  "SSDSCKKB240G8R",
 			Serial: "PHYH0115000B240J",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -3734,7 +3734,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
@@ -3854,7 +3854,7 @@ var (
 					},
 					Tally: 0,
 				},
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -3917,7 +3917,7 @@ var (
 			Model:  "SSDSCKKB240G8R",
 			Serial: "PHYH011304S4240J",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -4185,7 +4185,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
@@ -4305,7 +4305,7 @@ var (
 					},
 					Tally: 0,
 				},
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -4368,7 +4368,7 @@ var (
 			Model:  "PWR SPLY,550W,RDNT,DELTA",
 			Serial: "CNDED0005L1PQV",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -4430,7 +4430,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
@@ -4473,7 +4473,7 @@ var (
 					},
 					Tally: 0,
 				},
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -4536,7 +4536,7 @@ var (
 			Model:  "PWR SPLY,550W,RDNT,DELTA",
 			Serial: "CNDED0005L1PQZ",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -4598,7 +4598,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
@@ -4641,7 +4641,7 @@ var (
 					},
 					Tally: 0,
 				},
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -4704,7 +4704,7 @@ var (
 			Model:  "PWR SPLY,550W,RDNT,DELTA",
 			Serial: "2",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -4766,7 +4766,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
@@ -4809,7 +4809,7 @@ var (
 					},
 					Tally: 0,
 				},
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -4872,7 +4872,7 @@ var (
 			Model:  "AMD EPYC 7402P 24-Core Processor",
 			Serial: "0",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -5070,7 +5070,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
@@ -5114,7 +5114,7 @@ var (
 					},
 					Tally: 0,
 				},
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -5177,7 +5177,7 @@ var (
 			Model:  "",
 			Serial: "0",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -5211,7 +5211,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
@@ -5302,7 +5302,7 @@ var (
 					},
 					Tally: 0,
 				},
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -5363,7 +5363,7 @@ var (
 			Model:  "",
 			Serial: "0",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -5399,7 +5399,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
@@ -5506,7 +5506,7 @@ var (
 			Model:  "Dell HBA330 Mini",
 			Serial: "0",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -5563,7 +5563,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
@@ -5671,7 +5671,7 @@ var (
 					},
 					Tally: 0,
 				},
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -5734,7 +5734,7 @@ var (
 			Model:  "BOSS-S1",
 			Serial: "1",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -5781,7 +5781,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
@@ -5875,7 +5875,7 @@ var (
 					},
 					Tally: 0,
 				},
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -5938,7 +5938,7 @@ var (
 			Model:  "FCH SATA Controller [AHCI mode]",
 			Serial: "2",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -5994,7 +5994,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
@@ -6015,7 +6015,7 @@ var (
 					},
 					Tally: 0,
 				},
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -6076,7 +6076,7 @@ var (
 			Model:  "FCH SATA Controller [AHCI mode]",
 			Serial: "3",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -6132,7 +6132,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.firmware",
 					Data: json.RawMessage{
 						123,
@@ -6153,7 +6153,7 @@ var (
 					},
 					Tally: 0,
 				},
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -6214,7 +6214,7 @@ var (
 			Model:  "PowerEdge R6515",
 			Serial: "0",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -6587,7 +6587,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -6650,7 +6650,7 @@ var (
 			Model:  "BP14G+ 0:1",
 			Serial: "1",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -6823,7 +6823,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
@@ -6886,7 +6886,7 @@ var (
 			Model:  "PCIe SSD Backplane 1",
 			Serial: "2",
 			Attributes: []fleetdbapi.Attributes{
-				fleetdbapi.Attributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.metadata",
 					Data: json.RawMessage{
 						123,
@@ -6995,7 +6995,7 @@ var (
 				},
 			},
 			VersionedAttributes: []fleetdbapi.VersionedAttributes{
-				fleetdbapi.VersionedAttributes{
+				{
 					Namespace: "sh.hollow.alloy.outofband.status",
 					Data: json.RawMessage{
 						91,
