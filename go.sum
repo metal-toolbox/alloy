@@ -112,6 +112,8 @@ github.com/bmc-toolbox/bmclib/v2 v2.2.6 h1:ol2jVa1ERfBFZS5Ye1chORai+nkzt9J1LgTTM
 github.com/bmc-toolbox/bmclib/v2 v2.2.6/go.mod h1:V2XVg0Scpm16+0gE7WnI+5bU/M0c/o/nPZKHKzyVjAo=
 github.com/bmc-toolbox/common v0.0.0-20240723142833-87832458b53b h1:0LHjikaGWlqEMczrCEZ6w1N/ZqcYlx6WRHkhabRUQEk=
 github.com/bmc-toolbox/common v0.0.0-20240723142833-87832458b53b/go.mod h1:Cdnkm+edb6C0pVkyCrwh3JTXAe0iUF9diDG/DztPI9I=
+github.com/bmc-toolbox/common v0.0.0-20240806132831-ba8adc6a35e3 h1:/BjZSX/sphptIdxpYo4wxAQkgMLyMMgfdl48J9DKNeE=
+github.com/bmc-toolbox/common v0.0.0-20240806132831-ba8adc6a35e3/go.mod h1:Cdnkm+edb6C0pVkyCrwh3JTXAe0iUF9diDG/DztPI9I=
 github.com/bombsimon/logrusr/v2 v2.0.1 h1:1VgxVNQMCvjirZIYaT9JYn6sAVGVEcNtRE0y4mvaOAM=
 github.com/bombsimon/logrusr/v2 v2.0.1/go.mod h1:ByVAX+vHdLGAfdroiMg6q0zgq2FODY2lc5YJvzmOJio=
 github.com/bytedance/sonic v1.12.1 h1:jWl5Qz1fy7X1ioY74WqO0KjAMtAGQs4sYnjiEBiyX24=
