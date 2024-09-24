@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/bmc-toolbox/bmclib/v2 v2.2.6
-	github.com/bmc-toolbox/common v0.0.0-20240723142833-87832458b53b
+	github.com/bmc-toolbox/common v0.0.0-20240806132831-ba8adc6a35e3
 	github.com/bombsimon/logrusr/v2 v2.0.1
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/equinix-labs/otel-init-go v0.0.7
