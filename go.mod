@@ -15,7 +15,7 @@ require (
 	github.com/jacobweinstock/registrar v0.4.7
 	github.com/jeremywohl/flatten v1.0.1
 	github.com/jinzhu/copier v0.3.5
-	github.com/metal-toolbox/fleetdb v1.19.5-0.20240913163810-6a9703ca4111
+	github.com/metal-toolbox/fleetdb v1.19.5
 	github.com/metal-toolbox/ironlib v0.5.0
 	github.com/metal-toolbox/rivets v1.3.7
 	github.com/mitchellh/mapstructure v1.5.0
