@@ -3,9 +3,9 @@ module github.com/metal-toolbox/alloy
 go 1.22
 
 require (
-	github.com/bmc-toolbox/bmclib/v2 v2.2.6
+	github.com/bmc-toolbox/bmclib/v2 v2.3.0
 	github.com/bmc-toolbox/common v0.0.0-20240806132831-ba8adc6a35e3
-	github.com/bombsimon/logrusr/v2 v2.0.1
+	github.com/bombsimon/logrusr/v4 v4.1.0
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/equinix-labs/otel-init-go v0.0.9
 	github.com/google/go-cmp v0.6.0
@@ -44,7 +44,6 @@ require (
 	github.com/VictorLowther/soap v0.0.0-20150314151524-8e36fca84b22 // indirect
 	github.com/beevik/etree v1.4.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bombsimon/logrusr/v4 v4.1.0 // indirect
 	github.com/bytedance/sonic v1.12.1 // indirect
 	github.com/bytedance/sonic/loader v0.2.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
@@ -114,7 +113,7 @@ require (
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stmcginnis/gofish v0.15.1-0.20231121142100-22a60a77be91 // indirect
+	github.com/stmcginnis/gofish v0.19.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/tidwall/gjson v1.17.3 // indirect
