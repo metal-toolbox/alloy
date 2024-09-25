@@ -5,7 +5,7 @@ go 1.22
 require (
 	github.com/bmc-toolbox/bmclib/v2 v2.2.6
 	github.com/bmc-toolbox/common v0.0.0-20240806132831-ba8adc6a35e3
-	github.com/bombsimon/logrusr/v2 v2.0.1
+	github.com/bombsimon/logrusr/v4 v4.1.0
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/equinix-labs/otel-init-go v0.0.9
 	github.com/google/go-cmp v0.6.0
@@ -44,7 +44,6 @@ require (
 	github.com/VictorLowther/soap v0.0.0-20150314151524-8e36fca84b22 // indirect
 	github.com/beevik/etree v1.4.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bombsimon/logrusr/v4 v4.1.0 // indirect
 	github.com/bytedance/sonic v1.12.1 // indirect
 	github.com/bytedance/sonic/loader v0.2.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
