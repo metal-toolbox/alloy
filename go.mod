@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/bmc-toolbox/bmclib/v2 v2.3.0
-	github.com/bmc-toolbox/common v0.0.0-20240806132831-ba8adc6a35e3
+	github.com/bmc-toolbox/common v0.0.0-20240926143744-8c478be881d7
 	github.com/bombsimon/logrusr/v4 v4.1.0
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/equinix-labs/otel-init-go v0.0.9
@@ -15,7 +15,7 @@ require (
 	github.com/jacobweinstock/registrar v0.4.7
 	github.com/jeremywohl/flatten v1.0.1
 	github.com/jinzhu/copier v0.4.0
-	github.com/metal-toolbox/fleetdb v1.19.6
+	github.com/metal-toolbox/fleetdb v1.19.7
 	github.com/metal-toolbox/ironlib v0.5.0
 	github.com/metal-toolbox/rivets v1.3.8
 	github.com/mitchellh/mapstructure v1.5.0

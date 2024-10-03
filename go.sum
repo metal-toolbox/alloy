@@ -110,8 +110,8 @@ github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6r
 github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kBD4zp0CCIs=
 github.com/bmc-toolbox/bmclib/v2 v2.3.0 h1:BP8GkND46LSvK6hQcvJEyJpwDpB0rh5CNaZdfCOMNN8=
 github.com/bmc-toolbox/bmclib/v2 v2.3.0/go.mod h1:t8If/0fHQTRIK/yKDk2H3SgthDNNj+7z2aeftDFRFrU=
-github.com/bmc-toolbox/common v0.0.0-20240806132831-ba8adc6a35e3 h1:/BjZSX/sphptIdxpYo4wxAQkgMLyMMgfdl48J9DKNeE=
-github.com/bmc-toolbox/common v0.0.0-20240806132831-ba8adc6a35e3/go.mod h1:Cdnkm+edb6C0pVkyCrwh3JTXAe0iUF9diDG/DztPI9I=
+github.com/bmc-toolbox/common v0.0.0-20240926143744-8c478be881d7 h1:Xe6j3oMwe82buwBwEpok9wr+v21Io59pqMTZ5rKRVn8=
+github.com/bmc-toolbox/common v0.0.0-20240926143744-8c478be881d7/go.mod h1:Cdnkm+edb6C0pVkyCrwh3JTXAe0iUF9diDG/DztPI9I=
 github.com/bombsimon/logrusr/v2 v2.0.1 h1:1VgxVNQMCvjirZIYaT9JYn6sAVGVEcNtRE0y4mvaOAM=
 github.com/bombsimon/logrusr/v2 v2.0.1/go.mod h1:ByVAX+vHdLGAfdroiMg6q0zgq2FODY2lc5YJvzmOJio=
 github.com/bombsimon/logrusr/v4 v4.1.0 h1:uZNPbwusB0eUXlO8hIUwStE6Lr5bLN6IgYgG+75kuh4=
@@ -547,8 +547,8 @@ github.com/mattn/go-sqlite3 v1.14.14/go.mod h1:NyWgC/yNuGj7Q9rpYnZvas74GogHl5/Z4
 github.com/mattn/go-sqlite3 v1.14.22 h1:2gZY6PC6kBnID23Tichd1K+Z0oS6nE/XwU+Vz/5o4kU=
 github.com/mattn/go-sqlite3 v1.14.22/go.mod h1:Uh1q+B4BYcTPb+yiD3kU8Ct7aC0hY9fxUwlHK0RXw+Y=
 github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
-github.com/metal-toolbox/fleetdb v1.19.6 h1:jMjzzeG68/ekiZKbWCsP7ayWUTDPFkze2uZjJIjsAbc=
-github.com/metal-toolbox/fleetdb v1.19.6/go.mod h1:e5UrANxuGQVUhmjuXOL2dvxYltyA+lg2QaFtX0xhenU=
+github.com/metal-toolbox/fleetdb v1.19.7 h1:lTl67gtt5DzTdH4MgLViyXaTaH6FM8BtmM7NX7hXDZY=
+github.com/metal-toolbox/fleetdb v1.19.7/go.mod h1:IMbJwyC9DnznuPNjAaP54Y6uWuWu9cPXGH+yoe7jwGA=
 github.com/metal-toolbox/ironlib v0.5.0 h1:UBUmQhMwTu3nb/T45n6O5EfcWKM5SuEhNCfyuIp7lU0=
 github.com/metal-toolbox/ironlib v0.5.0/go.mod h1:WQZ8tZ8+bCts6mgBhN9M2r6Mer0aS8M0JNcaZm1dIS4=
 github.com/metal-toolbox/rivets v1.3.8 h1:BxzBPBYPMGBwJurIe+8Xji2YL7vHZUHbOmMpszWfPYw=
