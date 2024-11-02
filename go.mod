@@ -3,7 +3,7 @@ module github.com/metal-toolbox/alloy
 go 1.22
 
 require (
-	github.com/bmc-toolbox/bmclib/v2 v2.3.2
+	github.com/bmc-toolbox/bmclib/v2 v2.3.4
 	github.com/bmc-toolbox/common v0.0.0-20240926143744-8c478be881d7
 	github.com/bombsimon/logrusr/v4 v4.1.0
 	github.com/coreos/go-oidc v2.2.1+incompatible
