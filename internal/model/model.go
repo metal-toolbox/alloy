@@ -4,9 +4,8 @@ import (
 	"errors"
 	"net"
 
-	"github.com/bmc-toolbox/common"
-
-	rctypes "github.com/metal-toolbox/rivets/condition"
+	common "github.com/metal-toolbox/bmc-common"
+	rctypes "github.com/metal-toolbox/rivets/v2/condition"
 )
 
 type (

@@ -4,16 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"net"
-
-	// _ "net/http/pprof"
-
 	"testing"
 
-	"github.com/bmc-toolbox/common"
-	"github.com/metal-toolbox/alloy/internal/fixtures"
-	"github.com/metal-toolbox/alloy/internal/model"
+	common "github.com/metal-toolbox/bmc-common"
 	fleetdbapi "github.com/metal-toolbox/fleetdb/pkg/api/v1"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/metal-toolbox/alloy/internal/fixtures"
+	"github.com/metal-toolbox/alloy/internal/model"
 )
 
 func Test_validateRequiredAttributes(t *testing.T) {

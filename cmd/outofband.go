@@ -5,15 +5,16 @@ import (
 	"time"
 
 	"github.com/equinix-labs/otel-init-go/otelinit"
+	"github.com/metal-toolbox/rivets/v2/events"
+	"github.com/spf13/cobra"
+	"golang.org/x/net/context"
+
 	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/collector"
 	"github.com/metal-toolbox/alloy/internal/helpers"
 	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/metal-toolbox/alloy/internal/model"
 	"github.com/metal-toolbox/alloy/internal/worker"
-	"github.com/metal-toolbox/rivets/events"
-	"github.com/spf13/cobra"
-	"golang.org/x/net/context"
 )
 
 var (

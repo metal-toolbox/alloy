@@ -6,15 +6,16 @@ import (
 	"os"
 	"sort"
 
-	"github.com/bmc-toolbox/common"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
-	"github.com/metal-toolbox/alloy/internal/helpers"
-	"github.com/metal-toolbox/alloy/internal/model"
+	common "github.com/metal-toolbox/bmc-common"
 	fleetdbapi "github.com/metal-toolbox/fleetdb/pkg/api/v1"
 	"github.com/pkg/errors"
 	r3diff "github.com/r3labs/diff/v3"
 	"golang.org/x/exp/slices"
+
+	"github.com/metal-toolbox/alloy/internal/helpers"
+	"github.com/metal-toolbox/alloy/internal/model"
 )
 
 const (

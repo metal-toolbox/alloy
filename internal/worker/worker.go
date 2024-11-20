@@ -15,15 +15,13 @@ import (
 	"github.com/metal-toolbox/alloy/internal/store"
 	"github.com/metal-toolbox/alloy/internal/version"
 
+	rctypes "github.com/metal-toolbox/rivets/v2/condition"
+	"github.com/metal-toolbox/rivets/v2/events"
+	"github.com/metal-toolbox/rivets/v2/events/registry"
 	"github.com/nats-io/nats.go"
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel"
-
-	"github.com/metal-toolbox/rivets/events"
-	"github.com/metal-toolbox/rivets/events/registry"
 	"github.com/sirupsen/logrus"
-
-	rctypes "github.com/metal-toolbox/rivets/condition"
+	"go.opentelemetry.io/otel"
 )
 
 const (

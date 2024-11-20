@@ -3,12 +3,13 @@ package inband
 import (
 	"context"
 
-	"github.com/bmc-toolbox/common"
-	"github.com/metal-toolbox/alloy/internal/app"
-	"github.com/metal-toolbox/alloy/internal/model"
+	common "github.com/metal-toolbox/bmc-common"
 	"github.com/metal-toolbox/ironlib"
 	"github.com/metal-toolbox/ironlib/actions"
 	"github.com/sirupsen/logrus"
+
+	"github.com/metal-toolbox/alloy/internal/app"
+	"github.com/metal-toolbox/alloy/internal/model"
 )
 
 // Inband collector collects hardware, firmware inventory inband
