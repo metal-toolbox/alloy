@@ -1015,8 +1015,8 @@ func (r *Store) setAttributes(component *fleetdbapi.ServerComponent, attr *attri
 	}
 
 	// skip min sized json data containing just the braces `{}`
-	min := 2
-	if len(data) == min {
+	smallest := 2
+	if len(data) == smallest {
 		return
 	}
 
@@ -1071,8 +1071,8 @@ func (r *Store) setStatusVA(component *fleetdbapi.ServerComponent, statusesVA []
 	}
 
 	// skip empty json data containing just the braces `[{}]`
-	min := 4
-	if len(data) == min {
+	smallest := 4
+	if len(data) == smallest {
 		return
 	}
 
@@ -1128,8 +1128,8 @@ func (r *Store) setFirmwareVA(deviceVendor string, component *fleetdbapi.ServerC
 	}
 
 	// skip empty json data containing just the braces `{}`
-	min := 2
-	if len(data) == min {
+	smallest := 2
+	if len(data) == smallest {
 		return
 	}
 

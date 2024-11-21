@@ -6,7 +6,7 @@ service:
 linters-settings:
   govet:
     auto-fix: true
-    check-shadowing: true
+    shadow: true
     settings:
       printf:
         funcs:
@@ -63,10 +63,9 @@ linters:
     # additional linters
     - bodyclose
     - gocritic
-    - goerr113
+    - err113
     - goimports
     - revive
-    - gomnd
     - misspell
     - noctx
     - stylecheck
@@ -75,12 +74,10 @@ linters:
   enable-all: false
   disable-all: true
 
-run:
-#  build-tags:
-  skip-dirs:
+issues:
+  exclude-dirs:
     - internal/fixtures
 
-issues:
   exclude-rules:
     - linters:
         - gosec
