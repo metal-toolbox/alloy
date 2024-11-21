@@ -3,14 +3,14 @@ package outofband
 import (
 	"context"
 
-	bmclibv2 "github.com/bmc-toolbox/bmclib/v2"
-	"github.com/bmc-toolbox/common"
+	common "github.com/metal-toolbox/bmc-common"
+	"github.com/metal-toolbox/bmclib"
 )
 
 // nolint:govet // fieldalignment, pointless in tests
 type MockBmclib struct {
 	// embed bmclib client to provide methods
-	bmclibv2.Client
+	bmclib.Client
 	device     *common.Device
 	connOpened bool
 	connClosed bool

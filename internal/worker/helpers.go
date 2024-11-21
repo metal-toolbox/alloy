@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/metal-toolbox/alloy/internal/metrics"
-	"github.com/metal-toolbox/rivets/events"
+	rctypes "github.com/metal-toolbox/rivets/v2/condition"
+	"github.com/metal-toolbox/rivets/v2/events"
 	"github.com/pkg/errors"
 
-	rctypes "github.com/metal-toolbox/rivets/condition"
+	"github.com/metal-toolbox/alloy/internal/metrics"
 )
 
 func (w *Worker) concurrencyLimit() bool {

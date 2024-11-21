@@ -6,13 +6,10 @@ import (
 	"strings"
 	"time"
 
-	bmclibv2 "github.com/bmc-toolbox/bmclib/v2"
-	"github.com/bmc-toolbox/common"
 	logrusr "github.com/bombsimon/logrusr/v4"
 	"github.com/jacobweinstock/registrar"
-	"github.com/metal-toolbox/alloy/internal/app"
-	"github.com/metal-toolbox/alloy/internal/metrics"
-	"github.com/metal-toolbox/alloy/internal/model"
+	common "github.com/metal-toolbox/bmc-common"
+	bmclib "github.com/metal-toolbox/bmclib"
 	"github.com/pkg/errors"
 	"github.com/sanity-io/litter"
 	"github.com/sirupsen/logrus"
@@ -20,6 +17,10 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+
+	"github.com/metal-toolbox/alloy/internal/app"
+	"github.com/metal-toolbox/alloy/internal/metrics"
+	"github.com/metal-toolbox/alloy/internal/model"
 )
 
 var (
@@ -332,7 +333,7 @@ func (o *Queryor) bmcLogout(bmc BMCQueryor, asset *model.Asset) {
 }
 
 // newBMCClient initializes a bmclib client with the given credentials
-func newBMCClient(asset *model.Asset, l *logrus.Logger) *bmclibv2.Client {
+func newBMCClient(asset *model.Asset, l *logrus.Logger) *bmclib.Client {
 	logger := logrus.New()
 	logger.Formatter = l.Formatter
 
@@ -350,25 +351,25 @@ func newBMCClient(asset *model.Asset, l *logrus.Logger) *bmclibv2.Client {
 
 	logruslogr := logrusr.New(logger)
 
-	bmcClient := bmclibv2.NewClient(
+	bmcClient := bmclib.NewClient(
 		asset.BMCAddress.String(),
 		asset.BMCUsername,
 		asset.BMCPassword,
-		bmclibv2.WithLogger(logruslogr),
-		bmclibv2.WithPerProviderTimeout(bmclibProviderTimeout),
+		bmclib.WithLogger(logruslogr),
+		bmclib.WithPerProviderTimeout(bmclibProviderTimeout),
 	)
 
-	// set bmclibv2 driver
+	// set bmclib driver
 	//
 	// The bmclib drivers here are limited to the HTTPS means of connection,
 	// that is, drivers like ipmi are excluded.
 	switch asset.Vendor {
 	case common.VendorDell, common.VendorHPE:
 		// Set to the bmclib ProviderProtocol value
-		// https://github.com/bmc-toolbox/bmclib/blob/v2/providers/redfish/redfish.go#L26
+		// https://github.com/metal-toolbox/bmclib/blob/providers/redfish/redfish.go#L26
 		bmcClient.Registry.Drivers = bmcClient.Registry.Using("redfish")
 	case common.VendorAsrockrack:
-		// https://github.com/bmc-toolbox/bmclib/blob/v2/providers/asrockrack/asrockrack.go#L20
+		// https://github.com/metal-toolbox/bmclib/blob/providers/asrockrack/asrockrack.go#L20
 		bmcClient.Registry.Drivers = bmcClient.Registry.Using("vendorapi")
 	default:
 		// attempt both drivers when vendor is unknown

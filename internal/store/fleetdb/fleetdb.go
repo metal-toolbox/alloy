@@ -6,12 +6,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/bmc-toolbox/common"
 	"github.com/google/uuid"
-	"github.com/metal-toolbox/alloy/internal/app"
-	"github.com/metal-toolbox/alloy/internal/device/outofband"
-	"github.com/metal-toolbox/alloy/internal/metrics"
-	"github.com/metal-toolbox/alloy/internal/model"
+	common "github.com/metal-toolbox/bmc-common"
+	fleetdbapi "github.com/metal-toolbox/fleetdb/pkg/api/v1"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	r3diff "github.com/r3labs/diff/v3"
@@ -21,7 +18,10 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 
-	fleetdbapi "github.com/metal-toolbox/fleetdb/pkg/api/v1"
+	"github.com/metal-toolbox/alloy/internal/app"
+	"github.com/metal-toolbox/alloy/internal/device/outofband"
+	"github.com/metal-toolbox/alloy/internal/metrics"
+	"github.com/metal-toolbox/alloy/internal/model"
 )
 
 const (

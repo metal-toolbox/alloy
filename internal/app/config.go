@@ -8,7 +8,7 @@ import (
 
 	"github.com/jeremywohl/flatten"
 	"github.com/metal-toolbox/alloy/internal/model"
-	"github.com/metal-toolbox/rivets/events"
+	"github.com/metal-toolbox/rivets/v2/events"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 )

@@ -6,12 +6,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bmc-toolbox/common"
 	"github.com/google/uuid"
-	"github.com/metal-toolbox/alloy/internal/model"
+	common "github.com/metal-toolbox/bmc-common"
 	fleetdbapi "github.com/metal-toolbox/fleetdb/pkg/api/v1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/metal-toolbox/alloy/internal/model"
 )
 
 // devel notes
@@ -1014,8 +1015,8 @@ func (r *Store) setAttributes(component *fleetdbapi.ServerComponent, attr *attri
 	}
 
 	// skip min sized json data containing just the braces `{}`
-	min := 2
-	if len(data) == min {
+	smallest := 2
+	if len(data) == smallest {
 		return
 	}
 
@@ -1070,8 +1071,8 @@ func (r *Store) setStatusVA(component *fleetdbapi.ServerComponent, statusesVA []
 	}
 
 	// skip empty json data containing just the braces `[{}]`
-	min := 4
-	if len(data) == min {
+	smallest := 4
+	if len(data) == smallest {
 		return
 	}
 
@@ -1127,8 +1128,8 @@ func (r *Store) setFirmwareVA(deviceVendor string, component *fleetdbapi.ServerC
 	}
 
 	// skip empty json data containing just the braces `{}`
-	min := 2
-	if len(data) == min {
+	smallest := 2
+	if len(data) == smallest {
 		return
 	}
 

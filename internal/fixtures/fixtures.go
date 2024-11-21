@@ -1,8 +1,8 @@
 package fixtures
 
 import (
-	"github.com/bmc-toolbox/common"
 	"github.com/jinzhu/copier"
+	common "github.com/metal-toolbox/bmc-common"
 	fleetdbapi "github.com/metal-toolbox/fleetdb/pkg/api/v1"
 )
 

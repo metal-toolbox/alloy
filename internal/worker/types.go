@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/metal-toolbox/alloy/internal/model"
-	rctypes "github.com/metal-toolbox/rivets/condition"
+	rctypes "github.com/metal-toolbox/rivets/v2/condition"
 )
 
 // Task represents a task the controller works on

@@ -226,37 +226,6 @@ type AssetIterCollector struct {
 	concurrency   int32
 }
 
-// NewAssetIterCollector is a constructor method that returns an AssetIterCollector.
-func NewAssetIterCollector(
-	ctx context.Context,
-	storeKind model.StoreKind,
-	appKind model.AppKind,
-	cfg *app.Configuration,
-	syncWG *sync.WaitGroup,
-	logger *logrus.Logger,
-) (*AssetIterCollector, error) {
-	repository, err := store.NewRepository(ctx, storeKind, appKind, cfg, logger)
-	if err != nil {
-		return nil, err
-	}
-
-	queryor, err := device.NewQueryor(appKind, logger)
-	if err != nil {
-		return nil, err
-	}
-
-	assetIterator := NewAssetIterator(repository, logger)
-
-	return &AssetIterCollector{
-		concurrency:   int32(cfg.Concurrency),
-		queryor:       queryor,
-		assetIterator: *assetIterator,
-		repository:    repository,
-		syncWG:        syncWG,
-		logger:        logger,
-	}, nil
-}
-
 // NewAssetIterCollectorWithStore is a constructor method that accepts an initialized store to return an AssetIterCollector.
 func NewAssetIterCollectorWithStore(
 	appKind model.AppKind,

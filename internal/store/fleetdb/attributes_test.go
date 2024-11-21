@@ -12,15 +12,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bmc-toolbox/common"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-retryablehttp"
-	"github.com/metal-toolbox/alloy/internal/fixtures"
-	"github.com/metal-toolbox/alloy/internal/model"
+	common "github.com/metal-toolbox/bmc-common"
 	fleetdbapi "github.com/metal-toolbox/fleetdb/pkg/api/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/metal-toolbox/alloy/internal/fixtures"
+	"github.com/metal-toolbox/alloy/internal/model"
 )
 
 func testStoreInstance(t *testing.T, mockURL string) *Store {
