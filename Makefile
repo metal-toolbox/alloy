@@ -15,7 +15,7 @@ REPO := "https://github.com/metal-toolbox/alloy.git"
 
 ## lint
 lint:
-	golangci-lint run --config .golangci.yml --timeout=2m
+	golangci-lint run --config .golangci.yml --timeout=2m --fix
 
 ## Go test
 test: lint
