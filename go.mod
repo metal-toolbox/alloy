@@ -21,7 +21,7 @@ require (
 	github.com/metal-toolbox/ironlib v1.1.0
 	github.com/metal-toolbox/rivets/v2 v2.0.0
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/nats-io/nats.go v1.39.0
+	github.com/nats-io/nats.go v1.39.1
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.20.5
 	github.com/r3labs/diff/v3 v3.0.1
