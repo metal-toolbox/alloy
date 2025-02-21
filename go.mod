@@ -35,7 +35,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.34.0
 	go.uber.org/goleak v1.3.0
 	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f
-	golang.org/x/net v0.31.0
+	golang.org/x/net v0.33.0
 	golang.org/x/oauth2 v0.26.0
 )
 
