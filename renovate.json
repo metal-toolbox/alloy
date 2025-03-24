@@ -29,8 +29,7 @@
         "minor",
         "patch",
         "digest"
-      ],
-      "automerge": true
+      ]
     }
   ]
 }
