@@ -25,7 +25,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.20.5
 	github.com/r3labs/diff/v3 v3.0.1
-	github.com/sanity-io/litter v1.5.5
+	github.com/sanity-io/litter v1.5.8
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.19.0
