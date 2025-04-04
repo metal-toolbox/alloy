@@ -2,7 +2,7 @@ module github.com/metal-toolbox/alloy
 
 go 1.23.0
 
-toolchain go1.23.1
+toolchain go1.24.2
 
 require (
 	github.com/bombsimon/logrusr/v4 v4.1.0
