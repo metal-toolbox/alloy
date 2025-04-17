@@ -17,7 +17,7 @@ require (
 	github.com/jinzhu/copier v0.4.0
 	github.com/metal-toolbox/bmc-common v1.0.3
 	github.com/metal-toolbox/bmclib v1.2.1
-	github.com/metal-toolbox/fleetdb v1.20.1
+	github.com/metal-toolbox/fleetdb v1.20.3
 	github.com/metal-toolbox/ironlib v1.1.2
 	github.com/metal-toolbox/rivets/v2 v2.1.1
 	github.com/mitchellh/mapstructure v1.5.0

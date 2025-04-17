@@ -551,8 +551,8 @@ github.com/metal-toolbox/bmc-common v1.0.3 h1:hrX5Q3k+CrHzUtlN5nh6X9l7l7D3chsHKV
 github.com/metal-toolbox/bmc-common v1.0.3/go.mod h1:WxMpaNb7/yTSEW0fMDOWUrhs/CPAzuCSx0p3uv3vRVA=
 github.com/metal-toolbox/bmclib v1.2.1 h1:zb8zXV7hXZ8wtyMx1W5pmO99eFEux1Z96oBQWaWiH1I=
 github.com/metal-toolbox/bmclib v1.2.1/go.mod h1:P4fL5iGJCYjbwUoaUvBJG3Bqa41tfHf8KD975D6vTP4=
-github.com/metal-toolbox/fleetdb v1.20.1 h1:5YHnG8hFpzmRz7Ulyqs9tWPAIfJdMrUXcuWDWk/g88k=
-github.com/metal-toolbox/fleetdb v1.20.1/go.mod h1:8yVOYkEbxNRAvHx02g7bP6oBDiWBvhQ9HY95zI9ZtTU=
+github.com/metal-toolbox/fleetdb v1.20.3 h1:dcriOgjLqo8ZUv+MJ1ulumTWrFt4UL1m791MLjbe8v0=
+github.com/metal-toolbox/fleetdb v1.20.3/go.mod h1:8yVOYkEbxNRAvHx02g7bP6oBDiWBvhQ9HY95zI9ZtTU=
 github.com/metal-toolbox/ironlib v1.1.2 h1:bLV/wRS4zBXS1HO7UNdqg/eM9xMQP0duKdNfFInzPc0=
 github.com/metal-toolbox/ironlib v1.1.2/go.mod h1:vp1j/9/Qm483jtlVl+YDMO9mxgwTR7H/MWfuGBx06c8=
 github.com/metal-toolbox/rivets/v2 v2.1.1 h1:hyB/2ndhZAUgAAeesmRwrt794iDQARTL5nTo4miWLvI=
