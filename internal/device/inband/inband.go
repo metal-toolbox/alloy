@@ -38,6 +38,7 @@ func (i *Queryor) Inventory(ctx context.Context, asset *model.Asset) error {
 		}
 	}
 
+	i.logger.Info("Launching inband inventory")
 	device, err := i.deviceManager.GetInventory(ctx)
 	if err != nil {
 		return err
