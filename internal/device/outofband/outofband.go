@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/metrics"
 	"github.com/metal-toolbox/alloy/internal/model"
 )
@@ -64,18 +63,13 @@ type BMCQueryor interface {
 
 // NewQueryor returns a instance of the Queryor inventory collector
 func NewQueryor(logger *logrus.Logger) *Queryor {
-	loggerEntry := app.NewLogrusEntryFromLogger(
-		logrus.Fields{"component": "collector.outofband"},
-		logger,
-	)
-
 	lt, err := time.ParseDuration(logoutTimeout)
 	if err != nil {
 		panic(err)
 	}
 
 	c := &Queryor{
-		logger:        loggerEntry,
+		logger:        logger.WithFields(logrus.Fields{"component": "collector.outofband"}),
 		logoutTimeout: lt,
 	}
 
