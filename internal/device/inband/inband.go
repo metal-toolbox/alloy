@@ -8,7 +8,6 @@ import (
 	"github.com/metal-toolbox/ironlib/actions"
 	"github.com/sirupsen/logrus"
 
-	"github.com/metal-toolbox/alloy/internal/app"
 	"github.com/metal-toolbox/alloy/internal/model"
 )
 
@@ -21,13 +20,8 @@ type Queryor struct {
 
 // New returns an inband inventory collector
 func NewQueryor(logger *logrus.Logger) *Queryor {
-	loggerEntry := app.NewLogrusEntryFromLogger(
-		logrus.Fields{"component": "queryor.inband"},
-		logger,
-	)
-
 	return &Queryor{
-		logger: loggerEntry,
+		logger: logger.WithFields(logrus.Fields{"component": "queryor.inband"}),
 	}
 }
 
