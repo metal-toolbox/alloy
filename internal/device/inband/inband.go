@@ -38,8 +38,10 @@ func (i *Queryor) Inventory(ctx context.Context, asset *model.Asset) error {
 		}
 	}
 
+	i.logger.Info("inband: GetInventory launching...")
 	device, err := i.deviceManager.GetInventory(ctx)
 	if err != nil {
+		i.logger.WithFields(logrus.Fields{"err": err}).Error("inband: GetInventory error")
 		return err
 	}
 
@@ -52,6 +54,7 @@ func (i *Queryor) Inventory(ctx context.Context, asset *model.Asset) error {
 	asset.Model = "unknown"
 	asset.Serial = "unknown"
 
+	i.logger.Info("inband: GetInventory success")
 	return nil
 }
 
