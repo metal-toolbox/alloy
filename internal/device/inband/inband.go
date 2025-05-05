@@ -71,12 +71,15 @@ func (i *Queryor) BiosConfiguration(ctx context.Context, asset *model.Asset) err
 		}
 	}
 
+	i.logger.Info("inband: GetBIOSConfiguration launching...")
 	biosConfig, err := i.deviceManager.GetBIOSConfiguration(ctx)
 	if err != nil {
+		i.logger.WithFields(logrus.Fields{"err": err}).Error("inband: GetBIOSConfiguration error")
 		return err
 	}
 
 	asset.BiosConfig = biosConfig
 
+	i.logger.Info("inband: GetBIOSConfiguration success")
 	return nil
 }
