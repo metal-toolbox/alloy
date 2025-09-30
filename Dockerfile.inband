@@ -1,4 +1,4 @@
-ARG IRONLIB_IMAGE=ghcr.io/metal-toolbox/ironlib:v1.1.3
+ARG IRONLIB_IMAGE=ghcr.io/metal-toolbox/ironlib:v1.1.4
 FROM $IRONLIB_IMAGE
 
 COPY alloy /usr/sbin/alloy
